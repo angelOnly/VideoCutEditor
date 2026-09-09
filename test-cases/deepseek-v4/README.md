@@ -43,15 +43,17 @@ codex login --device-auth
 
 ## 3. 配置本次豆包配音
 
-使用对 Seed TTS 2.0 有权限的真实 API Key。以下输入不回显，不把密钥写入代码或聊天：
+使用对 Seed TTS 2.0 有权限的真实 API Key，首次配置执行：
 
 ```bash
-read -rsp '豆包 TTS API Key: ' DOUBAO_TTS_API_KEY; echo
-export DOUBAO_TTS_API_KEY
-export DOUBAO_TTS_RESOURCE_ID=seed-tts-2.0
+python3 test-cases/deepseek-v4/configure_tts.py
 ```
 
-固定女声 `zh_female_xiaohe_uranus_bigtts`、男声 `zh_male_m191_uranus_bigtts`，需在该账号可用。脚本仅将运行所需环境变量及这两个豆包变量传给 Agent 的子命令；不要把真实 Key 放入 task.json。收到鉴权/音色不可用时修正环境，不生成多轮试听。
+输入不回显，保存在仓库根目录 `.env`，权限 600，Git 已忽略。run.sh 每次自动加载，无需每次 export。已导出的非空环境变量优先于文件；若本终端仍保留旧 Key，先 `unset DOUBAO_TTS_API_KEY DOUBAO_TTS_RESOURCE_ID`。密钥是否失效以控制台有效期、禁用和权限为准。
+
+固定女声 `zh_female_xiaohe_uranus_bigtts`、男声 `zh_male_m191_uranus_bigtts`，需在该账号可用。收到鉴权/音色不可用时修正配置，不生成多轮试听。使用豆包语音新控制台的 API Key 管理，不是聊天产品账号密码。
+
+早期接入文档曾误含真实凭据。文档已替换占位符，但历史提交仍可能读取旧值；请禁用旧 Key 并配置新 Key。不要复用 Git 历史中的值。
 
 ## 4. 准备任务及渲染依赖
 

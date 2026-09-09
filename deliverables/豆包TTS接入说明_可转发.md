@@ -59,7 +59,7 @@ cp .env.example .env
 
 ```
 # Local-only credentials for the Doubao TTS smoke test. This file is git-ignored.
-DOUBAO_TTS_API_KEY=892ff19b-4c93-4726-a986-7d92756162e0
+DOUBAO_TTS_API_KEY=your_api_key_here
 DOUBAO_TTS_RESOURCE_ID=seed-tts-2.0
 DOUBAO_TTS_SPEAKER=zh_female_xiaohe_uranus_bigtts
 ```

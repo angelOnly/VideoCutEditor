@@ -10,7 +10,24 @@ for tool in codex ffmpeg ffprobe node npm python3 timeout flock; do
   command -v "$tool" >/dev/null || { echo "Missing dependency: $tool" >&2; exit 2; }
 done
 [[ -s "$job_dir/task.json" && -s "$job_dir/prompt.txt" ]] || { echo 'Run prepare.py first.' >&2; exit 2; }
-[[ -n "${DOUBAO_TTS_API_KEY:-}" ]] || { echo 'Export DOUBAO_TTS_API_KEY first (do not put it in Git).' >&2; exit 2; }
+# Load only the TTS settings as data, never source/eval a credential file.
+if [[ "${VIDEO_PIPELINE_ENV_LOADED:-}" != 1 ]]; then
+  exec python3 - "$repo_dir" "$job_id" <<'PYENV'
+import os, sys
+from pathlib import Path
+from dotenv import dotenv_values
+root = Path(sys.argv[1])
+config = dotenv_values(root / '.env', interpolate=False)
+env = dict(os.environ)
+for name in ('DOUBAO_TTS_API_KEY', 'DOUBAO_TTS_RESOURCE_ID'):
+    if not env.get(name) and config.get(name):
+        env[name] = config[name]
+env['VIDEO_PIPELINE_ENV_LOADED'] = '1'
+os.execvpe('bash', ['bash', str(root / 'test-cases/deepseek-v4/run.sh'), sys.argv[2]], env)
+PYENV
+fi
+[[ -n "${DOUBAO_TTS_API_KEY:-}" ]] || { echo 'Run python3 test-cases/deepseek-v4/configure_tts.py first.' >&2; exit 2; }
+
 codex login status
 exec 9>"$job_dir/run.lock"
 flock -n 9 || { echo 'This job is already running.' >&2; exit 2; }
