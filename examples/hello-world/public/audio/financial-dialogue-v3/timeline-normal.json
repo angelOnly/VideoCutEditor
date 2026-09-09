@@ -1,0 +1,203 @@
+{
+  "fps": 30,
+  "total_seconds": 143.448,
+  "total_frames": 4303,
+  "speakers": {
+    "female": "zh_female_xiaohe_uranus_bigtts",
+    "male": "zh_male_m191_uranus_bigtts"
+  },
+  "utterances": [
+    {
+      "id": "01-opening-question",
+      "role": "female",
+      "chapter": "opening",
+      "text": "营收降了14.8%，净利跌了73.1%，研发费用率却在上升，在建工程更涨了139.6%。利润几乎清零，钱为什么还在往研发和建厂里投？",
+      "file": "01-opening-question-female.mp3",
+      "start_seconds": 0.0,
+      "duration_seconds": 13.896,
+      "start_frame": 0,
+      "duration_frames": 417,
+      "gap_after_seconds": 0.28
+    },
+    {
+      "id": "02-opening-answer",
+      "role": "male",
+      "chapter": "opening",
+      "text": "作为国内汽车刹车片龙头，金麒麟的矛盾很清楚：短期利润收缩，长期投入却在加速。",
+      "file": "02-opening-answer-male.mp3",
+      "start_seconds": 14.176,
+      "duration_seconds": 8.256,
+      "start_frame": 425,
+      "duration_frames": 248,
+      "gap_after_seconds": 0.28
+    },
+    {
+      "id": "03-research-question",
+      "role": "female",
+      "chapter": "research",
+      "text": "先看研发。二季度研发费用率4.32%，同比提高1.02个百分点；营收下滑，研发反增，投向哪里？",
+      "file": "03-research-question-female.mp3",
+      "start_seconds": 22.712,
+      "duration_seconds": 9.504,
+      "start_frame": 681,
+      "duration_frames": 285,
+      "gap_after_seconds": 0.28
+    },
+    {
+      "id": "04-research-context",
+      "role": "male",
+      "chapter": "research",
+      "text": "公司正从传统液压制动转向电子刹车和线控制动，技术窗口只剩两到三年。",
+      "file": "04-research-context-male.mp3",
+      "start_seconds": 32.496,
+      "duration_seconds": 8.832,
+      "start_frame": 975,
+      "duration_frames": 265,
+      "gap_after_seconds": 0.28
+    },
+    {
+      "id": "05-research-proof-question",
+      "role": "female",
+      "chapter": "research",
+      "text": "怎样验证这笔投入不是浪费？",
+      "file": "05-research-proof-question-female.mp3",
+      "start_seconds": 41.608,
+      "duration_seconds": 2.448,
+      "start_frame": 1248,
+      "duration_frames": 73,
+      "gap_after_seconds": 0.28
+    },
+    {
+      "id": "06-research-proof-answer",
+      "role": "male",
+      "chapter": "research",
+      "text": "看Q3主机厂定点。拿到定点，投入开始兑现；如果还在改良旧产品，就是方向性浪费。",
+      "file": "06-research-proof-answer-male.mp3",
+      "start_seconds": 44.336,
+      "duration_seconds": 9.072,
+      "start_frame": 1330,
+      "duration_frames": 272,
+      "gap_after_seconds": 0.28
+    },
+    {
+      "id": "07-construction-question",
+      "role": "female",
+      "chapter": "construction",
+      "text": "再看在建工程，0.4亿元，同比涨139.6%。业绩收缩时，为什么还要继续建厂？",
+      "file": "07-construction-question-female.mp3",
+      "start_seconds": 53.688,
+      "duration_seconds": 8.064,
+      "start_frame": 1611,
+      "duration_frames": 242,
+      "gap_after_seconds": 0.28
+    },
+    {
+      "id": "08-construction-answer",
+      "role": "male",
+      "chapter": "construction",
+      "text": "产能建设要一到两年，对应的是2027到2028年的供给。技术转型会淘汰小厂，龙头可能拿到更多份额。前提是，现金流能撑到需求回暖；关键要看钱来自自有现金，还是新增借款。",
+      "file": "08-construction-answer-male.mp3",
+      "start_seconds": 62.032,
+      "duration_seconds": 15.84,
+      "start_frame": 1861,
+      "duration_frames": 475,
+      "gap_after_seconds": 0.28
+    },
+    {
+      "id": "09-operations-question",
+      "role": "female",
+      "chapter": "operations",
+      "text": "公司的运营体质，能承受这场押注吗？",
+      "file": "09-operations-question-female.mp3",
+      "start_seconds": 78.152,
+      "duration_seconds": 3.24,
+      "start_frame": 2345,
+      "duration_frames": 97,
+      "gap_after_seconds": 0.28
+    },
+    {
+      "id": "10-turnover-answer",
+      "role": "male",
+      "chapter": "operations",
+      "text": "固定资产周转率1.53次，处在正常区间下沿；周转降幅小于营收，更像主动压缩低效产能。Q3营收回到4.5亿元以上，周转率会修复。",
+      "file": "10-turnover-answer-male.mp3",
+      "start_seconds": 81.672,
+      "duration_seconds": 12.864,
+      "start_frame": 2450,
+      "duration_frames": 386,
+      "gap_after_seconds": 0.28
+    },
+    {
+      "id": "11-capex-question",
+      "role": "female",
+      "chapter": "operations",
+      "text": "资本开支和存货，还会不会继续拖累利润？",
+      "file": "11-capex-question-female.mp3",
+      "start_seconds": 94.816,
+      "duration_seconds": 3.648,
+      "start_frame": 2844,
+      "duration_frames": 109,
+      "gap_after_seconds": 0.28
+    },
+    {
+      "id": "12-capex-inventory-answer",
+      "role": "male",
+      "chapter": "operations",
+      "text": "Capex强度65.6%仍安全；但工程转固、营收又跟不上，强度可能冲到80%以上，折旧和闲置产能都会压利润。存货营收比44.8%，仍在正常区间；重点关注钢价下行带来的跌价准备。",
+      "file": "12-capex-inventory-answer-male.mp3",
+      "start_seconds": 98.744,
+      "duration_seconds": 18.84,
+      "start_frame": 2962,
+      "duration_frames": 565,
+      "gap_after_seconds": 0.28
+    },
+    {
+      "id": "13-q3-signals",
+      "role": "male",
+      "chapter": "q3",
+      "text": "所以Q3盯五点：电子刹车定点和扩产、资金来源、营收能否回到4.5亿元、工程转固时间，以及存货跌价准备。",
+      "file": "13-q3-signals-male.mp3",
+      "start_seconds": 117.864,
+      "duration_seconds": 11.424,
+      "start_frame": 3536,
+      "duration_frames": 343,
+      "gap_after_seconds": 0.28
+    },
+    {
+      "id": "14-q3-conclusion",
+      "role": "female",
+      "chapter": "q3",
+      "text": "它们决定这轮投入是提前卡位，还是把压力留给利润表。",
+      "file": "14-q3-conclusion-female.mp3",
+      "start_seconds": 129.568,
+      "duration_seconds": 4.44,
+      "start_frame": 3887,
+      "duration_frames": 133,
+      "gap_after_seconds": 0.28
+    },
+    {
+      "id": "15-closing-male",
+      "role": "male",
+      "chapter": "closing",
+      "text": "财报不能只看当期利润，更要看投入是否指向未来回报。",
+      "file": "15-closing-male-male.mp3",
+      "start_seconds": 134.288,
+      "duration_seconds": 5.64,
+      "start_frame": 4029,
+      "duration_frames": 169,
+      "gap_after_seconds": 0.28
+    },
+    {
+      "id": "16-closing-female",
+      "role": "female",
+      "chapter": "closing",
+      "text": "每期三分钟，拆解财报里的关键信号。",
+      "file": "16-closing-female-female.mp3",
+      "start_seconds": 140.208,
+      "duration_seconds": 3.24,
+      "start_frame": 4206,
+      "duration_frames": 97,
+      "gap_after_seconds": 0.28
+    }
+  ]
+}

@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>财经双人对话视频生成指令手册</title>
+<style>
+  @page { size: A4; margin: 13mm 13mm 15mm; }
+  * { box-sizing: border-box; }
+  body { margin: 0; color: #142233; font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif; font-size: 10.5pt; line-height: 1.58; }
+  h1,h2,h3 { margin: 0; color:#0a1724; line-height:1.25; }
+  h1 { font-size: 27pt; letter-spacing: .02em; }
+  h2 { font-size: 17pt; margin-top: 20px; padding-top: 5px; border-top: 2px solid #e94b51; }
+  h3 { font-size: 12.5pt; margin-top: 12px; }
+  p { margin: 6px 0; }
+  .cover { min-height: 265mm; display:flex; flex-direction:column; justify-content:center; text-align:center; page-break-after:always; }
+  .eyebrow { color:#e94b51; font-size:10pt; font-weight:800; letter-spacing:.17em; }
+  .subtitle { color:#64748b; font-size:13pt; margin:14px 0 22px; }
+  .rule { color:#e94b51; letter-spacing:.3em; font-size:19pt; margin-bottom:25px; }
+  .cover img { width:82%; margin:0 auto; border-radius:10px; box-shadow:0 12px 35px rgba(10,23,36,.18); }
+  .note { color:#64748b; font-size:9pt; }
+  .pagebreak { page-break-before:always; }
+  .callout { margin:11px 0; padding:10px 12px; border-left:4px solid #e94b51; border-radius:0 8px 8px 0; background:#fcecef; }
+  .callout.blue { border-color:#22b8cf; background:#eaf8fb; }
+  .callout.gold { border-color:#eab84d; background:#fff6dd; }
+  .label { color:#e94b51; font-weight:800; margin-right:7px; }
+  table { width:100%; border-collapse:collapse; margin:8px 0 12px; font-size:9.2pt; page-break-inside:avoid; }
+  th { background:#e8eef5; color:#142233; font-weight:800; }
+  td,th { border:1px solid #cbd7e3; padding:7px 8px; vertical-align:top; }
+  .no-break { page-break-inside:avoid; }
+  pre { margin:7px 0 12px; padding:12px; white-space:pre-wrap; font:8.4pt/1.48 "SFMono-Regular", Menlo, Consolas, monospace; background:#f2f5f8; border-left:3px solid #c9d5e3; color:#233142; }
+  ol,ul { margin:6px 0 9px; padding-left:22px; }
+  li { margin:3px 0; }
+  figure { margin:10px 0 13px; text-align:center; page-break-inside:avoid; }
+  figure img { width:89%; border-radius:8px; box-shadow:0 7px 20px rgba(10,23,36,.14); }
+  figcaption { color:#64748b; font-size:8.6pt; margin-top:4px; }
+  .asset { padding:8px 10px; margin:7px 0; background:#f6f8fb; border:1px solid #d7e0e9; border-radius:7px; }
+  .asset strong { color:#0a1724; }
+  a { color:#c73542; text-decoration:underline; overflow-wrap:anywhere; }
+  .path { display:block; color:#64748b; font:7.7pt/1.35 "SFMono-Regular", Menlo, Consolas, monospace; margin-top:3px; overflow-wrap:anywhere; }
+  .footer { color:#64748b; text-align:center; font-size:8.5pt; margin:20px 0 0; }
+</style>
+</head>
+<body>
+  <section class="cover">
+    <div class="eyebrow">FINANCIAL REPORT / REVEALED</div>
+    <h1>财经双人对话视频<br>可复用生成指令手册</h1>
+    <p class="subtitle">适用于《财报揭秘室》 · Remotion 动效 · 豆包 TTS</p>
+    <div class="rule">━━━━━━</div>
+    <img src="video-generation-guide-assets/03_active-speaker.png" alt="发言者高亮示例">
+    <p class="note">已验证流程 · 横版 16:9 财经解释视频 · 2026-08</p>
+  </section>
+
+  <section>
+    <h2>先读这一页：本片的“正确公式”</h2>
+    <div class="callout"><span class="label">目标观感</span>不是“念全文 + 静态 PPT”。而是：声音先行，数据/关键词随后出现；每次只突出一位主持人；章节与片尾都服务于节奏，不额外拖长。</div>
+    <table>
+      <thead><tr><th>模块</th><th>已验证的做法</th><th>不要这样做</th></tr></thead>
+      <tbody>
+        <tr><td>开头</td><td>先用 1 个问题或反差数据做钩子，再接 2.23 秒栏目片头。</td><td>开场先放品牌片头，或一开始把所有数据抛完。</td></tr>
+        <tr><td>人物</td><td>当前发言者 130px 高亮头像 + 一句关键结论；另一人 64px、低透明度。</td><td>整段旁白塞进对话框，双方头像同等抢画面。</td></tr>
+        <tr><td>章节</td><td>上一段结束后的 1.4 - 1.6 秒，先展示章节标题；标题退出后再进下一位人物。</td><td>小标题与人物对话同时出现，或空白停 1 秒。</td></tr>
+        <tr><td>数据</td><td>按照旁白中的数字、因果和验证点渐进出现。</td><td>画面一进入就把全部卡片、折线和结论放完。</td></tr>
+        <tr><td>收尾</td><td>最后女声“每期三分钟...”起，全屏主标动效；女声结束即终止视频。</td><td>男声仍在分析时提前上片尾，或片尾后再加尾音/空白。</td></tr>
+      </tbody>
+    </table>
+
+    <h2>一、下次直接给 Codex 的两步式指令</h2>
+    <h3>步骤 A：先让它规划，不要直接渲染</h3>
+    <pre>我要做一支《财报揭秘室》风格的横版财经双人对话视频。请先不要生成视频，先阅读我提供的解读稿、人物头像、数据素材、音效和参考视频。
+
+目标：约 [X] 分钟、1920×1080 / 30fps、16:9；不需要口型，只要头像与数据动效。
+请输出：
+1. 压缩后的完整男女对话文案（标明男女、每句的核心结论）；
+2. 逐镜头分镜表：时间段、发言者、画面数据、关键句、音效、转场；
+3. 每章节的标题卡位置与时长；
+4. 片头/片尾如何接入现有动效；
+5. 需要我确认的数字、音色和素材缺口。
+
+节奏要求：钩子 → 片头 → 章节分析 → 全屏片尾；数据必须随旁白渐进出现；章节标题必须先出现并消失，再进入人物解说。</pre>
+    <h3>步骤 B：确认方案后，再让它执行</h3>
+    <pre>按已确认的分镜执行并渲染预览。使用豆包 TTS：男声“刘飞 2.0”、女声“流畅女声 2.0”。
+
+人物规则：正在说话的人高亮放大；另一人缩小、弱化；对话卡只显示一句关键结论，不能直接放完整旁白。
+音画规则：每条音频以真实时长写入 timeline；数据/卡片按句中信息分批出现；章节标题只占上一句结束后的转场空档；禁止标题和人物卡同屏。
+片尾规则：最后女声“每期三分钟，拆解财报里的关键信号”开始时切入全屏主标动效，其他 UI 全部关闭；女声结束的同一帧结束视频，不加尾音、不留空白。
+
+先输出 3 个关键时间点的静帧供我确认：一个人物切换、一个章节转场、一个片尾。确认后再导出完整 MP4。</pre>
+
+    <h2>二、需要提供哪些素材与信息</h2>
+    <table>
+      <thead><tr><th>输入</th><th>最小要求</th><th>交付建议</th></tr></thead>
+      <tbody>
+        <tr><td>解读稿</td><td>带章节小标题，数字口径明确。</td><td>DOCX 或 Markdown；把“必须出现”的数字加粗或单列。</td></tr>
+        <tr><td>头像</td><td>男女主持人各 1 张，正面、清晰、背景干净。</td><td>PNG；人物脸部占画面约 50% 以上。</td></tr>
+        <tr><td>品牌资产</td><td>透明 Logo、主视觉色、免责声明。</td><td>PNG/SVG；注明是否允许在右上角常驻。</td></tr>
+        <tr><td>声音</td><td>男/女声选择、TTS 凭证、是否允许语速调整。</td><td>先生成 2 - 4 个试听片段，确认后再批量生成。</td></tr>
+        <tr><td>参考视频</td><td>至少 1 支，标出喜欢的 3 个时间点。</td><td>说明喜欢“节奏、排版、人物切换”还是“音效”。</td></tr>
+        <tr><td>音效与配乐</td><td>可商用来源、文件夹结构。</td><td>提供 WAV/MP3，并区分“章节、数字、风险、片尾”。</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>三、固定镜头语法：如何排版才像“在对话”</h2>
+    <figure><img src="video-generation-guide-assets/01_hook.png" alt="开场钩子"><figcaption>镜头 0｜开场钩子：用问题或反差数据先抓住观众，再进入栏目片头。</figcaption></figure>
+    <table>
+      <thead><tr><th>镜头类型</th><th>画面规则</th><th>推荐时长</th></tr></thead>
+      <tbody>
+        <tr><td>钩子</td><td>单人提问 + 1 - 3 个反差指标；不先解释。</td><td>8 - 15 秒</td></tr>
+        <tr><td>栏目片头</td><td>钩子结束后接人物主标片头；无具体公司数据。</td><td>2.23 秒</td></tr>
+        <tr><td>提问镜头</td><td>女主持人右侧高亮；左侧男主持人弱化；只留一行问题。</td><td>2 - 6 秒</td></tr>
+        <tr><td>回答镜头</td><td>男主持人左侧高亮；右侧女主持人弱化；数据面板为视觉中心。</td><td>6 - 16 秒</td></tr>
+        <tr><td>章节卡</td><td>全屏暗遮罩 + 章节编号与标题；与声音错开。</td><td>1.2 - 1.6 秒</td></tr>
+        <tr><td>收束</td><td>男声说投资结论时仍是分析画面；最后女声开始时切全屏品牌片尾。</td><td>3 - 4 秒（仅随末句）</td></tr>
+      </tbody>
+    </table>
+    <figure><img src="video-generation-guide-assets/03_active-speaker.png" alt="发言者高亮"><figcaption>镜头 1｜发言者高亮：当前角色放大、对方弱化；画面信息中心仍是数据面板。</figcaption></figure>
+    <div class="callout blue"><span class="label">对话卡写法</span>把整段旁白“压缩”为 8 - 18 字的关键句。例如旁白讲研发费率、线控制动和验证节点；对话卡只写“Q3 主机厂定点，是兑现门槛”。</div>
+
+    <h2>四、章节与音画同步：这一步决定视频是否“专业”</h2>
+    <figure><img src="video-generation-guide-assets/04_chapter-card.png" alt="章节标题卡"><figcaption>镜头 2｜章节卡占用前后两句之间的转场空档；它退出后，人物与新面板才进入。</figcaption></figure>
+    <ol>
+      <li>将每条 TTS 音频的真实时长写入 timeline；不要按文字字数估算。</li>
+      <li>给每段旁白定义“语义触发点”：讲到第一个数字再出现第一张卡；讲到第二个验证点再出现第二项。</li>
+      <li>章节卡放入上一段结束后的已有停顿；如果没有自然停顿，预留约 1.3 秒，并由章节扫光音效填充。</li>
+      <li>章节卡最后一帧必须先消失；下一条音频第一帧才出现发言者高亮卡。</li>
+      <li>不要对整段音频做拉伸，也不要在视频最后添加“默认收尾音”。</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>五、音色、配乐与音效：已验证的关键决策</h2>
+    <table>
+      <thead><tr><th>类别</th><th>本次选择</th><th>使用原则</th></tr></thead>
+      <tbody>
+        <tr><td>男声 TTS</td><td>刘飞 2.0<br><code>zh_male_liufei_uranus_bigtts</code></td><td>用于解释、判断、结论；偏沉稳。</td></tr>
+        <tr><td>女声 TTS</td><td>流畅女声 2.0<br><code>zh_female_liuchangnv_uranus_bigtts</code></td><td>用于提问、追问、收束；节奏利落。</td></tr>
+        <tr><td>背景音乐</td><td>immersed.mp3</td><td>约 12% 音量；开头 1.5 秒淡入；始终让对白处于最前。</td></tr>
+        <tr><td>章节</td><td>section-tech-sweep + headline-land</td><td>前者用于章节切换，后者用于标题落定；仅章节使用。</td></tr>
+        <tr><td>数据</td><td>data-tick-crisp / number-counter-fast</td><td>数字、计数、指标卡出现时轻用；不要每个元素都响。</td></tr>
+        <tr><td>风险</td><td>risk-alert</td><td>仅在阈值、风险提示或警示结论出现时使用一次。</td></tr>
+        <tr><td>片尾</td><td>主标动效自带扫描音效（约 18%）</td><td>与最后一句并行；女声结束即结束，不用 closing-resolve。</td></tr>
+      </tbody>
+    </table>
+    <h2>六、片头与片尾：直接复用的资产链接</h2>
+    <div class="asset"><strong>片头｜双人物主标动效</strong>：放在开场钩子之后、正文之前；与开场数据扫描音效匹配。<br><a href="file:///Users/jiang/Documents/remotion动画/claude-code-video-toolkit/examples/hello-world/out/financial-intro-portrait-sfx-v1.mov">点击打开片头视频（2.23 秒 / 67 帧 / 30fps）</a><span class="path">/Users/jiang/Documents/remotion动画/claude-code-video-toolkit/examples/hello-world/out/financial-intro-portrait-sfx-v1.mov</span></div>
+    <figure><img src="video-generation-guide-assets/02_intro.png" alt="人物片头"><figcaption>片头｜钩子后的栏目主标动效：无业务数据，只建立栏目识别。</figcaption></figure>
+    <div class="asset"><strong>片尾｜纯主标动效</strong>：从最后女声“每期三分钟...”第一字开始播放；完成后停在最后定帧，至女声结束。<br><a href="file:///Users/jiang/Documents/remotion动画/claude-code-video-toolkit/examples/hello-world/out/financial-intro-logo-sfx-v3.mov">点击打开片尾视频（2.23 秒 / 67 帧 / 30fps）</a><span class="path">/Users/jiang/Documents/remotion动画/claude-code-video-toolkit/examples/hello-world/out/financial-intro-logo-sfx-v3.mov</span></div>
+    <figure><img src="video-generation-guide-assets/05_outro.png" alt="片尾"><figcaption>片尾｜全屏无人物、无进度条、无数据面板；本片在女声结束时立即结束。</figcaption></figure>
+    <div class="asset"><strong>已完成成片（参考实现）</strong>：本次最终无尾音预览，2 分 29 秒、960×540。<br><a href="file:///Users/jiang/Documents/remotion动画/claude-code-video-toolkit/examples/hello-world/out/financial-report-dialogue-v3-final-cut-preview.mp4">点击打开参考成片</a><span class="path">/Users/jiang/Documents/remotion动画/claude-code-video-toolkit/examples/hello-world/out/financial-report-dialogue-v3-final-cut-preview.mp4</span></div>
+
+    <h2>七、交付前验收清单（让 Codex 自检）</h2>
+    <ul>
+      <li>逐条核对音频时长与 Sequence 起止帧，确认没有配音、字幕、动效提前或滞后。</li>
+      <li>任意时刻只突出一位发言者；对方仅保留弱化头像。</li>
+      <li>对话卡只显示关键句，不显示整段旁白。</li>
+      <li>右上角栏目 Logo 与人物头像、气泡卡保持安全间距。</li>
+      <li>章节标题在说话前完成淡出，不能和人物卡重叠。</li>
+      <li>所有数据卡、曲线和风险提示按旁白递进出现，不能一进场全亮。</li>
+      <li>片头不放具体公司数据；片尾从最后一句启动，片尾结束不再加音效或空白。</li>
+      <li>至少导出并人工查看：人物切换、章节卡、片尾三个关键静帧，再导出成片。</li>
+    </ul>
+    <div class="callout gold"><span class="label">一句话交付标准</span>观众应该感觉是在看两位主持人围绕一份财报逐层追问：谁说话谁突出；说到哪里数据就出现到哪里；章节和片尾都像节目节奏的一部分，而不是后贴上的模板。</div>
+    <p class="footer">《财报揭秘室》财经双人对话视频生成工作手册</p>
+  </section>
+</body>
+</html>
