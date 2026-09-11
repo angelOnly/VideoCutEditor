@@ -23,12 +23,13 @@ test('one root env configures Worker without tenants.json; injected values and e
         'IFENG_ALLOWED_INPUT_PREFIXES=input/a, input/b',
         'DOUBAO_TTS_SPEAKER=test_speaker',
         'CODEX_MODEL=',
+        'CODEX_REASONING_EFFORT=',
         'CODEX_BASE_URL=',
       ].join('\n'),
     );
     const code = `import {loadConfig} from './src/config.ts';
       const c=loadConfig(${JSON.stringify(envFile)});
-      console.log(JSON.stringify({tenant:c.tenants[0],voice:c.ttsVoice,db:c.databaseUrl,model:c.codexModel,base:c.codexBaseUrl}));`;
+      console.log(JSON.stringify({tenant:c.tenants[0],voice:c.ttsVoice,db:c.databaseUrl,model:c.codexModel,effort:c.codexReasoningEffort,base:c.codexBaseUrl}));`;
     const read = (env: Record<string, string> = {}) =>
       JSON.parse(
         execFileSync(process.execPath, ['--import', 'tsx', '--input-type=module', '-e', code], {
@@ -44,6 +45,10 @@ test('one root env configures Worker without tenants.json; injected values and e
     assert.match(config.db, /test_database_password@127\.0\.0\.1:15432/);
     assert.match(read({ POSTGRES_HOST_PORT: '15433' }).db, /:15433\/videocut$/);
     assert.equal(config.model, undefined);
+    assert.equal(config.effort, undefined);
+    const astra = read({ CODEX_MODEL: 'gpt-6-astra', CODEX_REASONING_EFFORT: 'low' });
+    assert.equal(astra.model, 'gpt-6-astra');
+    assert.equal(astra.effort, 'low');
     assert.equal(config.base, undefined);
     const overridden = read({
       IFENG_API_KEY: 'injected-interface-token',

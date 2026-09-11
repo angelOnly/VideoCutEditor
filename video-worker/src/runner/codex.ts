@@ -17,6 +17,12 @@ export async function runCodex(root: string, task: any) {
     webSearchMode: 'disabled',
     networkAccessEnabled: true,
     ...(process.env.CODEX_MODEL ? { model: process.env.CODEX_MODEL } : {}),
+    ...(process.env.CODEX_REASONING_EFFORT
+      ? {
+          modelReasoningEffort: process.env
+            .CODEX_REASONING_EFFORT as ThreadOptions['modelReasoningEffort'],
+        }
+      : {}),
   };
   let threadId = task.threadId;
   try {

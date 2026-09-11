@@ -34,7 +34,8 @@ Ubuntu 需要 Docker Engine 和 Compose v2；安装方式见 [Docker 官方文�
 | POSTGRES_HOST_PORT | 默认 15432，只绑定宿主 127.0.0.1 |
 | CODEX_HOME | /home/ops/.codex，与登录用户一致 |
 | CODEX_PATH | 可选；默认使用项目安装的 Codex 0.154.0 |
-| CODEX_MODEL | 可选；留空使用 Codex 默认模型 |
+| CODEX_MODEL | 已配置 `gpt-6-astra` |
+| CODEX_REASONING_EFFORT | 已配置 `low`；Worker 在每次执行时传给 Codex |
 | HOST_TASK_CPUS / HOST_TASK_MEMORY / HOST_TASK_PIDS | 2 / 4G / 256 |
 | MEDIA_ROOT / DATA_ROOT | 上述媒体根和任务数据根 |
 | IFENG_API_KEY / IFENG_CALLBACK_SECRET | 请求鉴权、回调签名 |

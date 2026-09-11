@@ -39,6 +39,8 @@ export interface Config {
   dockerMemory: string;
   dockerCpus: string;
   codexModel?: string;
+  codexReasoningEffort?:
+    'minimal' | 'low' | 'medium' | 'high' | 'xhigh' | 'max' | 'ultra' | 'persistent';
   codexApiKey?: string;
   codexBaseUrl?: string;
   ttsVoice: string;
@@ -134,6 +136,10 @@ export function loadConfig(envFile = path.resolve(serviceRoot, '../.env')): Conf
     dockerMemory: process.env.RUNNER_MEMORY ?? '4g',
     dockerCpus: process.env.RUNNER_CPUS ?? '2',
     codexModel: process.env.CODEX_MODEL || undefined,
+    codexReasoningEffort: z
+      .enum(['minimal', 'low', 'medium', 'high', 'xhigh', 'max', 'ultra', 'persistent'])
+      .optional()
+      .parse(process.env.CODEX_REASONING_EFFORT || undefined),
     codexApiKey: process.env.CODEX_API_KEY || undefined,
     codexBaseUrl: process.env.CODEX_BASE_URL || undefined,
     ttsVoice:

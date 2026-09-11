@@ -132,7 +132,13 @@ test('native process completion is checked with systemd and stop failures propag
 test('four native Codex tasks route by thread/turn, persist identity, resume, and cancellation releases only after cleanup', async () => {
   const dir = await mkdtemp(path.join(os.tmpdir(), 'host-routing-')),
     db = await database();
-  const c = config({ executor: 'host', dataRoot: dir, mediaRoot: dir }),
+  const c = config({
+      executor: 'host',
+      dataRoot: dir,
+      mediaRoot: dir,
+      codexModel: 'gpt-6-astra',
+      codexReasoningEffort: 'low',
+    }),
     queue = new Queue(db);
   const tasks = new Tasks(new TaskRepository(db), c),
     workspace = new Workspaces(c, db, new Storage(c));
@@ -174,6 +180,12 @@ test('four native Codex tasks route by thread/turn, persist identity, resume, an
         (await db.query('SELECT * FROM host_executions WHERE turn_id IS NOT NULL')).rows.length ===
         4,
     );
+    for (const call of rpc.calls.filter((x) => x.method === 'thread/start')) {
+      assert.equal(call.params.model, 'gpt-6-astra');
+      assert.equal(call.params.config.model_reasoning_effort, 'low');
+    }
+    for (const call of rpc.calls.filter((x) => x.method === 'turn/start'))
+      assert.equal(call.params.effort, 'low');
     const contexts = (await db.query('SELECT * FROM host_executions')).rows;
     assert.equal(new Set(contexts.map((x) => x.thread_id)).size, 4);
     for (const ctx of contexts) {

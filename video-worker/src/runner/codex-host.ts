@@ -43,6 +43,7 @@ export function threadConfig(config: Config, w: Workspace) {
   // Builtin commands are disabled. This profile also constrains any remaining file tools.
   return {
     ...codexOverrides,
+    ...(config.codexReasoningEffort ? { model_reasoning_effort: config.codexReasoningEffort } : {}),
     project_doc_max_bytes: 0,
     default_permissions: 'videocut',
     permissions: { videocut: { filesystem, network: { enabled: false } } },
@@ -240,6 +241,7 @@ export class HostCodex {
       state.requested = true;
       const start = await this.rpc.request('turn/start', {
         threadId,
+        ...(this.config.codexReasoningEffort ? { effort: this.config.codexReasoningEffort } : {}),
         input: [{ type: 'text', text: prompt(w.task, w.root, this.config.toolkitRoot) }],
         outputSchema,
       });

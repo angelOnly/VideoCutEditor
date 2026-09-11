@@ -42,6 +42,7 @@ export class DockerSandbox implements Sandbox {
         PATH: process.env.PATH,
         CODEX_API_KEY: this.config.codexApiKey,
         CODEX_MODEL: this.config.codexModel,
+        CODEX_REASONING_EFFORT: this.config.codexReasoningEffort,
         CODEX_BASE_URL: this.config.codexBaseUrl,
       }).filter(([, v]) => v !== undefined),
     );
@@ -78,6 +79,8 @@ export class DockerSandbox implements Sandbox {
       'CODEX_API_KEY',
       '-e',
       'CODEX_MODEL',
+      '-e',
+      'CODEX_REASONING_EFFORT',
       '-e',
       'CODEX_BASE_URL',
       this.config.runnerImage,
