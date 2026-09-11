@@ -58,7 +58,7 @@ VideoCutEditor/                         项目与 Git 根
 
 ## 3. 建议新增的代码结构
 
-统一配置位于 `VideoCutEditor/.env`，Worker 与 toolkit 共用，不在子目录另建 `.env`。
+统一配置位于 `VideoCutEditor/.env`，Worker 与 toolkit 共用，不在子目录另建 `.env`。部署入口为根目录 `VideoCutEditor/docker-compose.yml`，运行 `docker compose up -d --build` 自动完成镜像构建、首次数据库初始化和服务启动。
 
 `video-worker/` 已实现主要模块；可选数字人在线供应商适配尚未接入，首版采用预生成素材。目录按职责划分，同一职责首版可放在一个文件，不需要为每个小函数创建文件。
 
@@ -105,7 +105,7 @@ VideoCutEditor/video-worker/    新增：业务控制与执行服务
 └── deploy/
     ├── Dockerfile.control            API/Worker/回调发送器镜像
     ├── Dockerfile.runner             SDK + toolkit + 媒体依赖
-    ├── compose.yaml                  首版单机部署配置
+    ├── callback-mock.mjs             内部测试回调接收器
     └── runtime-manifest.json         源码快照、契约、依赖和镜像版本
 ```
 

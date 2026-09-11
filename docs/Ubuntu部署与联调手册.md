@@ -19,6 +19,7 @@ docker run --rm hello-world
 ```text
 /home/ops/jiangzb/VideoCutEditor/
 ├── .env                            # 全项目统一配置，随代码提供
+├── docker-compose.yml              # 根目录直接 docker compose up -d --build
 ├── .dockerignore
 ├── video-worker/
 ├── claude-code-video-toolkit/
@@ -37,10 +38,10 @@ docker run --rm hello-world
 整个项目只使用 `VideoCutEditor/.env`，已纳入 Git。无需复制 `.env.example`，也无需创建 `config/tenants.json`。原 toolkit 的豆包配置已原样迁入，数据库密码、接口令牌和回调签名密钥已生成。
 
 ```bash
-cd /home/ops/jiangzb/VideoCutEditor/video-worker
+cd /home/ops/jiangzb/VideoCutEditor
 mkdir -p /home/ops/jiangzb/videos/input
 mkdir -p /home/ops/jiangzb/video-worker-data
-chmod 600 ../.env
+chmod 600 .env
 ```
 
 根目录 `.env` 的配置分工：
@@ -64,45 +65,26 @@ chmod 600 ../.env
 
 ## 3. 构建、初始化和启动
 
-从 `video-worker` 目录执行，定义便于复用的函数；换终端后需重新定义：
+从 **VideoCutEditor 根目录**执行，不需要先切换到 video-worker。换终端后如要继续使用 dc，重新定义函数即可：
 
 ```bash
-cd /home/ops/jiangzb/VideoCutEditor/video-worker
-dc() { docker compose --env-file ../.env -f deploy/compose.yaml "$@"; }
+cd /home/ops/jiangzb/VideoCutEditor
+dc() { docker compose "$@"; }
 dc config --quiet
-dc --profile build build
-dc up -d postgres
-dc run --rm migrate
-```
-
-任何一步报错先处理，再执行后续命令。构建会下载镜像、Node/Python 依赖和浏览器组件，服务器需要能访问对应源。
-
-**仅当使用临时回调配置时**，在已创建的 Compose 网络中启动接收器：
-
-```bash
-docker run -d --name videocut-smoke-callback \
-  --network videocut_default \
-  node:22-bookworm-slim node -e '
-require("node:http").createServer((req,res)=>{
-  let body="";
-  req.on("data",chunk=>body+=chunk);
-  req.on("end",()=>{
-    console.log(JSON.stringify({path:req.url,eventId:req.headers["x-event-id"],body:JSON.parse(body)}));
-    res.writeHead(200,{"content-type":"application/json"});
-    res.end(JSON.stringify({status:0,msg:"test received"}));
-  });
-}).listen(9000,"0.0.0.0");'
-```
-
-它只用于记录测试回调并返回成功，不验证签名，不代表编辑平台完成对接；测试结束后可 `docker rm -f videocut-smoke-callback` 删除。不要同时启动重名接收器。
-
-```bash
-dc up -d api worker callbacks
-dc ps
+dc up -d --build
+dc ps -a
 dc logs --tail=100 api worker callbacks
 curl --fail-with-body http://127.0.0.1:8080/healthz
 dc exec worker docker version
 ```
+
+根目录 docker-compose.yml 自动读取同目录 `.env`，自动构建镜像、等待 PostgreSQL 健康、执行 migrate，再启动 API/Worker/回调服务。runner-image 在镜像构建完成后以空命令正常退出，Worker 等待它成功后才启动。`migrate` 和 `runner-image` 的 Exited(0) 是正常状态。数据库初始化失败会阻止业务服务启动。启动顺序依据 [Compose 官方文档](https://docs.docker.com/compose/how-tos/startup-order/)。
+
+**启动前补齐根目录 .env 的 CODEX_API_KEY**，否则 Worker 会报缺少密钥。构建需要访问镜像和依赖源。API 默认绑定 127.0.0.1:8080；需要变更时在根目录 .env 增加 API_BIND_ADDRESS/API_PORT。
+
+Compose 已内置 `callback-mock`，匹配 IFENG_CALLBACK_BASE_URL 默认测试地址，不需要再手动 docker run。通过 `dc logs callback-mock` 查看回调。接收器只记录测试通知，不验证 HMAC、不代替编辑平台；不向宿主发布端口。正式联调改回调地址后可 `dc stop callback-mock`，以后整体 up 会重新启动测试接收器，但 callbacks 仍按你配置的正式地址投递。
+
+旧版部署文件 `video-worker/deploy/compose.yaml` 已移除，以根目录文件为准。若曾按旧手册手动启动同名网络别名的测试接收器，先删除自己创建的旧 `videocut-smoke-callback` 容器，避免与本版内置接收器别名冲突。
 
 预期健康检查返回 `{"status":0}`；三个服务不反复重启；Worker 内 Docker 命令能看到 Client 和 Server。健康检查只检查 API 和数据库，不能替代实际模型/容器测试。若 Docker 报 API 版本不兼容，需要匹配服务端/控制镜像客户端版本后重建。
 
@@ -151,7 +133,7 @@ curl --fail-with-body \
   -o .local-data/deploy-smoke/task.json
 cat .local-data/deploy-smoke/task.json
 dc logs --tail=100 worker callbacks
-docker logs --tail=10 videocut-smoke-callback
+dc logs --tail=10 callback-mock
 ```
 
 正式回调服务就绪时最后一条改看该服务日志。重复查询直到 `data.taskState` 为 `awaiting_editor`、`data.plan` 包含方案；成功投递后 `data.callbackState` 为 `delivered`。分析结束释放槽位，等待编辑期间不会保持运行容器。
@@ -232,7 +214,7 @@ dc exec -T postgres psql -U videocut -d videocut -c 'SELECT id,stage,state,attem
 
 ## 8. 不调用真实模型的自动化回归（可选）
 
-宿主安装 Node.js 22+、pnpm 11.19.0、Python 3.11+、FFmpeg、Chromium 后，从 `video-worker` 执行。测试使用合成素材和模拟 Agent；媒体测试实际运行 Remotion/FFmpeg，但不验收真实模型质量。
+宿主安装 Node.js 22+、pnpm 11.19.0、Python 3.11+、FFmpeg、Chromium 后，从 `video-worker` 执行（此节先 `cd /home/ops/jiangzb/VideoCutEditor/video-worker`）。测试使用合成素材和模拟 Agent；媒体测试实际运行 Remotion/FFmpeg，但不验收真实模型质量。
 
 ```bash
 pnpm install --frozen-lockfile --ignore-scripts

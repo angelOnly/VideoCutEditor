@@ -17,8 +17,8 @@
     "contracts": "tsx scripts/generate-contracts.ts",
     "runtime-manifest": "node scripts/runtime-manifest.mjs",
     "test:media": "RUN_MEDIA_TESTS=1 tsx --test tests/media.test.ts",
-    "format": "prettier --write src tests scripts config deploy/*.yaml deploy/*.json",
-    "format:check": "prettier --check src tests scripts config deploy/*.yaml deploy/*.json"
+    "format": "prettier --write src tests scripts config deploy/*.json deploy/*.mjs ../docker-compose.yml",
+    "format:check": "prettier --check src tests scripts config deploy/*.json deploy/*.mjs ../docker-compose.yml"
   },
   "dependencies": {
     "@openai/codex-sdk": "0.154.0",

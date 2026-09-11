@@ -44,18 +44,19 @@ VideoCutEditor 的任务服务。提供稿件/素材分析、编辑确认后的�
 
 全项目共用根目录 `.env`。已迁入原 toolkit 配音配置，并生成数据库密码、调用方令牌和回调签名密钥；Worker 默认从 `IFENG_*` 读取调用方配置，无需创建 tenants.json。仅需要多调用方时显式设置 `TENANTS_FILE` 并挂载该 JSON 文件。容器环境变量优先于根目录配置，任务镜像不包含 `.env`。
 
-从 `video-worker/` 执行：
+从 **VideoCutEditor 项目根目录**执行：
 
 ```bash
-# 根目录 ../.env 已随代码提供，无需复制配置。
-# 补充 CODEX_API_KEY；正式联调时修改 IFENG_CALLBACK_BASE_URL。
+# 根目录 .env 已随代码提供；先补充 CODEX_API_KEY。
 mkdir -p /home/ops/jiangzb/videos/input /home/ops/jiangzb/video-worker-data
-
-docker compose --env-file ../.env -f deploy/compose.yaml --profile build build
-docker compose --env-file ../.env -f deploy/compose.yaml up -d postgres
-docker compose --env-file ../.env -f deploy/compose.yaml run --rm migrate
-docker compose --env-file ../.env -f deploy/compose.yaml up -d api worker callbacks
+docker compose up -d --build
+docker compose ps -a
+curl --fail-with-body http://127.0.0.1:8080/healthz
 ```
+
+根目录 `docker-compose.yml` 是唯一部署入口；旧 `video-worker/deploy/compose.yaml` 已移除。Compose 自动构建 control/runner 镜像，等待数据库健康、初始化完成和 runner 镜像准备完成后启动对应服务。`migrate` 与 `runner-image` 显示 Exited(0) 正常，不需要手动启动迁移。等待关系遵循 [Compose 官方启动顺序规则](https://docs.docker.com/compose/how-tos/startup-order/)。
+
+默认同时启动内部 `callback-mock`，匹配 `.env` 中的测试回调地址；通过 `docker compose logs callback-mock` 查看通知。它只记录测试回调、不验证签名，不是编辑平台。正式使用时修改 IFENG_CALLBACK_BASE_URL 并重新创建 callbacks 服务。若缺少 CODEX_API_KEY，Worker 无法启动；填好后再执行 up。
 
 API 默认绑定宿主 `127.0.0.1:8080`，由现有网关反代给编辑平台。`IFENG_CALLBACK_BASE_URL`（内部 callbackBaseUrl）必须是 callbacks 容器可达的编辑平台后端地址；容器里的 `127.0.0.1` 是容器自身。Runner 镜像构建包含 Chromium、FFmpeg、字体、固定版本模板和 SDK，不需要运行时安装依赖。
 

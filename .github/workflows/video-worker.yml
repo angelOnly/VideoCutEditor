@@ -8,6 +8,7 @@ on:
       - "claude-code-video-toolkit/templates/ifeng-scenes/**"
       - "claude-code-video-toolkit/tools/**"
       - ".github/workflows/video-worker.yml"
+      - "docker-compose.yml"
   workflow_dispatch:
 permissions:
   contents: read
@@ -34,6 +35,8 @@ jobs:
           node-version: "22"
       - run: npm install --global pnpm@11.19.0
       - run: sudo apt-get update && sudo apt-get install -y ffmpeg python3-venv
+      - name: Validate root deployment configuration
+        run: docker compose config --quiet
       - name: Install and compile
         working-directory: video-worker
         run: |
@@ -64,3 +67,13 @@ jobs:
           docker build -f video-worker/deploy/Dockerfile.runner -t videocut-runner:0.1.0 .
           cd video-worker
           DATA_ROOT="$RUNNER_TEMP/videocut" RUN_DOCKER_TESTS=1 pnpm test
+      - name: Automatic migration and API startup (no model call)
+        env:
+          MEDIA_ROOT: /tmp/videocut-ci/videos
+          DATA_ROOT: /tmp/videocut-ci/data
+        run: |
+          docker compose up -d --wait api callbacks callback-mock
+          curl --fail --retry 10 --retry-delay 2 --retry-connrefused http://127.0.0.1:8080/healthz
+      - name: Stop deployment smoke services
+        if: always()
+        run: docker compose down

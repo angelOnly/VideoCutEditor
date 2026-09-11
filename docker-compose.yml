@@ -1,0 +1,129 @@
+# From VideoCutEditor/: docker compose up -d --build
+# Reads the shared root .env automatically. Set CODEX_API_KEY before starting Worker.
+name: videocut
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+x-control: &control
+  image: videocut-control:0.1.0
+  build:
+    context: .
+    dockerfile: video-worker/deploy/Dockerfile.control
+  env_file: .env
+  environment:
+    DATABASE_URL: postgresql://videocut:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@postgres:5432/videocut
+    MEDIA_ROOT: ${MEDIA_ROOT:-/home/ops/jiangzb/videos}
+    DATA_ROOT: ${DATA_ROOT:-/home/ops/jiangzb/video-worker-data}
+    RUNNER_IMAGE: ${RUNNER_IMAGE:-videocut-runner:0.1.0}
+    PORT: "8080"
+  volumes:
+    # Docker daemon resolves sources on the HOST: keep host/container paths identical.
+    - ${MEDIA_ROOT:-/home/ops/jiangzb/videos}:${MEDIA_ROOT:-/home/ops/jiangzb/videos}
+    - ${DATA_ROOT:-/home/ops/jiangzb/video-worker-data}:${DATA_ROOT:-/home/ops/jiangzb/video-worker-data}
+  restart: unless-stopped
+  logging: *logging
+
+x-ready: &ready
+  postgres:
+    condition: service_healthy
+  migrate:
+    condition: service_completed_successfully
+
+services:
+  postgres:
+    image: postgres:17-bookworm
+    environment:
+      POSTGRES_USER: videocut
+      POSTGRES_DB: videocut
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U videocut -d videocut"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+    logging: *logging
+
+  # Runs once after PostgreSQL is ready. A nonzero exit blocks application startup.
+  migrate:
+    <<: *control
+    command: ["node", "dist/entrypoints/migrate.js"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  # Build/tag the task image before starting the supervisor. Exited(0) is expected.
+  runner-image:
+    image: ${RUNNER_IMAGE:-videocut-runner:0.1.0}
+    build:
+      context: .
+      dockerfile: video-worker/deploy/Dockerfile.runner
+    entrypoint: ["true"]
+    command: []
+    network_mode: none
+    restart: "no"
+    logging: *logging
+
+  api:
+    <<: *control
+    command: ["node", "dist/entrypoints/api.js"]
+    depends_on: *ready
+    ports:
+      - "${API_BIND_ADDRESS:-127.0.0.1}:${API_PORT:-8080}:8080"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          'fetch("http://127.0.0.1:8080/healthz").then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
+
+  worker:
+    <<: *control
+    command: ["/opt/video-worker/deploy/start-worker.sh"]
+    depends_on:
+      <<: *ready
+      runner-image:
+        condition: service_completed_successfully
+    volumes:
+      - ${MEDIA_ROOT:-/home/ops/jiangzb/videos}:${MEDIA_ROOT:-/home/ops/jiangzb/videos}
+      - ${DATA_ROOT:-/home/ops/jiangzb/video-worker-data}:${DATA_ROOT:-/home/ops/jiangzb/video-worker-data}
+      - /var/run/docker.sock:/var/run/docker.sock
+    stop_grace_period: 90s
+
+  callbacks:
+    <<: *control
+    command: ["node", "dist/entrypoints/callbacks.js"]
+    depends_on: *ready
+
+  # Test-only callback receiver, matching the current .env default URL.
+  # No host port and no model credentials. Real integration uses the editor backend.
+  callback-mock:
+    image: node:22-bookworm-slim
+    command: ["node", "/app/callback-mock.mjs"]
+    volumes:
+      - ./video-worker/deploy/callback-mock.mjs:/app/callback-mock.mjs:ro
+    networks:
+      default:
+        aliases: ["videocut-smoke-callback"]
+    user: "1000:1000"
+    read_only: true
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+    logging: *logging
+
+volumes:
+  postgres-data:
