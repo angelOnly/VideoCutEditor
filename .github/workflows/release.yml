@@ -32,7 +32,7 @@ jobs:
             VERSION="${{ github.ref_name }}"
             VERSION="${VERSION#v}"
           else
-            VERSION=$(jq -r '.version' _internal/toolkit-registry.json)
+            VERSION=$(jq -r '.version' claude-code-video-toolkit/_internal/toolkit-registry.json)
           fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "tag=v$VERSION" >> $GITHUB_OUTPUT

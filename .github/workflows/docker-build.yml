@@ -3,8 +3,8 @@ name: Build Docker Images
 on:
   push:
     paths:
-      - 'docker/**/Dockerfile'
-      - 'docker/**/handler.py'
+      - 'claude-code-video-toolkit/docker/**/Dockerfile'
+      - 'claude-code-video-toolkit/docker/**/handler.py'
       - '.github/workflows/docker-build.yml'
     branches:
       - main
@@ -46,11 +46,11 @@ jobs:
             if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
               BASE="HEAD~1"
             fi
-            CHANGED=$(git diff --name-only "$BASE" HEAD -- 'docker/*/Dockerfile' 'docker/*/handler.py' | \
-              sed 's|docker/\([^/]*\)/.*|\1|' | sort -u | jq -R . | jq -sc .)
+            CHANGED=$(git diff --name-only "$BASE" HEAD -- 'claude-code-video-toolkit/docker/*/Dockerfile' 'claude-code-video-toolkit/docker/*/handler.py' | \
+              sed 's|claude-code-video-toolkit/docker/\([^/]*\)/.*|\1|' | sort -u | jq -R . | jq -sc .)
             if [ "$CHANGED" = "[]" ]; then
               # Fallback: only build images that have a Dockerfile (modal-* dirs use Python API at deploy time)
-              CHANGED=$(for d in docker/*/; do [ -f "$d/Dockerfile" ] && basename "$d"; done | jq -R . | jq -sc .)
+              CHANGED=$(for d in claude-code-video-toolkit/docker/*/; do [ -f "$d/Dockerfile" ] && basename "$d"; done | jq -R . | jq -sc .)
             fi
             echo "images=$CHANGED" >> $GITHUB_OUTPUT
           fi
@@ -70,7 +70,7 @@ jobs:
 
       - name: Check Dockerfile exists
         run: |
-          if [ ! -f "docker/${{ matrix.image }}/Dockerfile" ]; then
+          if [ ! -f "claude-code-video-toolkit/docker/${{ matrix.image }}/Dockerfile" ]; then
             echo "No Dockerfile found for ${{ matrix.image }}, skipping"
             exit 0
           fi
@@ -103,7 +103,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v7
         with:
-          context: docker/${{ matrix.image }}
+          context: claude-code-video-toolkit/docker/${{ matrix.image }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

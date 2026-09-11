@@ -1,0 +1,11 @@
+[
+  {
+    "id": "ifeng",
+    "apiKey": "replace-with-a-random-api-token",
+    "inputRoot": "/home/ops/jiangzb/videos",
+    "exportRoot": "/home/ops/jiangzb/videos",
+    "allowedInputPrefixes": ["input"],
+    "callbackBaseUrl": "http://editor-backend:9000",
+    "callbackSecret": "replace-with-a-random-callback-secret"
+  }
+]

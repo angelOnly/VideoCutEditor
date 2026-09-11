@@ -1,0 +1,17 @@
+{
+  "width": 1080,
+  "height": 1920,
+  "fps": 30,
+  "scenes": [
+    {
+      "id": "example",
+      "content": "请由 Worker 填入确认方案",
+      "frames": 90,
+      "audio": "example.wav",
+      "animationPreset": "none",
+      "layoutPreset": "full_frame",
+      "keywords": [],
+      "assets": []
+    }
+  ]
+}

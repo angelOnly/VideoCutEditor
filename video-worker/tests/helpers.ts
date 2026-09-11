@@ -1,0 +1,98 @@
+import { randomUUID } from 'node:crypto';
+import { Postgres, migrate } from '../src/infrastructure/postgres.js';
+import { PGlite } from '@electric-sql/pglite';
+import { readFile } from 'node:fs/promises';
+import type { Database, Sql } from '../src/infrastructure/postgres.js';
+import type { Config } from '../src/config.js';
+export async function database() {
+  if (process.env.TEST_DATABASE_URL) {
+    const admin = new Postgres(process.env.TEST_DATABASE_URL),
+      schema = 'test_' + randomUUID().replaceAll('-', '');
+    await admin.query('CREATE SCHEMA ' + schema);
+    const url = new URL(process.env.TEST_DATABASE_URL);
+    url.searchParams.set('options', '-c search_path=' + schema);
+    const db = new Postgres(url.toString());
+    await migrate(db);
+    return {
+      ...{ query: db.query.bind(db), tx: db.tx.bind(db) },
+      close: async () => {
+        await db.close();
+        await admin.query('DROP SCHEMA ' + schema + ' CASCADE');
+        await admin.close();
+      },
+    };
+  }
+
+  const pg = new PGlite();
+  const adapt = (q: any): Sql => ({
+    query: async <T = any>(sql: string, args?: any[]) => (await q.query(sql, args)) as any,
+  });
+  await pg.exec(await readFile(new URL('../migrations/001_initial.sql', import.meta.url), 'utf8'));
+  const db: Database = {
+    ...adapt(pg),
+    tx: (fn) => pg.transaction((t) => fn(adapt(t))),
+    close: () => pg.close(),
+  };
+  return db;
+}
+export const tenant = {
+  id: 'ifeng',
+  apiKey: 'test-key-with-16-characters',
+  inputRoot: '/home/ops/jiangzb/videos',
+  exportRoot: '/home/ops/jiangzb/videos',
+  allowedInputPrefixes: ['input'],
+  callbackBaseUrl: 'http://127.0.0.1:9988',
+  callbackSecret: 'test-callback-secret-only',
+};
+export function config(overrides: Partial<Config> = {}): Config {
+  return {
+    databaseUrl: 'unused',
+    port: 0,
+    mediaRoot: tenant.inputRoot,
+    dataRoot: '/tmp/video-worker-test',
+    toolkitRoot: new URL('../../claude-code-video-toolkit', import.meta.url).pathname,
+    tenants: [tenant],
+    leaseSeconds: 60,
+    timeoutSeconds: 14400,
+    maxAttempts: 3,
+    repairRounds: 1,
+    runnerImage: 'test',
+    dockerNetwork: 'none',
+    dockerUid: '1000:1000',
+    dockerMemory: '1g',
+    dockerCpus: '1',
+    ttsVoice: 'test',
+    ttsResourceId: 'seed-tts-2.0',
+    python: process.env.PYTHON ?? 'python3',
+    templates: { finance_vertical_v1: { path: 'templates/ifeng-scenes', version: '1' } },
+    runtimeVersion: 'test',
+    ...overrides,
+  };
+}
+export function analysis(taskId = 'task1', requestId = 'analysis-' + taskId) {
+  return {
+    schemaVersion: 2,
+    taskId,
+    requestId,
+    script: '第一句。第二句。',
+    otherRequirements: '财经',
+    digitalHumanAccounId: 'account1',
+    plugin: { templateId: 'finance_vertical_v1', digitalHumanId: '' },
+    narration: null,
+    outputSpec: { width: 320, height: 240, fps: 10 },
+    otherMaterial: { picInfoList: [], videoInfoList: [] },
+  };
+}
+export function scene(id = 'scene_001', content = '第一句。') {
+  return {
+    id,
+    content,
+    dur: 1,
+    visualPlan: {
+      description: '文字背景',
+      layoutPreset: 'full_frame' as const,
+      animationPreset: 'slow_zoom' as const,
+    },
+    extraData: { keywordList: ['重点'], digitalHumanId: '', videoInfoList: [], picInfoList: [] },
+  };
+}

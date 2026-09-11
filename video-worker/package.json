@@ -1,0 +1,40 @@
+{
+  "name": "video-worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc && node scripts/bundle-runner.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test tests/*.test.ts",
+    "api": "node dist/entrypoints/api.js",
+    "worker": "node dist/entrypoints/worker.js",
+    "callbacks": "node dist/entrypoints/callbacks.js",
+    "migrate": "node dist/entrypoints/migrate.js",
+    "contracts": "tsx scripts/generate-contracts.ts",
+    "runtime-manifest": "node scripts/runtime-manifest.mjs",
+    "test:media": "RUN_MEDIA_TESTS=1 tsx --test tests/media.test.ts",
+    "format": "prettier --write src tests scripts config deploy/*.yaml deploy/*.json",
+    "format:check": "prettier --check src tests scripts config deploy/*.yaml deploy/*.json"
+  },
+  "dependencies": {
+    "@openai/codex-sdk": "0.154.0",
+    "ajv": "8.20.0",
+    "fastify": "5.12.3",
+    "pg": "8.23.0",
+    "zod": "4.6.1"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.8",
+    "@types/node": "22.20.2",
+    "@types/pg": "8.23.1",
+    "esbuild": "0.28.2",
+    "prettier": "3.9.6",
+    "tsx": "4.23.13",
+    "typescript": "7.0.2"
+  },
+  "packageManager": "pnpm@11.19.0"
+}
