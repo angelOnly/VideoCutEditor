@@ -18,6 +18,7 @@ docker run --rm hello-world
 
 ```text
 /home/ops/jiangzb/VideoCutEditor/
+├── .env                            # 全项目统一配置，随代码提供
 ├── .dockerignore
 ├── video-worker/
 ├── claude-code-video-toolkit/
@@ -29,58 +30,37 @@ docker run --rm hello-world
 /home/ops/jiangzb/video-worker-data/   # 独立任务目录、会话和运行缓存
 ```
 
-通过现有代码发布方式同步当前版本，或在本次修改提交并推送之后拉取对应版本。不要把开发机的 `.env`、密钥、node_modules、缓存和历史视频当作部署配置上传。镜像构建不需要宿主安装 Node、Python、FFmpeg；只有下面的源码自动化测试需要额外依赖。
+通过现有代码发布方式同步当前版本，或在本次修改提交并推送之后拉取对应版本。根目录 `.env` 已按项目要求随代码提供；不需要上传 node_modules、缓存和历史视频。镜像构建不需要宿主安装 Node、Python、FFmpeg；只有下面的源码自动化测试需要额外依赖。
 
-## 2. 填写两份配置
+## 2. 使用已提供的根目录配置
 
-以下复制命令只在首次部署执行；已有配置时直接编辑，不覆盖。
+整个项目只使用 `VideoCutEditor/.env`，已纳入 Git。无需复制 `.env.example`，也无需创建 `config/tenants.json`。原 toolkit 的豆包配置已原样迁入，数据库密码、接口令牌和回调签名密钥已生成。
 
 ```bash
 cd /home/ops/jiangzb/VideoCutEditor/video-worker
-cp .env.example .env
-cp config/tenants.example.json config/tenants.json
 mkdir -p /home/ops/jiangzb/videos/input
 mkdir -p /home/ops/jiangzb/video-worker-data
-chmod 600 .env config/tenants.json
+chmod 600 ../.env
 ```
 
-编辑 `.env`：
+根目录 `.env` 的配置分工：
 
-```dotenv
-MEDIA_ROOT=/home/ops/jiangzb/videos
-DATA_ROOT=/home/ops/jiangzb/video-worker-data
-POSTGRES_PASSWORD=替换为足够长的随机字母数字密码
-RUNNER_IMAGE=videocut-runner:0.1.0
-RUNNER_UID=1000:1000
-RUNNER_CPUS=2
-RUNNER_MEMORY=4g
-RUNNER_NETWORK=bridge
-CODEX_API_KEY=填写可用的模型调用密钥
-CODEX_MODEL=
-DOUBAO_TTS_API_KEY=填写豆包配音密钥
-DOUBAO_TTS_RESOURCE_ID=seed-tts-2.0
-TTS_VOICE=zh_female_xiaohe_uranus_bigtts
-```
+| 配置 | 当前状态 / 用途 |
+| --- | --- |
+| MEDIA_ROOT / DATA_ROOT | 已设置为约定的 Ubuntu 目录 |
+| POSTGRES_PASSWORD | 已生成；Compose 自动构造数据库连接地址 |
+| IFENG_API_KEY | 已生成，调用方请求本 Worker 的 Bearer 令牌 |
+| IFENG_CALLBACK_SECRET | 已生成，与接收方约定的 HMAC 签名密钥 |
+| IFENG_TENANT_ID / IFENG_ALLOWED_INPUT_PREFIXES | 默认 ifeng / input |
+| IFENG_CALLBACK_BASE_URL | 默认 `http://videocut-smoke-callback:9000`，用于下一节临时回调接收器 |
+| RUNNER_* | 镜像、资源和容器用户默认值已填写，总并发固定为 4 |
+| DOUBAO_TTS_* | 保留原项目已有配置，Worker 和 toolkit 共用 |
+| CODEX_API_KEY | **尚缺真实模型密钥，需要填写** |
+| CODEX_MODEL / CODEX_BASE_URL | 可选，留空使用运行时默认值 |
 
-保留 `.env.example` 其余项目即可。Compose 会设置实际数据库服务地址；模型名可留空使用运行时默认值，或明确填写账号可用型号。首轮使用 `narration: null`，因此渲染会真实调用配音；模型分析和渲染也会真实调用模型服务。
+只有真实模型密钥目前无法代填。正式对接时把 IFENG_CALLBACK_BASE_URL 改为 callbacks 容器可达的编辑平台后端根地址，例如 `http://实际内网IP:端口`。不要填文档网站地址或宿主的 `127.0.0.1`；程序自动追加两个 Callback 路径。测试接收器地址不是正式编辑平台地址。
 
-编辑 `config/tenants.json`。如果编辑平台还没提供回调，先用以下测试配置，并在下一步启动临时接收器：
-
-```json
-[
-  {
-    "id": "ifeng",
-    "apiKey": "替换为至少16字符的随机接口令牌",
-    "inputRoot": "/home/ops/jiangzb/videos",
-    "exportRoot": "/home/ops/jiangzb/videos",
-    "allowedInputPrefixes": ["input"],
-    "callbackBaseUrl": "http://videocut-smoke-callback:9000",
-    "callbackSecret": "替换为至少16字符的随机回调签名密钥"
-  }
-]
-```
-
-正式对接时将 callbackBaseUrl 改成 callbacks 容器可达的编辑平台后端地址，例如 `http://实际内网IP:端口`。这里填服务根地址，程序自动追加两个 Callback 路径；不能填成文档网站地址或宿主的 `127.0.0.1`。`apiKey` 给调用方用于请求本 Worker，`callbackSecret` 与接收方约定用于验证回调签名。
+首轮使用 `narration: null`，会真实调用配音；分析和渲染也会调用模型。默认单调用方直接读取 `IFENG_*`。以后需要多个调用方时才显式配置 TENANTS_FILE 并自行挂载对应 JSON；普通部署不需要该文件。
 
 ## 3. 构建、初始化和启动
 
@@ -88,7 +68,7 @@ TTS_VOICE=zh_female_xiaohe_uranus_bigtts
 
 ```bash
 cd /home/ops/jiangzb/VideoCutEditor/video-worker
-dc() { docker compose --env-file .env -f deploy/compose.yaml "$@"; }
+dc() { docker compose --env-file ../.env -f deploy/compose.yaml "$@"; }
 dc config --quiet
 dc --profile build build
 dc up -d postgres
@@ -136,7 +116,7 @@ API 默认只绑定宿主 127.0.0.1:8080，先在 Ubuntu 本机 curl 测试。�
 
 ```bash
 mkdir -p .local-data/deploy-smoke
-read -r -s -p '输入 tenants.json 中的 apiKey: ' API_TOKEN
+read -r -s -p '输入根目录 .env 中的 IFENG_API_KEY: ' API_TOKEN
 export API_TOKEN
 cat > .local-data/deploy-smoke/analysis.json <<'JSON'
 {
@@ -262,6 +242,7 @@ python3 -m venv .venv
 .venv/bin/pip install jsonschema==4.26.0 requests==2.32.5 python-dotenv==1.2.1
 cd ../claude-code-video-toolkit
 ../video-worker/.venv/bin/python3 -m unittest discover -s tests -p 'test_*pipeline.py'
+../video-worker/.venv/bin/python3 -m unittest discover -s tests -p 'test_shared_environment.py'
 cd templates/ifeng-scenes
 pnpm install --frozen-lockfile --ignore-scripts
 pnpm typecheck
@@ -276,7 +257,7 @@ Chromium 路径以本机实际安装结果为准。Docker 隔离测试默认使�
 
 | 现象 | 先检查 |
 | --- | --- |
-| API 401 | Authorization 使用的是 tenants 的 apiKey，而非模型密钥 |
+| API 401 | Authorization 使用根目录 .env 的 IFENG_API_KEY，而非模型密钥 |
 | HTTP 400 | 返回的字段错误；必须使用当前 v2 JSON，包含 script/requestId 等 |
 | HTTP 409 | 同任务正在执行、requestId 内容冲突、方案版本过时 |
 | queued 长时间不开始 | worker 日志、4 个槽位、Docker 权限、supervisor 锁是否被另一进程持有 |
@@ -286,6 +267,6 @@ Chromium 路径以本机实际安装结果为准。Docker 隔离测试默认使�
 | ready 但没有回调 | callbackBaseUrl 容器可达；接收端必须 HTTP 2xx 且 JSON status=0；看 callback.last_error |
 | 回调 dead_letter | 修复接收端后，POST `/ai_video_director/callbacks/<eventId>/retry`，带 Bearer 令牌 |
 
-正式接入时替换临时 callbackBaseUrl，执行 `dc up -d --force-recreate api worker callbacks` 重新加载配置；选择空闲时段，避免打断测试任务。接收端还须验证 HMAC、eventId 幂等和版本顺序，规则见 Worker README。
+正式接入时在根目录 .env 替换 IFENG_CALLBACK_BASE_URL，执行 `dc up -d --force-recreate api worker callbacks` 重新加载配置；选择空闲时段，避免打断测试任务。接收端还须验证 HMAC、eventId 幂等和版本顺序，规则见 Worker README。
 
 后续发布制作代码要重新生成 runtime-manifest（Worker 目录执行 `pnpm runtime-manifest`），一起构建 control/runner 镜像；停止接收新请求、等待执行任务结束后更新。首次建库命令不要当成自动升级/回滚方案；未来数据库变更需对应迁移与备份。本版保留数据库卷、媒体目录和运行目录；不要使用 `docker compose down -v` 作为日常重启命令。

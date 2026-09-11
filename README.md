@@ -4,6 +4,7 @@
 
 ```text
 VideoCutEditor/
+├── .env                        Worker 与 toolkit 共用的部署配置
 ├── claude-code-video-toolkit/   已有视频制作主体，保留内部结构
 ├── video-worker/                任务 API、4 并发队列、Codex 容器与可靠回调
 ├── huibo-saas/                  百度一镜数字人 HTTP 适配器
@@ -22,3 +23,5 @@ VideoCutEditor/
 工具库的 Python/Remotion 命令仍从 `claude-code-video-toolkit/` 或对应模板目录执行。项目根目前没有统一的 npm 启动命令。
 
 本地输入素材在 `.local-data/`；任务数据和登录配置继续沿用各目录的忽略规则，不作为代码提交。
+
+全项目实际配置统一为根目录 `.env`，已随代码提供，不需要复制；子目录 `.env.example` 如有保留，仅为原工具的可选参数参考。数据库密码、接口令牌和回调签名密钥已生成，原豆包配置已迁入。`CODEX_API_KEY` 仍需填写实际服务端密钥；`IFENG_CALLBACK_BASE_URL` 默认指向测试回调接收器，正式对接时改为编辑平台地址。

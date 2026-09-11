@@ -58,13 +58,14 @@ VideoCutEditor/                         项目与 Git 根
 
 ## 3. 建议新增的代码结构
 
+统一配置位于 `VideoCutEditor/.env`，Worker 与 toolkit 共用，不在子目录另建 `.env`。
+
 `video-worker/` 已实现主要模块；可选数字人在线供应商适配尚未接入，首版采用预生成素材。目录按职责划分，同一职责首版可放在一个文件，不需要为每个小函数创建文件。
 
 ```text
 VideoCutEditor/video-worker/    新增：业务控制与执行服务
 ├── package.json                      一个 TS 项目，多个入口
 ├── tsconfig.json
-├── .env.example                      只列配置名和非敏感示例
 ├── src/
 │   ├── entrypoints/
 │   │   ├── api.ts                    接收分析/渲染，查询、取消

@@ -49,7 +49,7 @@ codex login --device-auth
 python3 test-cases/deepseek-v4/configure_tts.py
 ```
 
-输入不回显，保存在仓库根目录 `.env`，权限 600，Git 已忽略。run.sh 每次自动加载，无需每次 export。已导出的非空环境变量优先于文件；若本终端仍保留旧 Key，先 `unset DOUBAO_TTS_API_KEY DOUBAO_TTS_RESOURCE_ID`。密钥是否失效以控制台有效期、禁用和权限为准。
+输入不回显，保存在 `VideoCutEditor/.env`，权限 600，按项目要求纳入 Git；不在 toolkit 目录创建第二份配置。run.sh 每次自动加载，无需每次 export。已导出的非空环境变量优先于文件；若本终端仍保留旧 Key，先 `unset DOUBAO_TTS_API_KEY DOUBAO_TTS_RESOURCE_ID`。密钥是否失效以控制台有效期、禁用和权限为准。
 
 固定女声 `zh_female_xiaohe_uranus_bigtts`、男声 `zh_male_m191_uranus_bigtts`，需在该账号可用。收到鉴权/音色不可用时修正配置，不生成多轮试听。使用豆包语音新控制台的 API Key 管理，不是聊天产品账号密码。
 

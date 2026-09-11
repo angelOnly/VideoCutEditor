@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Save a TTS key once to the git-ignored local .env, without echoing it."""
+"""Save a TTS key to the shared VideoCutEditor .env, without echoing it."""
 import getpass
 import os
 from pathlib import Path
 from dotenv import set_key
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 
 
 def save_config(key):

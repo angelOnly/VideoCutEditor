@@ -26,7 +26,7 @@ import os, sys
 from pathlib import Path
 from dotenv import dotenv_values
 root = Path(sys.argv[1])
-config = dotenv_values(root / '.env', interpolate=False)
+config = dotenv_values(root.parent / '.env', interpolate=False)
 env = dict(os.environ)
 for name in ('DOUBAO_TTS_API_KEY', 'DOUBAO_TTS_RESOURCE_ID'):
     if not env.get(name) and config.get(name):

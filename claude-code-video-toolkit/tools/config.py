@@ -5,6 +5,12 @@ import json
 import os
 from pathlib import Path
 
+def load_environment() -> None:
+    """Read the shared repository .env; injected container values take priority."""
+    from dotenv import load_dotenv
+    load_dotenv(Path(__file__).resolve().parents[2] / ".env", override=False)
+
+
 # Find workspace root (where _internal/ lives)
 def find_workspace_root() -> Path:
     """Find the workspace root by looking for _internal directory."""
@@ -31,8 +37,7 @@ def load_registry() -> dict:
 
 def get_voice_id() -> str | None:
     """Get the default voice ID from env var, falling back to registry."""
-    from dotenv import load_dotenv
-    load_dotenv()
+    load_environment()
 
     # First check environment variable
     voice_id = os.getenv("ELEVENLABS_VOICE_ID")
@@ -46,36 +51,31 @@ def get_voice_id() -> str | None:
 
 def get_elevenlabs_api_key() -> str | None:
     """Get ElevenLabs API key from environment."""
-    from dotenv import load_dotenv
-    load_dotenv()
+    load_environment()
     return os.getenv("ELEVENLABS_API_KEY")
 
 
 def get_doubao_tts_api_key() -> str | None:
     """Get the Volcengine new-console API key for Doubao TTS."""
-    from dotenv import load_dotenv
-    load_dotenv()
+    load_environment()
     return os.getenv("DOUBAO_TTS_API_KEY")
 
 
 def get_doubao_tts_resource_id() -> str:
     """Get the Doubao TTS resource ID, using the Seed TTS 2.0 default."""
-    from dotenv import load_dotenv
-    load_dotenv()
+    load_environment()
     return os.getenv("DOUBAO_TTS_RESOURCE_ID", "seed-tts-2.0")
 
 
 def get_doubao_tts_speaker() -> str:
     """Get the default Doubao TTS speaker for this workspace."""
-    from dotenv import load_dotenv
-    load_dotenv()
+    load_environment()
     return os.getenv("DOUBAO_TTS_SPEAKER", "zh_female_xiaohe_uranus_bigtts")
 
 
 def get_sixtydb_api_key() -> str | None:
     """Get 60db API key from environment."""
-    from dotenv import load_dotenv
-    load_dotenv()
+    load_environment()
     return os.getenv("SIXTYDB_API_KEY")
 
 
@@ -85,8 +85,7 @@ def get_sixtydb_voice_id() -> str | None:
     Returns None if neither is set — callers fall back to the documented
     60db default voice.
     """
-    from dotenv import load_dotenv
-    load_dotenv()
+    load_environment()
 
     voice_id = os.getenv("SIXTYDB_VOICE_ID")
     if voice_id and voice_id != "your_voice_id_here":
@@ -105,15 +104,13 @@ def get_default_output_dir(project_path: str | None = None) -> Path:
 
 def get_acemusic_api_key() -> str | None:
     """Get ACE-Step Music API key from environment."""
-    from dotenv import load_dotenv
-    load_dotenv()
+    load_environment()
     return os.getenv("ACEMUSIC_API_KEY")
 
 
 def get_ideogram_api_key() -> str | None:
     """Get Ideogram (hosted v4 API) key from environment."""
-    from dotenv import load_dotenv
-    load_dotenv()
+    load_environment()
     return os.getenv("IDEOGRAM_API_KEY")
 
 
@@ -123,8 +120,7 @@ def get_youtube_client_secrets_file() -> str | None:
     Returns None if unset or still the placeholder. YouTube uploads use OAuth (acting
     on behalf of a channel), not an API key — see docs/youtube-upload.md.
     """
-    from dotenv import load_dotenv
-    load_dotenv()
+    load_environment()
     path = os.getenv("YOUTUBE_CLIENT_SECRETS_FILE")
     if path and path != "/absolute/path/to/client_secret.json":
         return path
@@ -137,8 +133,7 @@ def get_youtube_token_dir() -> Path:
     Override via YOUTUBE_TOKEN_DIR. Default: <workspace>/_internal/.youtube/
     (must be gitignored — refresh tokens are long-lived secrets).
     """
-    from dotenv import load_dotenv
-    load_dotenv()
+    load_environment()
     override = os.getenv("YOUTUBE_TOKEN_DIR")
     if override:
         return Path(override)
@@ -147,22 +142,19 @@ def get_youtube_token_dir() -> Path:
 
 def get_runpod_api_key() -> str | None:
     """Get RunPod API key from environment."""
-    from dotenv import load_dotenv
-    load_dotenv()
+    load_environment()
     return os.getenv("RUNPOD_API_KEY")
 
 
 def get_runpod_endpoint_id() -> str | None:
     """Get RunPod endpoint ID from environment."""
-    from dotenv import load_dotenv
-    load_dotenv()
+    load_environment()
     return os.getenv("RUNPOD_ENDPOINT_ID")
 
 
 def get_qwen3_tts_endpoint_id() -> str | None:
     """Get Qwen3-TTS RunPod endpoint ID from environment."""
-    from dotenv import load_dotenv
-    load_dotenv()
+    load_environment()
     return os.getenv("RUNPOD_QWEN3_TTS_ENDPOINT_ID")
 
 
@@ -173,8 +165,7 @@ def get_modal_token() -> tuple[str | None, str | None]:
     Modal stores tokens in ~/.modal.toml after `modal setup`, but for
     web endpoint auth we read from .env.
     """
-    from dotenv import load_dotenv
-    load_dotenv()
+    load_environment()
     return os.getenv("MODAL_TOKEN_ID"), os.getenv("MODAL_TOKEN_SECRET")
 
 
@@ -184,8 +175,7 @@ def get_modal_endpoint_url(tool_name: str) -> str | None:
     Env var convention: MODAL_{TOOL}_ENDPOINT_URL
     e.g., MODAL_QWEN3_TTS_ENDPOINT_URL, MODAL_FLUX2_ENDPOINT_URL
     """
-    from dotenv import load_dotenv
-    load_dotenv()
+    load_environment()
     env_var = f"MODAL_{tool_name.upper()}_ENDPOINT_URL"
     return os.getenv(env_var)
 
@@ -216,8 +206,7 @@ def get_r2_config() -> dict | None:
     Returns dict with account_id, access_key_id, secret_access_key, bucket_name
     or None if not configured.
     """
-    from dotenv import load_dotenv
-    load_dotenv()
+    load_environment()
 
     account_id = os.getenv("R2_ACCOUNT_ID")
     access_key_id = os.getenv("R2_ACCESS_KEY_ID")

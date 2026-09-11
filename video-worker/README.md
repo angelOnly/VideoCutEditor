@@ -42,21 +42,22 @@ VideoCutEditor 的任务服务。提供稿件/素材分析、编辑确认后的�
 
 需要 Ubuntu 上的 Docker Engine、Compose v2，以及能访问模型与已配置配音服务的网络。媒体根目录为 `/home/ops/jiangzb/videos`，运行数据根目录为 `/home/ops/jiangzb/video-worker-data`。两者均为宿主持久化目录，不放在代码库里。
 
+全项目共用根目录 `.env`。已迁入原 toolkit 配音配置，并生成数据库密码、调用方令牌和回调签名密钥；Worker 默认从 `IFENG_*` 读取调用方配置，无需创建 tenants.json。仅需要多调用方时显式设置 `TENANTS_FILE` 并挂载该 JSON 文件。容器环境变量优先于根目录配置，任务镜像不包含 `.env`。
+
 从 `video-worker/` 执行：
 
 ```bash
-cp .env.example .env
-cp config/tenants.example.json config/tenants.json
-# 编辑上述两个文件：设置数据库密码、调用方令牌、实际回调服务地址、签名密钥及 Codex/豆包凭据。
+# 根目录 ../.env 已随代码提供，无需复制配置。
+# 补充 CODEX_API_KEY；正式联调时修改 IFENG_CALLBACK_BASE_URL。
 mkdir -p /home/ops/jiangzb/videos/input /home/ops/jiangzb/video-worker-data
 
-docker compose --env-file .env -f deploy/compose.yaml --profile build build
-docker compose --env-file .env -f deploy/compose.yaml up -d postgres
-docker compose --env-file .env -f deploy/compose.yaml run --rm migrate
-docker compose --env-file .env -f deploy/compose.yaml up -d api worker callbacks
+docker compose --env-file ../.env -f deploy/compose.yaml --profile build build
+docker compose --env-file ../.env -f deploy/compose.yaml up -d postgres
+docker compose --env-file ../.env -f deploy/compose.yaml run --rm migrate
+docker compose --env-file ../.env -f deploy/compose.yaml up -d api worker callbacks
 ```
 
-API 默认绑定宿主 `127.0.0.1:8080`，由现有网关反代给编辑平台。`callbackBaseUrl` 必须是 callbacks 容器可达的编辑平台后端地址；容器里的 `127.0.0.1` 是容器自身。Runner 镜像构建包含 Chromium、FFmpeg、字体、固定版本模板和 SDK，不需要运行时安装依赖。
+API 默认绑定宿主 `127.0.0.1:8080`，由现有网关反代给编辑平台。`IFENG_CALLBACK_BASE_URL`（内部 callbackBaseUrl）必须是 callbacks 容器可达的编辑平台后端地址；容器里的 `127.0.0.1` 是容器自身。Runner 镜像构建包含 Chromium、FFmpeg、字体、固定版本模板和 SDK，不需要运行时安装依赖。
 
 `DATA_ROOT` 在 control 容器与宿主保持**相同绝对路径**，因为 Docker daemon 解析的是宿主的 bind source。仅 Worker 控制进程挂载 Docker socket；任务容器只挂载本次工作区，input 和 task.json 只读。部署脚本通过宿主共享的 `flock` 锁保证单宿主只有一个 supervisor；恢复时先停止旧容器，再释放数据库槽位。不要绕过 `deploy/start-worker.sh` 直接启动生产 Worker。建议为运行数据配置独立磁盘/配额和备份，按真实任务压测调整 CPU/内存；不将 DATA_ROOT 指向其他机器的共享 supervisor 锁文件。
 

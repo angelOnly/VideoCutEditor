@@ -46,7 +46,9 @@ jobs:
         run: pnpm test
       - name: Trusted media validators and legacy pipeline
         working-directory: claude-code-video-toolkit
-        run: ../video-worker/.venv/bin/python3 -m unittest discover -s tests -p 'test_*pipeline.py'
+        run: |
+          ../video-worker/.venv/bin/python3 -m unittest discover -s tests -p 'test_*pipeline.py'
+          ../video-worker/.venv/bin/python3 -m unittest discover -s tests -p 'test_shared_environment.py'
       - name: Install admitted template
         working-directory: claude-code-video-toolkit/templates/ifeng-scenes
         run: |

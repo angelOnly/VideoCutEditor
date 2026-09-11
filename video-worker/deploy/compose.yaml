@@ -4,14 +4,12 @@ x-control: &control
   build:
     context: ../..
     dockerfile: video-worker/deploy/Dockerfile.control
-  env_file: ../.env
+  env_file: ../../.env
   environment:
     DATABASE_URL: postgresql://videocut:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@postgres:5432/videocut
-    TENANTS_FILE: /run/config/tenants.json
     MEDIA_ROOT: ${MEDIA_ROOT:-/home/ops/jiangzb/videos}
     DATA_ROOT: ${DATA_ROOT:-/home/ops/jiangzb/video-worker-data}
   volumes:
-    - ../config/tenants.json:/run/config/tenants.json:ro
     # Identical host/container paths are required: Docker bind sources refer to the HOST daemon.
     - ${MEDIA_ROOT:-/home/ops/jiangzb/videos}:${MEDIA_ROOT:-/home/ops/jiangzb/videos}
     - ${DATA_ROOT:-/home/ops/jiangzb/video-worker-data}:${DATA_ROOT:-/home/ops/jiangzb/video-worker-data}
@@ -47,7 +45,6 @@ services:
     <<: *control
     command: ['/opt/video-worker/deploy/start-worker.sh']
     volumes:
-      - ../config/tenants.json:/run/config/tenants.json:ro
       - ${MEDIA_ROOT:-/home/ops/jiangzb/videos}:${MEDIA_ROOT:-/home/ops/jiangzb/videos}
       - ${DATA_ROOT:-/home/ops/jiangzb/video-worker-data}:${DATA_ROOT:-/home/ops/jiangzb/video-worker-data}
       - /var/run/docker.sock:/var/run/docker.sock

@@ -33,7 +33,7 @@ class DoubaoTTSProviderTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        load_dotenv(REPO_ROOT / ".env")
+        load_dotenv(REPO_ROOT.parent / ".env")
         cls.api_key = os.getenv("DOUBAO_TTS_API_KEY", "")
         cls.resource_id = os.getenv("DOUBAO_TTS_RESOURCE_ID", DEFAULT_RESOURCE_ID)
         cls.speaker = os.getenv("DOUBAO_TTS_SPEAKER", DEFAULT_SPEAKER)
