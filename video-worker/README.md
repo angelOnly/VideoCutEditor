@@ -11,7 +11,7 @@ VideoCutEditor 的任务服务。提供稿件/素材分析、编辑确认后的�
 | `POST /getAiVideoEditingAnalysisData` | 接收完整 `script` 和素材，返回 HTTP 202、taskId/runId/queued |
 | `POST /getAiVideoEditingData` | 接收相同 taskId、basePlanVersion 和完整 dataList，创建渲染执行 |
 | `GET /tasks/:taskId` | 查询任务、排队位置、最新方案/可用结果及回调状态 |
-| `POST /runs/:runId/cancel` | 取消 queued 执行；running 执行先停止容器再释放槽位 |
+| `POST /runs/:runId/cancel` | 取消 queued 执行；running 执行先停止本机任务进程再释放槽位 |
 | `POST /callbacks/:eventId/retry` | 将本调用方的 dead_letter 事件重新投递，eventId/内容保持不变 |
 
 两个 `...Callback` 接口由编辑平台提供，Worker 只调用它们，不在本服务重复接收。业务 JSON 采用已确认的 v2 契约；准确字段见 `src/contracts/ifeng.ts`，可运行的完整链路示例见 `tests/media.test.ts`。
@@ -38,31 +38,26 @@ VideoCutEditor 的任务服务。提供稿件/素材分析、编辑确认后的�
 
 ## Ubuntu 部署
 
-首次部署和逐步验收请按 [Ubuntu 部署与联调手册](../docs/Ubuntu部署与联调手册.md) 操作，包含临时回调接收器、分析/确认 curl 请求、文件检查及 4 并发测试。
+默认采用混合部署：Docker 运行 PostgreSQL、API、回调发送器；Ubuntu 用户服务运行 Worker 和一个常驻 Codex app-server。全项目仍只使用根目录 `.env`，不用复制模板，也不用填写 CODEX_API_KEY。Codex 使用同一 Ubuntu 用户完成的 `codex login` ChatGPT 登录。
 
-需要 Ubuntu 上的 Docker Engine、Compose v2，以及能访问模型与已配置配音服务的网络。媒体根目录为 `/home/ops/jiangzb/videos`，运行数据根目录为 `/home/ops/jiangzb/video-worker-data`。两者均为宿主持久化目录，不放在代码库里。
-
-全项目共用根目录 `.env`。已迁入原 toolkit 配音配置，并生成数据库密码、调用方令牌和回调签名密钥；Worker 默认从 `IFENG_*` 读取调用方配置，无需创建 tenants.json。仅需要多调用方时显式设置 `TENANTS_FILE` 并挂载该 JSON 文件。容器环境变量优先于根目录配置，任务镜像不包含 `.env`。
-
-从 **VideoCutEditor 项目根目录**执行：
+以 `ops` 用户执行，不要用 sudo 启动安装脚本（脚本仅在安装系统依赖时使用 sudo）：
 
 ```bash
-# 根目录 .env 已随代码提供；先补充 CODEX_API_KEY。
+cd /home/ops/jiangzb/VideoCutEditor
 mkdir -p /home/ops/jiangzb/videos/input /home/ops/jiangzb/video-worker-data
-docker compose up -d --build
-docker compose ps -a
-curl --fail-with-body http://127.0.0.1:8080/healthz
+docker compose up -d --build --remove-orphans
+bash video-worker/deploy/install-host.sh
+systemctl --user status videocut-worker
+journalctl --user -u videocut-worker -f
 ```
 
-根目录 `docker-compose.yml` 是唯一部署入口；旧 `video-worker/deploy/compose.yaml` 已移除。Compose 自动构建 control/runner 镜像，等待数据库健康、初始化完成和 runner 镜像准备完成后启动对应服务。`migrate` 与 `runner-image` 显示 Exited(0) 正常，不需要手动启动迁移。等待关系遵循 [Compose 官方启动顺序规则](https://docs.docker.com/compose/how-tos/startup-order/)。
+安装脚本安装 Node 22（已有 22+ 时复用）、Python 虚拟环境、FFmpeg、字体、Bubblewrap、固定版本 Codex 0.154.0、Remotion 和浏览器；生成 systemd 用户服务并启用 linger，因此退出 SSH 后仍运行。安装末尾检查数据库、沙箱、浏览器、ChatGPT 登录和协议，不会调用模型制作视频或调用 TTS。登录失效时，使用 `ops` 用户重新 `codex login` 后再次运行安装脚本。
 
-默认同时启动内部 `callback-mock`，匹配 `.env` 中的测试回调地址；通过 `docker compose logs callback-mock` 查看通知。它只记录测试回调、不验证签名，不是编辑平台。正式使用时修改 IFENG_CALLBACK_BASE_URL 并重新创建 callbacks 服务。若缺少 CODEX_API_KEY，Worker 无法启动；填好后再执行 up。
+Compose 中 `migrate` 执行成功后退出是正常现象；没有 worker 或 runner-image 服务，不再挂载 Docker socket。API 使用 `postgres:5432`，Ubuntu Worker 使用 `127.0.0.1:15432`，连接同一个数据库。`POSTGRES_HOST_PORT` 可以调整后者。API 仍默认绑定 `127.0.0.1:8080`。默认测试回调接收器为 `callback-mock`，真实联调时修改根目录 `IFENG_CALLBACK_BASE_URL` 并重建 callbacks 服务。
 
-API 默认绑定宿主 `127.0.0.1:8080`，由现有网关反代给编辑平台。`IFENG_CALLBACK_BASE_URL`（内部 callbackBaseUrl）必须是 callbacks 容器可达的编辑平台后端地址；容器里的 `127.0.0.1` 是容器自身。Runner 镜像构建包含 Chromium、FFmpeg、字体、固定版本模板和 SDK，不需要运行时安装依赖。
+资源限制由 `HOST_TASK_CPUS=2`、`HOST_TASK_MEMORY=4G`、`HOST_TASK_PIDS=256` 控制；四个执行槽位仍由数据库固定限制。`WORKER_EXECUTOR=host` 为默认值。旧 DockerSandbox 和 Runner Dockerfile 保留用于旧执行器回归，不属于当前 Compose 部署；其 API Key 配置不用于本机 ChatGPT 模式。
 
-`DATA_ROOT` 在 control 容器与宿主保持**相同绝对路径**，因为 Docker daemon 解析的是宿主的 bind source。仅 Worker 控制进程挂载 Docker socket；任务容器只挂载本次工作区，input 和 task.json 只读。部署脚本通过宿主共享的 `flock` 锁保证单宿主只有一个 supervisor；恢复时先停止旧容器，再释放数据库槽位。不要绕过 `deploy/start-worker.sh` 直接启动生产 Worker。建议为运行数据配置独立磁盘/配额和备份，按真实任务压测调整 CPU/内存；不将 DATA_ROOT 指向其他机器的共享 supervisor 锁文件。
-
-Worker 启动时将 Runner 标签解析为本地镜像 ID，本次进程固定使用该镜像。`deploy/runtime-manifest.json` 记录制作源码摘要，修改制作代码后运行 `pnpm runtime-manifest` 并一起发布 control/runner 两个镜像。摘要和执行镜像参与分镜缓存键。
+完整首次部署、升级和 curl 验收见 [Ubuntu 部署与联调手册](../docs/Ubuntu部署与联调手册.md)。
 
 ## 媒体文件与任务隔离
 
@@ -75,11 +70,14 @@ Worker 启动时将 Runner 标签解析为本地镜像 ID，本次进程固定�
 ## 执行、配音与回调
 
 - PostgreSQL 原子控制 requestId 幂等、同 task 互斥、4 个槽位和版本检查。等待编辑和等待回调不占槽位。run 首次开始后总期限为 4 小时，最多恢复 3 次执行尝试、10 轮修复，重启不重置计数。
-- Codex SDK 的 `startThread/resumeThread/runStreamed` 只在任务容器中执行；每任务保存独立会话快照，按精确 threadId 恢复。缺少本地会话文件时从确认快照创建新会话。原始 SDK 事件不直接决定任务成功。[官方 SDK 文档](https://learn.chatgpt.com/docs/codex-sdk)
-- 首版固定豆包 TTS；服务先保存外部调用记录，再在可信工具容器中生成音频，按文本/音色/版本缓存。结果未知时返回 `EXTERNAL_RESULT_UNKNOWN`，不自动再付费。需要人工核对供应商记录和缓存后处理，不可直接删调用记录重跑。
+- 一个 app-server 管理登录与多任务会话，业务 taskId 对应数据库内部任务主键和 threadId；host_executions 保存 runId、attempt、fencingToken、threadId、turnId 和工作目录。会话恢复读取数据库，不信任模型写入的 session.json；不复制 auth.json 或 CODEX_HOME。锁定版本的实验协议通过启动检查后才领取任务。[官方 app-server 文档](https://learn.chatgpt.com/docs/app-server)
+- Codex 的命令/看图使用 video_exec、video_view_image，由本机 Worker 路由到对应任务。制作命令在 Bubblewrap 私有文件系统、PID 和网络命名空间中运行，每个任务同一时刻最多一条命令；systemd transient service 限制资源并清理全部子进程。命令结束不会留下后台进程，Remotion 内部本地预览服务器可以在同一条制作命令期间运行。
+- 模型执行不继承业务凭据；不挂载整个媒体根、运行数据根、CODEX_HOME、根目录 .env 或 Docker socket。模板/工具/输入只读，仅当前 project/output/cache 可写。可信音频准备允许写 input/audio；仅固定 TTS 适配器获得配音凭据和外网权限。校验器使用无网络、只读工作区。
+- 取消先拒绝后续工具调用，等待 turn/interrupt 完成通知，再停止并确认对应 systemd 服务。app-server 崩溃时停止接新任务，由 systemd 重启整个 Worker；启动先清理旧任务进程，随后按数据库租约恢复。没有终止确认不释放槽位。
+- 首版固定豆包 TTS；服务先保存外部调用记录，再在可信本机工具沙箱中生成音频，按文本/音色/版本缓存。结果未知时返回 `EXTERNAL_RESULT_UNKNOWN`，不自动再付费。需要人工核对供应商记录和缓存后处理，不可直接删调用记录重跑。
 - 使用预配音时，每镜必须有 `narrationStartTime/narrationEndTime`。分析阶段不能对齐就明确失败；改动已有配音的口播文本需重新提交匹配音频进行分析。句级字幕按实际音频量化时长，长句分页，不宣称逐字对齐。
 - 数字人首版使用与该镜口播匹配的**预生成视频**：设置 `digitalHumanId`，并在 videoInfoList 提供一条 `role: "presenter"` 素材。不会默认调用尚未完成 Ubuntu 联调的一镜/曦灵服务。模板支持 full_frame/presenter_pip、none/slow_zoom/fade，跨镜音乐/转场交给下游。
-- 候选停止写入后，在无网络、只读任务挂载的可信容器校验 Schema、分镜集合、确认内容、源素材、MP4 全量解码、帧数、AAC 配音一致性和画面证据。模型提交的 `passed` 本身不是成功依据。
+- 候选停止写入后，在无网络、只读任务挂载的可信本机沙箱校验 Schema、分镜集合、确认内容、源素材、MP4 全量解码、帧数、AAC 配音一致性和画面证据。模型提交的 `passed` 本身不是成功依据。
 - 发布文件后，数据库同一事务保存结果和 outbox。回调失败只重发通知。接收端必须同时返回 HTTP 2xx 和 `{"status":0}` 才标记 delivered；4xx（429 除外）或明确业务失败进入 dead_letter。
 
 回调头包含 `X-Event-Id`、`X-Callback-Timestamp`（Unix 秒）和 `X-Callback-Signature`。签名为 `HMAC-SHA256(callbackSecret, timestamp + "." + 原始请求体)` 的十六进制值。接收端验证签名及时间窗口、按 eventId 去重，并用 taskId/runId/planVersion/resultVersion 拒绝旧结果覆盖新结果。延迟重试保持相同事件内容，签名时间重新生成。
@@ -110,8 +108,10 @@ Ubuntu 上可以追加真实基础设施验收：
 ```bash
 # 使用专门测试库；测试只创建/删除随机命名的独立 schema。
 TEST_DATABASE_URL=postgresql://user:password@127.0.0.1:5432/test_db pnpm test
-# 先构建 Runner；此项无模型调用，验证镜像依赖与目录隔离。
-RUN_DOCKER_TESTS=1 RUNNER_IMAGE=videocut-runner:0.1.0 pnpm test
+# 检查真实本机运行环境，不调用模型/TTS；与正在运行的 Worker 互斥。
+systemctl --user stop videocut-worker
+pnpm host:check
+systemctl --user start videocut-worker
 ```
 
-真实 Codex/豆包、Ubuntu Docker 运行及编辑平台真实回调仍需使用部署配置进行联调；当前开发机的本地测试不声称已完成这些外部环境验收。
+真实 Codex 四任务并行/登录刷新、豆包、Ubuntu 本机隔离和编辑平台真实回调仍需使用部署配置进行联调；当前开发机的本地测试不声称已完成这些外部环境验收。

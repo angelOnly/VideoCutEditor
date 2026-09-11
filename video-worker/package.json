@@ -18,14 +18,16 @@
     "runtime-manifest": "node scripts/runtime-manifest.mjs",
     "test:media": "RUN_MEDIA_TESTS=1 tsx --test tests/media.test.ts",
     "format": "prettier --write src tests scripts config deploy/*.json deploy/*.mjs ../docker-compose.yml",
-    "format:check": "prettier --check src tests scripts config deploy/*.json deploy/*.mjs ../docker-compose.yml"
+    "format:check": "prettier --check src tests scripts config deploy/*.json deploy/*.mjs ../docker-compose.yml",
+    "host:check": "./deploy/start-worker.sh host-check"
   },
   "dependencies": {
     "@openai/codex-sdk": "0.154.0",
     "ajv": "8.20.0",
     "fastify": "5.12.3",
     "pg": "8.23.0",
-    "zod": "4.6.1"
+    "zod": "4.6.1",
+    "@openai/codex": "0.154.0"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.8",

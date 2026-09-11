@@ -46,6 +46,13 @@ export const tenant = {
 };
 export function config(overrides: Partial<Config> = {}): Config {
   return {
+    executor: 'docker',
+    codexPath: 'codex',
+    codexHome: '/tmp/test-codex-home',
+    hostBrowser: '/usr/bin/chromium',
+    hostMemory: '1G',
+    hostCpus: 1,
+    hostTasksMax: 128,
     databaseUrl: 'unused',
     port: 0,
     mediaRoot: tenant.inputRoot,

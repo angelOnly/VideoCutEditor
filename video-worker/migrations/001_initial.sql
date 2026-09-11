@@ -53,3 +53,9 @@ CREATE TABLE IF NOT EXISTS external_calls (
  state text NOT NULL CHECK(state IN ('pending','succeeded','unknown')), result jsonb,
  created_at timestamptz NOT NULL DEFAULT now(), PRIMARY KEY(task_id,input_hash)
 );
+
+-- Internal native execution identity; never supplied by callers or the model.
+CREATE TABLE IF NOT EXISTS host_executions (
+ run_id uuid PRIMARY KEY REFERENCES runs(id), attempt integer NOT NULL, fencing_token integer NOT NULL,
+ thread_id text NOT NULL, turn_id text, workspace text NOT NULL
+);

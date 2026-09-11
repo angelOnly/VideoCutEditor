@@ -40,6 +40,9 @@ await writeFile(
     {
       protocolVersion: 2,
       sdkVersion: '0.154.0',
+      codexCliVersion: '0.154.0',
+      defaultExecutor: 'host-app-server',
+      taskIsolation: 'bubblewrap-systemd-user',
       remotionVersion: '4.0.425',
       runtimeSourceSha256: version,
       files: hashes,

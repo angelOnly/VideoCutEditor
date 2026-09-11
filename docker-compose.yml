@@ -1,5 +1,5 @@
 # From VideoCutEditor/: docker compose up -d --build
-# Reads the shared root .env automatically. Set CODEX_API_KEY before starting Worker.
+# Docker runs control services. Ubuntu runs video-worker via deploy/install-host.sh.
 name: videocut
 
 x-logging: &logging
@@ -18,12 +18,7 @@ x-control: &control
     DATABASE_URL: postgresql://videocut:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@postgres:5432/videocut
     MEDIA_ROOT: ${MEDIA_ROOT:-/home/ops/jiangzb/videos}
     DATA_ROOT: ${DATA_ROOT:-/home/ops/jiangzb/video-worker-data}
-    RUNNER_IMAGE: ${RUNNER_IMAGE:-videocut-runner:0.1.0}
     PORT: "8080"
-  volumes:
-    # Docker daemon resolves sources on the HOST: keep host/container paths identical.
-    - ${MEDIA_ROOT:-/home/ops/jiangzb/videos}:${MEDIA_ROOT:-/home/ops/jiangzb/videos}
-    - ${DATA_ROOT:-/home/ops/jiangzb/video-worker-data}:${DATA_ROOT:-/home/ops/jiangzb/video-worker-data}
   restart: unless-stopped
   logging: *logging
 
@@ -36,6 +31,8 @@ x-ready: &ready
 services:
   postgres:
     image: postgres:17-bookworm
+    ports:
+      - "127.0.0.1:${POSTGRES_HOST_PORT:-15432}:5432"
     environment:
       POSTGRES_USER: videocut
       POSTGRES_DB: videocut
@@ -59,18 +56,6 @@ services:
         condition: service_healthy
     restart: "no"
 
-  # Build/tag the task image before starting the supervisor. Exited(0) is expected.
-  runner-image:
-    image: ${RUNNER_IMAGE:-videocut-runner:0.1.0}
-    build:
-      context: .
-      dockerfile: video-worker/deploy/Dockerfile.runner
-    entrypoint: ["true"]
-    command: []
-    network_mode: none
-    restart: "no"
-    logging: *logging
-
   api:
     <<: *control
     command: ["node", "dist/entrypoints/api.js"]
@@ -89,19 +74,6 @@ services:
       timeout: 5s
       retries: 6
       start_period: 15s
-
-  worker:
-    <<: *control
-    command: ["/opt/video-worker/deploy/start-worker.sh"]
-    depends_on:
-      <<: *ready
-      runner-image:
-        condition: service_completed_successfully
-    volumes:
-      - ${MEDIA_ROOT:-/home/ops/jiangzb/videos}:${MEDIA_ROOT:-/home/ops/jiangzb/videos}
-      - ${DATA_ROOT:-/home/ops/jiangzb/video-worker-data}:${DATA_ROOT:-/home/ops/jiangzb/video-worker-data}
-      - /var/run/docker.sock:/var/run/docker.sock
-    stop_grace_period: 90s
 
   callbacks:
     <<: *control

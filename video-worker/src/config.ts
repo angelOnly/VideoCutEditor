@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { loadEnvFile } from 'node:process';
 import path from 'node:path';
+import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 const serviceRoot = fileURLToPath(new URL('../', import.meta.url));
@@ -15,6 +16,13 @@ const tenantSchema = z.object({
 });
 export type Tenant = z.infer<typeof tenantSchema>;
 export interface Config {
+  executor: 'host' | 'docker';
+  codexPath: string;
+  codexHome: string;
+  hostBrowser: string;
+  hostMemory: string;
+  hostCpus: number;
+  hostTasksMax: number;
   databaseUrl: string;
   port: number;
   mediaRoot: string;
@@ -76,10 +84,39 @@ export function loadConfig(envFile = path.resolve(serviceRoot, '../.env')): Conf
   const databaseUrl =
     process.env.DATABASE_URL ||
     (process.env.POSTGRES_PASSWORD
-      ? `postgresql://videocut:${encodeURIComponent(process.env.POSTGRES_PASSWORD)}@127.0.0.1:5432/videocut`
+      ? `postgresql://videocut:${encodeURIComponent(process.env.POSTGRES_PASSWORD)}@127.0.0.1:${z.coerce
+          .number()
+          .int()
+          .min(1)
+          .max(65535)
+          .parse(process.env.POSTGRES_HOST_PORT ?? 15432)}/videocut`
       : undefined);
   if (!databaseUrl) throw Error('DATABASE_URL or POSTGRES_PASSWORD is required');
+  const hostRuntimeFile = path.join(serviceRoot, 'config/host-runtime.json');
+  const hostRuntime = existsSync(hostRuntimeFile)
+    ? JSON.parse(readFileSync(hostRuntimeFile, 'utf8'))
+    : {};
   return {
+    hostBrowser:
+      process.env.REMOTION_BROWSER_EXECUTABLE || hostRuntime.browser || '/usr/bin/chromium',
+    executor: z.enum(['host', 'docker']).parse(process.env.WORKER_EXECUTOR ?? 'host'),
+    codexPath: process.env.CODEX_PATH || path.join(serviceRoot, 'node_modules/.bin/codex'),
+    codexHome: process.env.CODEX_HOME || path.join(os.homedir(), '.codex'),
+    hostMemory: z
+      .string()
+      .regex(/^\d+[MG]$/)
+      .parse(process.env.HOST_TASK_MEMORY ?? '4G'),
+    hostCpus: z.coerce
+      .number()
+      .positive()
+      .max(64)
+      .parse(process.env.HOST_TASK_CPUS ?? 2),
+    hostTasksMax: z.coerce
+      .number()
+      .int()
+      .min(32)
+      .max(4096)
+      .parse(process.env.HOST_TASK_PIDS ?? 256),
     databaseUrl,
     port: Number(process.env.PORT ?? 8080),
     mediaRoot,
@@ -102,7 +139,7 @@ export function loadConfig(envFile = path.resolve(serviceRoot, '../.env')): Conf
     ttsVoice:
       process.env.TTS_VOICE || process.env.DOUBAO_TTS_SPEAKER || 'zh_female_xiaohe_uranus_bigtts',
     ttsResourceId: process.env.DOUBAO_TTS_RESOURCE_ID ?? 'seed-tts-2.0',
-    python: process.env.PYTHON ?? 'python3',
+    python: process.env.PYTHON || path.join(serviceRoot, '.venv/bin/python3'),
     templates,
     runtimeVersion: JSON.parse(
       readFileSync(path.join(serviceRoot, 'config/runtime-version.json'), 'utf8'),

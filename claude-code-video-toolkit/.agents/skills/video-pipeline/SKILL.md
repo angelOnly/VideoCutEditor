@@ -17,10 +17,12 @@ description: 无人值守视频制作编排。用于上游任务、auto 模式�
 
 ## v2 两阶段 Worker 任务
 
+Worker 提供 `JOB_DIR` 与 `TOOLKIT_ROOT`，不得假定固定容器路径。Ubuntu 模式通过 `video_exec` 执行命令、通过 `video_view_image` 实际查看帧图；每条命令返回前结束，不启动后台任务。
+
 先查看 `task.json.schemaVersion`。值为 2 时，读取 [v2 文件协议](references/v2-contract.md)，仅执行 `operation` 指定的阶段：
 
-- `analysis`：读取稿件，运行 `python3 /opt/toolkit/tools/inspect_assets.py --job-dir /workspace/job`，实际查看图片/视频抽帧，理解素材。保留稿件文本拆分分镜，输出 `output/analysis-plan.json`。此阶段不制作正式视频、不调用 TTS，返回分析 candidate 后结束。
-- `render`：读取只读确认方案和 Worker 提供的逐镜配音，禁止修改口播、替换素材或重新拆镜。运行 `python3 /opt/toolkit/tools/render_segments.py --job-dir /workspace/job`，只渲染 renderSelection.sceneIds；实际查看每镜开头/中间/末尾，写入 `output/quality-review.json`。输出 `output/render-manifest.json`，返回 render candidate 后结束。
+- `analysis`：读取稿件，运行 `python3 "$TOOLKIT_ROOT/tools/inspect_assets.py" --job-dir "$JOB_DIR"`，实际查看图片/视频抽帧，理解素材。保留稿件文本拆分分镜，输出 `output/analysis-plan.json`。此阶段不制作正式视频、不调用 TTS，返回分析 candidate 后结束。
+- `render`：读取只读确认方案和 Worker 提供的逐镜配音，禁止修改口播、替换素材或重新拆镜。运行 `python3 "$TOOLKIT_ROOT/tools/render_segments.py" --job-dir "$JOB_DIR"`，只渲染 renderSelection.sceneIds；实际查看每镜开头/中间/末尾，写入 `output/quality-review.json`。输出 `output/render-manifest.json`，返回 render candidate 后结束。
 
 v2 不运行下方 v1 的整片编排或 `validate_delivery.py`。分别使用 `validate_analysis.py` / `validate_segments.py`，最终响应遵循 `response-v2.schema.json`。配音和付费请求由可信 Worker 处理，Agent 不持有供应商凭据。若预生成数字人素材缺失，返回结构化失败，不自行购买或调用未准入服务。v1 task 保持原流程不变。
 

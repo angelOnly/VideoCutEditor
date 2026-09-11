@@ -1,4 +1,4 @@
-import { mkdir, copyFile, rename, open, stat } from 'node:fs/promises';
+import { mkdir, copyFile, rename, open, stat, chmod } from 'node:fs/promises';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import type { Config, Tenant } from '../config.js';
@@ -52,6 +52,7 @@ export class Storage {
     const sha256 = await hashFile(tmp);
     if (sha256 !== (await hashFile(source)))
       throw new AppError('PUBLISH_HASH_MISMATCH', '文件复制校验失败');
+    await chmod(tmp, 0o444);
     await rename(tmp, target);
     const dir = await open(path.dirname(target), 'r');
     await dir.sync();

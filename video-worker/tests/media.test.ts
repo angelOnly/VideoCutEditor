@@ -24,7 +24,7 @@ test(
       data = path.join(temp, 'data');
     await mkdir(path.join(media, 'input'), { recursive: true });
     const t = { ...tenant, inputRoot: media, exportRoot: media };
-    const c = config({ mediaRoot: media, dataRoot: data, tenants: [t] });
+    const c = config({ executor: 'host', mediaRoot: media, dataRoot: data, tenants: [t] });
     const root = c.toolkitRoot;
     try {
       await command('ffmpeg', [

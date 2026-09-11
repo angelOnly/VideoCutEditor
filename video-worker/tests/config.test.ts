@@ -41,7 +41,8 @@ test('one root env configures Worker without tenants.json; injected values and e
     assert.equal(config.tenant.inputRoot, '/shared/videos');
     assert.deepEqual(config.tenant.allowedInputPrefixes, ['input/a', 'input/b']);
     assert.equal(config.voice, 'test_speaker');
-    assert.match(config.db, /test_database_password@127\.0\.0\.1/);
+    assert.match(config.db, /test_database_password@127\.0\.0\.1:15432/);
+    assert.match(read({ POSTGRES_HOST_PORT: '15433' }).db, /:15433\/videocut$/);
     assert.equal(config.model, undefined);
     assert.equal(config.base, undefined);
     const overridden = read({

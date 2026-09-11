@@ -34,7 +34,7 @@ jobs:
         with:
           node-version: "22"
       - run: npm install --global pnpm@11.19.0
-      - run: sudo apt-get update && sudo apt-get install -y ffmpeg python3-venv
+      - run: sudo apt-get update && sudo apt-get install -y ffmpeg python3-venv bubblewrap dbus-user-session
       - name: Validate root deployment configuration
         run: docker compose config --quiet
       - name: Install and compile
@@ -61,12 +61,16 @@ jobs:
       - name: Five scenes and selective rerender (synthetic agent, real MP4)
         working-directory: video-worker
         run: PYTHON="$PWD/.venv/bin/python3" pnpm test:media
-      - name: Build and inspect isolated runner (no model call)
+      - name: Native Linux namespace and process cleanup (no model call)
+        working-directory: video-worker
         run: |
-          docker build -f video-worker/deploy/Dockerfile.control -t videocut-control:0.1.0 .
-          docker build -f video-worker/deploy/Dockerfile.runner -t videocut-runner:0.1.0 .
-          cd video-worker
-          DATA_ROOT="$RUNNER_TEMP/videocut" RUN_DOCKER_TESTS=1 pnpm test
+          sudo loginctl enable-linger "$(id -un)"
+          sudo systemctl start "user@$(id -u).service"
+          export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
+          RUN_HOST_TESTS=1 pnpm exec tsx --test tests/host-linux.test.ts
+      - name: Build control services
+        run: docker build -f video-worker/deploy/Dockerfile.control -t videocut-control:0.1.0 .
       - name: Automatic migration and API startup (no model call)
         env:
           MEDIA_ROOT: /tmp/videocut-ci/videos

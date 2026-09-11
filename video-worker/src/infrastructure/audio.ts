@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { runtimePaths } from './runtime-paths.js';
 import { mkdir, copyFile, chmod, access } from 'node:fs/promises';
 import type { Lease } from '../domain/task.js';
 import { AppError } from '../domain/task.js';
@@ -17,9 +18,10 @@ export async function prepareAudio(
   sandbox: Sandbox,
 ) {
   if (l.run.stage !== 'render') return;
+  const paths = runtimePaths(config, w.root);
   const audioDir = path.join(w.root, 'input/audio');
   await mkdir(audioDir, { recursive: true });
-  await chmod(audioDir, 0o777);
+  await chmod(audioDir, config.executor === 'host' ? 0o700 : 0o777);
   const clips: any[] = [];
   for (const scene of l.run.input.dataList) {
     if (!w.task.renderSelection.sceneIds.includes(scene.id)) continue;
@@ -49,7 +51,7 @@ export async function prepareAudio(
           'error',
           '-y',
           '-i',
-          '/workspace/job/' + a.path,
+          path.join(paths.job, a.path),
           '-ss',
           String(scene.narrationStartTime),
           '-t',
@@ -59,7 +61,7 @@ export async function prepareAudio(
           '48000',
           '-ac',
           '2',
-          '/workspace/job/input/audio/' + scene.id + '.wav',
+          path.join(paths.job, 'input/audio', scene.id + '.wav'),
         ],
         signal,
       );
@@ -91,7 +93,7 @@ export async function prepareAudio(
       });
       const cache = path.join(config.dataRoot, l.run.task_id, 'audio-cache', inputHash + '.wav');
       await mkdir(path.dirname(cache), { recursive: true });
-      await chmod(path.dirname(cache), 0o777);
+      await chmod(path.dirname(cache), config.executor === 'host' ? 0o700 : 0o777);
       if (cached) {
         if ((await hashFile(cache)) !== cached.sha256)
           throw new AppError('AUDIO_CACHE_INVALID', '已付费配音缓存丢失或损坏，需要人工核对');
@@ -109,11 +111,14 @@ export async function prepareAudio(
             w,
             [
               'python3',
-              '/opt/toolkit/tools/worker_tts.py',
+              path.join(paths.toolkit, 'tools/worker_tts.py'),
               '--request',
-              '/workspace/job/input/audio/' + scene.id + '.request.json',
+              path.join(paths.job, 'input/audio', scene.id + '.request.json'),
               '--output',
-              '/audio-cache/' + path.basename(cache),
+              path.join(
+                runtimePaths(config, w.root, path.dirname(cache)).audioCache,
+                path.basename(cache),
+              ),
             ],
             signal,
             path.dirname(cache),
@@ -150,7 +155,7 @@ export async function prepareAudio(
           '-show_format',
           '-of',
           'json',
-          '/workspace/job/input/audio/' + scene.id + '.wav',
+          path.join(paths.job, 'input/audio', scene.id + '.wav'),
         ],
         signal,
       ),

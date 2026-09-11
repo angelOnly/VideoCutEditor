@@ -3,31 +3,40 @@ import { setTimeout } from 'node:timers/promises';
 import { loadConfig } from '../config.js';
 import { Postgres } from '../infrastructure/postgres.js';
 import { Queue } from '../infrastructure/queue.js';
+import { HostSandbox } from '../infrastructure/host-sandbox.js';
 import { DockerSandbox } from '../infrastructure/sandbox.js';
 import { command } from '../infrastructure/process.js';
 import { executeRun } from '../application/execute-run.js';
 if (process.env.VIDEOCUT_SUPERVISOR_LOCKED !== '1')
   throw Error('Start via deploy/start-worker.sh to hold the single-host supervisor lock');
 const config = loadConfig();
-if (!config.codexApiKey) throw Error('CODEX_API_KEY required for runner');
-config.runnerImage = (
-  await command('docker', ['image', 'inspect', '--format', '{{.Id}}', config.runnerImage], {
-    timeout: 30000,
-  })
-).trim();
 const db = new Postgres(config.databaseUrl),
   queue = new Queue(db, config.leaseSeconds, config.timeoutSeconds),
-  sandbox = new DockerSandbox(config),
+  sandbox = config.executor === 'host' ? new HostSandbox(config, queue) : new DockerSandbox(config),
   owner = randomUUID(),
   abort = new AbortController();
 const active = new Set<Promise<void>>(),
   activeIds = new Set<string>();
 for (const s of ['SIGINT', 'SIGTERM']) process.on(s, () => abort.abort());
 try {
+  if (sandbox instanceof HostSandbox) await sandbox.start();
+  else {
+    if (!config.codexApiKey) throw Error('Docker executor requires CODEX_API_KEY');
+    config.runnerImage = (
+      await command('docker', ['image', 'inspect', '--format', '{{.Id}}', config.runnerImage], {
+        timeout: 30000,
+      })
+    ).trim();
+  }
   while (!abort.signal.aborted) {
+    if (sandbox instanceof HostSandbox && !sandbox.healthy) {
+      abort.abort();
+      throw Error('Codex app-server stopped; systemd will restart Worker');
+    }
     try {
       await queue.recover(owner, (id) => sandbox.stop(id), config.maxAttempts, activeIds);
-      while (active.size < 4) {
+      while (active.size < 4 && !abort.signal.aborted) {
+        if (sandbox instanceof HostSandbox && !sandbox.healthy) break;
         const l = await queue.claim(owner);
         if (!l) break;
         activeIds.add(l.run.id);
@@ -46,5 +55,11 @@ try {
   }
   await Promise.allSettled([...active]);
 } finally {
-  await db.close();
+  abort.abort();
+  await Promise.allSettled([...active]);
+  try {
+    if (sandbox instanceof HostSandbox) await sandbox.close();
+  } finally {
+    await db.close();
+  }
 }

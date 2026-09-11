@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { toolkitPath } from './runtime-paths.js';
 import { constants } from 'node:fs';
 import { mkdir, copyFile, readFile, access, chmod } from 'node:fs/promises';
 import type { Config, Tenant } from '../config.js';
@@ -35,10 +36,16 @@ export class Workspaces {
       `attempt_${l.run.attempt}`,
     );
     await mkdir(root, { recursive: true });
-    await chmod(root, 0o755);
-    for (const d of ['input', 'output', 'project', 'cache', 'codex-home']) {
+    await chmod(root, this.config.executor === 'host' ? 0o700 : 0o755);
+    for (const d of [
+      'input',
+      'output',
+      'project',
+      'cache',
+      ...(this.config.executor === 'docker' ? ['codex-home'] : []),
+    ]) {
       await mkdir(path.join(root, d), { recursive: true });
-      await chmod(path.join(root, d), 0o777);
+      await chmod(path.join(root, d), this.config.executor === 'host' ? 0o700 : 0o777);
     }
     const refs =
       l.run.stage === 'analysis'
@@ -188,7 +195,8 @@ export class Workspaces {
     );
     const state = l.run.attempt > 1 ? path.join(previousAttempt, 'codex-home') : task.session_path;
     try {
-      if (!state) throw Object.assign(new Error('No session'), { code: 'ENOENT' });
+      if (this.config.executor === 'host' || !state)
+        throw Object.assign(new Error('No session'), { code: 'ENOENT' });
       await access(state);
       await copyTree(state, path.join(root, 'codex-home'));
     } catch (e: any) {
@@ -226,7 +234,7 @@ export class Workspaces {
       template: {
         id: task.config.templateId,
         version: task.config.templateVersion,
-        path: '/opt/toolkit/' + task.config.templatePath,
+        path: toolkitPath(this.config, task.config.templatePath),
       },
       renderSelection: {
         sceneIds:
@@ -268,11 +276,14 @@ export class Workspaces {
       ...(l.run.stage === 'render' ? ['input/confirmed-plan.json'] : []),
     ])
       await chmod(path.join(root, file), 0o444);
-    for (const d of ['codex-home', 'project', 'cache', 'output'])
-      await ownTree(path.join(root, d), this.config.dockerUid);
+    if (this.config.executor === 'docker')
+      for (const d of ['codex-home', 'project', 'cache', 'output'])
+        await ownTree(path.join(root, d), this.config.dockerUid);
     return { root, task: internal, taskConfig: task.config, assets, hashes, reuse, sceneHashes };
   }
   async saveSession(l: Lease, w: Workspace) {
+    // Host session identity is persisted from app-server responses under the lease.
+    if (this.config.executor === 'host') return;
     // Called only after the container and all children have stopped.
     const sessionPath = path.join(
       this.config.dataRoot,
@@ -280,7 +291,8 @@ export class Workspaces {
       'sessions',
       `${l.run.id}-${l.run.attempt}-${l.run.repair_rounds}`,
     );
-    await copyTree(path.join(w.root, 'codex-home'), sessionPath);
+    if (this.config.executor === 'docker')
+      await copyTree(path.join(w.root, 'codex-home'), sessionPath);
     try {
       const session = await readJson(path.join(w.root, 'output/session.json'));
       if (typeof session.threadId === 'string')
@@ -288,7 +300,7 @@ export class Workspaces {
           await q.query('UPDATE tasks SET thread_id=$2,session_path=$3 WHERE id=$1', [
             l.run.task_id,
             session.threadId,
-            sessionPath,
+            this.config.executor === 'host' ? null : sessionPath,
           ]);
         });
     } catch {

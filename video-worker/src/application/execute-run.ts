@@ -20,6 +20,7 @@ export async function executeRun(
   const abort = new AbortController();
   const stop = () => abort.abort();
   shutdown?.addEventListener('abort', stop, { once: true });
+  if (shutdown?.aborted) stop();
   let busy = false;
   let pulseError: unknown;
   let timer: NodeJS.Timeout | undefined;

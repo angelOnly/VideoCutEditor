@@ -5,7 +5,7 @@
 The Git root is VideoCutEditor. Preserve these sibling directories:
 
 - claude-code-video-toolkit/: video production tools, templates, components and Skills.
-- video-worker/: task API, PostgreSQL queue, Codex container supervisor and callbacks.
+- video-worker/: task API, PostgreSQL queue, Ubuntu Codex supervisor and callbacks.
 - huibo-saas/: existing digital-human HTTP adapter.
 - xiling-http/: existing local digital-human client scripts.
 - docs/: shared API and architecture documents.
