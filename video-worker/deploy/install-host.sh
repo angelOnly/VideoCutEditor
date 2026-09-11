@@ -14,7 +14,15 @@ fi
 # Avoid silently installing Node into an interactive-only nvm directory.
 sudo apt-get update
 sudo apt-get install -y curl ca-certificates xz-utils python3 python3-venv ffmpeg fonts-noto-cjk bubblewrap util-linux dbus-user-session
-if ! command -v node >/dev/null || ! node -e 'if(Number(process.versions.node.split(".")[0])<22)process.exit(1)'; then
+node_supported() {
+  "$1" -e 'const [major, minor] = process.versions.node.split(".").map(Number); if (major < 22 || (major === 22 && minor < 13)) process.exit(1)'
+}
+# Prefer the runtime installed here on previous attempts, even when PATH still selects Node 18.
+if [[ -x /usr/local/bin/node ]] && node_supported /usr/local/bin/node; then
+  node_dir=/usr/local/bin
+elif command -v node >/dev/null && node_supported "$(command -v node)"; then
+  node_dir=$(dirname "$(command -v node)")
+else
   case $(uname -m) in x86_64) arch=x64;; aarch64) arch=arm64;; *) echo 'Unsupported Node architecture'; exit 1;; esac
   node_version=v22.20.0
   download_dir=$(mktemp -d)
@@ -24,9 +32,14 @@ if ! command -v node >/dev/null || ! node -e 'if(Number(process.versions.node.sp
   curl -fsSL "https://nodejs.org/dist/${node_version}/SHASUMS256.txt" -o "$download_dir/SHASUMS256.txt"
   (cd "$download_dir" && awk -v file="$archive" '$2 == file' SHASUMS256.txt > selected.sha256 && test -s selected.sha256 && sha256sum -c selected.sha256)
   sudo tar -xJf "$download_dir/$archive" -C /usr/local --strip-components=1
+  node_dir=/usr/local/bin
 fi
-node_dir=$(dirname "$(command -v node)")
 export PATH="$node_dir:/usr/local/bin:/usr/bin:/bin:$PATH"
+# Bash may have cached /usr/bin/node before installation. Refresh it after choosing PATH.
+hash -r
+node_supported "$node_dir/node" || { echo 'Node.js >=22.13 is required'; exit 1; }
+[[ -x "$node_dir/npm" ]] || { echo "npm is missing from $node_dir"; exit 1; }
+printf 'Using Node %s (%s) and npm %s\n' "$(node --version)" "$(command -v node)" "$(npm --version)"
 # Project-local package manager; never require copying another .env.
 cd "$service_dir"
 npm exec --yes --package=pnpm@11.19.0 -- pnpm install --frozen-lockfile --ignore-scripts
