@@ -9,11 +9,16 @@ export XDG_RUNTIME_DIR="/run/user/$(id -u)"
 export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
 # Stop before replacing any source/dependency used by current native tasks.
 if [[ -f "$HOME/.config/systemd/user/videocut-worker.service" ]]; then
-  systemctl --user stop videocut-worker.service
+  worker_state=$(systemctl --user show --property=ActiveState --value videocut-worker.service)
+  case "$worker_state" in
+    active|activating|deactivating|reloading) systemctl --user stop videocut-worker.service ;;
+    inactive|failed) ;; # An invalid inactive unit from an interrupted install can be replaced.
+    *) echo "Unexpected Worker state: $worker_state"; exit 1 ;;
+  esac
 fi
 # Avoid silently installing Node into an interactive-only nvm directory.
 sudo apt-get update
-sudo apt-get install -y curl ca-certificates xz-utils python3 python3-venv ffmpeg fonts-noto-cjk bubblewrap util-linux dbus-user-session
+sudo apt-get install -y curl ca-certificates xz-utils python3 python3-venv ffmpeg fonts-noto-cjk bubblewrap apparmor util-linux dbus-user-session
 node_supported() {
   "$1" -e 'const [major, minor] = process.versions.node.split(".").map(Number); if (major < 22 || (major === 22 && minor < 13)) process.exit(1)'
 }
@@ -61,6 +66,9 @@ export VIDEOCUT_INSTALL_SERVICE_DIR="$service_dir" VIDEOCUT_INSTALL_NODE_DIR="$n
 python3 - <<'PY'
 import os,pathlib
 service=pathlib.Path(os.environ['VIDEOCUT_INSTALL_SERVICE_DIR'])
+# WorkingDirectory is a single literal path; systemd does not strip shell quotes there.
+if any(c in str(service) for c in '\r\n') or str(service) != str(service).strip():
+    raise SystemExit('Installation path must not contain line breaks or surrounding whitespace')
 def quote(value): return '"'+str(value).replace('\\','\\\\').replace('"','\\"').replace('%','%%')+'"'
 unit='''[Unit]
 Description=VideoCutEditor Ubuntu Worker (ChatGPT login)
@@ -83,9 +91,10 @@ LimitNOFILE=65536
 
 [Install]
 WantedBy=default.target
-''' % (quote(service),quote(service/'deploy/start-worker.sh'),quote('PATH='+os.environ['VIDEOCUT_INSTALL_NODE_DIR']+':/usr/local/bin:/usr/bin:/bin'))
+''' % (str(service).replace('%','%%'),quote(service/'deploy/start-worker.sh'),quote('PATH='+os.environ['VIDEOCUT_INSTALL_NODE_DIR']+':/usr/local/bin:/usr/bin:/bin'))
 (pathlib.Path.home()/'.config/systemd/user/videocut-worker.service').write_text(unit)
 PY
+systemd-analyze --user verify "$HOME/.config/systemd/user/videocut-worker.service"
 systemctl --user daemon-reload
 # The check uses fake local files for isolation and account/read for login. No model/TTS charges.
 # Stop the existing native Worker before opening another app-server with the same login.
@@ -99,6 +108,7 @@ if command -v docker >/dev/null; then
   old_jobs=$(docker ps -aq --filter label=videocut.run)
   while IFS= read -r container_id; do [[ -z "$container_id" ]] || docker rm -f "$container_id"; done <<< "$old_jobs"
 fi
+bash "$service_dir/deploy/install-bwrap-policy.sh"
 ./deploy/start-worker.sh host-check
 systemctl --user enable --now videocut-worker.service
 printf '%s\n' 'Worker installed. Logs: journalctl --user -u videocut-worker -f'

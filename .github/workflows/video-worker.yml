@@ -68,6 +68,7 @@ jobs:
           sudo systemctl start "user@$(id -u).service"
           export XDG_RUNTIME_DIR="/run/user/$(id -u)"
           export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
+          bash deploy/install-bwrap-policy.sh
           RUN_HOST_TESTS=1 pnpm exec tsx --test tests/host-linux.test.ts
       - name: Build control services
         run: docker build -f video-worker/deploy/Dockerfile.control -t videocut-control:0.1.0 .

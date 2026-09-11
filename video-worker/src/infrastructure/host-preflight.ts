@@ -39,6 +39,22 @@ else: raise RuntimeError('readonly input was writable')
       new AbortController().signal,
       'agent',
     );
+  } catch (cause) {
+    const message = cause instanceof Error ? cause.message : String(cause);
+    if (
+      /Failed RTM_NEWADDR|No permissions to create new namespace|Creating new namespace failed/.test(
+        message,
+      )
+    ) {
+      throw new Error(
+        'HOST_NAMESPACE_DENIED: Ubuntu rejected Bubblewrap namespace setup. Worker was not started. ' +
+          'Check AppArmor/kernel denials with: sudo journalctl -k --since "30 minutes ago" --no-pager. ' +
+          'Configure the distribution Bubblewrap policy if the audit log confirms a denial; keep task isolation enabled.\n' +
+          message,
+        { cause },
+      );
+    }
+    throw cause;
   } finally {
     try {
       await processes.stop(id);

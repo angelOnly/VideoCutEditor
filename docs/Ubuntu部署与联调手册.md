@@ -59,7 +59,7 @@ bash video-worker/deploy/install-host.sh
 
 **用 ops 用户执行安装脚本，不要在脚本前加 sudo。** 脚本内部仅在安装 OS 依赖和启用 linger 时使用 sudo。它安装固定 Codex/Remotion 版本、浏览器与 Python 虚拟环境，生成 `~/.config/systemd/user/videocut-worker.service`，检查环境后启动服务。
 
-安装检查包含：数据库表、Bubblewrap 文件读取/写入隔离、浏览器可执行、ChatGPT 登录、Codex 权限和工具协议。检查不发起模型制作或收费 TTS 请求；失败时不会退回无隔离执行。Ubuntu 若限制非特权 user namespace，需要运维为发行版 Bubblewrap 配置允许的 AppArmor 策略，再重新检查；不要关闭全机安全限制来绕过检查。
+安装检查包含：数据库表、Bubblewrap 文件读取/写入隔离、浏览器可执行、ChatGPT 登录、Codex 权限和工具协议。检查不发起模型制作或收费 TTS 请求；失败时不会退回无隔离执行。Ubuntu 开启非特权 user namespace 限制时，脚本先探测 Bubblewrap；如果探测出现命名空间权限错误且没有现有 Bubblewrap 策略，会安装仓库内固定版本的 AppArmor 官方专用策略到 `/etc/apparmor.d/videocut-bwrap-userns`，编译、加载并重试。该策略作用于系统 `/usr/bin/bwrap`，也会影响其他使用它的程序；子进程使用拒绝 capabilities 的叠加策略。已有管理员策略会被保留并提示检查，脚本不会修改全局 userns 开关或关闭隔离。策略来源与许可证见 `video-worker/deploy/apparmor/README.md`。
 
 安装过程中会停止已有本机 Worker 后检查，避免第二个 app-server 并发操作同一登录缓存。若从旧 Docker 版本升级，`--remove-orphans` 先停止旧 Worker；安装脚本检查旧 supervisor 已停止后，清理带 `videocut.run` 标签的旧任务容器，不删除数据库、输入或成片。
 
@@ -249,6 +249,8 @@ Chromium 路径以本机实际安装结果为准。本机隔离检查使用 DATA
 | HTTP 409 | 同任务正在执行、requestId 内容冲突、方案版本过时 |
 | queued 长时间不开始 | worker 日志、4 个槽位、systemd 用户服务/Bubblewrap、supervisor 锁是否被另一进程持有 |
 | ASSET_UNAVAILABLE / 路径拒绝 | 宿主文件存在、inputRoot/allowedInputPrefixes、挂载路径和文件读取权限 |
+| systemd `bad-setting` / WorkingDirectory 非绝对路径 | 更新代码后重新运行安装脚本；新脚本使用不带外围引号的 WorkingDirectory，并在启动前运行 systemd-analyze 校验 |
+| `HOST_NAMESPACE_DENIED` / `Failed RTM_NEWADDR` | 本机命名空间权限被拒绝；查看 `sudo journalctl -k --since "30 minutes ago" --no-pager`，确认 AppArmor/userns/net_admin 拒绝记录后配置发行版 Bubblewrap 策略。失败时 Worker 保持停止，不能用共享宿主网络替代隔离 |
 | 模型调用失败 | 同一用户的 codex login 状态、账号额度、显式模型权限和 Ubuntu 网络 |
 | 配音失败 | 豆包凭据、资源 ID、音色；EXTERNAL_RESULT_UNKNOWN 需要核对外部记录，不盲目重复付费 |
 | ready 但没有回调 | callbackBaseUrl 容器可达；接收端必须 HTTP 2xx 且 JSON status=0；看 callback.last_error |

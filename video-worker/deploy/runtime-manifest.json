@@ -5,7 +5,7 @@
   "defaultExecutor": "host-app-server",
   "taskIsolation": "bubblewrap-systemd-user",
   "remotionVersion": "4.0.425",
-  "runtimeSourceSha256": "bcfb35ce1e647a86c68e9c4643ee93c52c7f81045cf89c22ec8e10d4fcc93290",
+  "runtimeSourceSha256": "668a3d7da4022d2c9ff56b35b45f239b1689094b96c39c4f27ea4e7126d01a51",
   "files": {
     "claude-code-video-toolkit/.claude/skills/video-pipeline/SKILL.md": "f20f4804d8219477d5556558ffdda5bcd03da800e0da993fc85b91aa361c5bd8",
     "claude-code-video-toolkit/.claude/skills/video-pipeline/agents/openai.yaml": "71afe3d03707f064298527f6ad4a1549e44c0de7d45c38acd91fa4ee6e441570",
@@ -58,7 +58,7 @@
     "video-worker/src/infrastructure/audio.ts": "9881342f936f42b86ea3d192df724cd446f2b00c7b48c5d6aa598b33c74f7592",
     "video-worker/src/infrastructure/callback-outbox.ts": "646e18c9c87fe7359fc6e8b91c085ba77727280034d215802fd19a2d153b0ca0",
     "video-worker/src/infrastructure/files.ts": "19dc128a4371c65d99d9422d52b6a039c142ad6e7d9cb621439462ccf8313bee",
-    "video-worker/src/infrastructure/host-preflight.ts": "6924b25d573a3e682a52e473b073887bd88c6db5b2a086c429b799bb6e6e16c8",
+    "video-worker/src/infrastructure/host-preflight.ts": "21b3b58772018de01eee661d70d60b5716fd086e4666762e67358dda56d32dd5",
     "video-worker/src/infrastructure/host-processes.ts": "96fadfc0a4d47525e49371c471d43693f4e82c96feb34ce89d829ca1062f4292",
     "video-worker/src/infrastructure/host-sandbox.ts": "90bd3fbd2c4af8a54eb230bcbaabcc31c2531f2c71d58d225e759da1702fd004",
     "video-worker/src/infrastructure/postgres.ts": "e1a36935584e918973b8f5ef9891c6f64046e64288f2d492b3ec3101895f9ae5",
