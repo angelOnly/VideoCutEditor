@@ -68,6 +68,8 @@ print('two-stage isolation passed')`,
       new AbortController().signal,
       'agent',
     );
+    for (const binary of ['ffmpeg', 'ffprobe'])
+      await processes.run(id, w, [binary, '-version'], new AbortController().signal, 'agent');
   } catch (cause) {
     const message = cause instanceof Error ? cause.message : String(cause);
     if (

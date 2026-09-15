@@ -58,7 +58,7 @@ export const dynamicTools = [
     type: 'function',
     name: 'video_view_image',
     description:
-      'Actually view an image/frame from this task (PNG or JPEG). Use after extracting video frames or rendering previews.',
+      'View a task PNG/JPEG. Returns a data: image URL; pass it to image(result). Large originals are resized for inspection. If the result is an error string, read it with text(result), not image().',
     inputSchema: {
       type: 'object',
       properties: { path: { type: 'string' } },
@@ -224,7 +224,8 @@ export class HostCodex {
           [
             this.config.python,
             '-c',
-            'import base64,pathlib,sys; b=pathlib.Path(sys.argv[1]).open("rb").read(4000001); assert len(b)<=4000000; mime="image/png" if b.startswith(b"\\x89PNG\\r\\n\\x1a\\n") else "image/jpeg" if b.startswith(b"\\xff\\xd8\\xff") else None; assert mime; print("data:"+mime+";base64,"+base64.b64encode(b).decode())',
+            // 大图只缩放查看副本，原始素材及校验证据不变；FFmpeg 同样在任务命名空间运行。
+            'import base64,pathlib,sys,subprocess; b=pathlib.Path(sys.argv[1]).open("rb").read(4000001); mime="image/png" if b.startswith(b"\\x89PNG\\r\\n\\x1a\\n") else "image/jpeg" if b.startswith(b"\\xff\\xd8\\xff") else None; assert mime,"Expected PNG/JPEG"; large=len(b)>4000000; b=subprocess.run(["ffmpeg","-v","error","-i",sys.argv[1],"-vf","scale=min(1920\\\\,iw):-2","-frames:v","1","-q:v","3","-f","image2pipe","-vcodec","mjpeg","pipe:1"],check=True,capture_output=True,timeout=30).stdout if large else b; mime="image/jpeg" if large else mime; assert len(b)<=4000000,"Inspection image too large"; print("data:"+mime+";base64,"+base64.b64encode(b).decode())',
             file,
           ],
           state.signal,

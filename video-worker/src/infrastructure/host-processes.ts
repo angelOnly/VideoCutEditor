@@ -51,6 +51,8 @@ export function bubblewrapArgs(
     args.push('--ro-bind-try', directory, directory);
   for (const file of [
     '/etc/ld.so.cache',
+    // Ubuntu 的 BLAS/LAPACK 等库通过 alternatives 链接，FFmpeg 运行时需要解析。
+    '/etc/alternatives',
     '/etc/fonts',
     '/etc/ssl/certs',
     '/etc/resolv.conf',
