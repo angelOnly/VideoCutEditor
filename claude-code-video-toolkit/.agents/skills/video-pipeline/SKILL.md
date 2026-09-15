@@ -7,12 +7,13 @@ description: 无人值守视频制作编排。用于上游任务、auto 模式�
 
 将已授权的完整任务持续执行到本地 MP4 和交付清单，或有明确原因的结构化失败。此 Skill 是自动任务的唯一流程入口；底层 Skill 提供技术知识，不接管流程。
 
-## 新本地两阶段入口（video-two-stage/1）
+## 两阶段入口（video-two-stage/1）
 
-先识别用户指定的阶段请求：若 `contractVersion` 为 `video-two-stage/1`，只读取并执行 [本地两阶段协议](references/two-stage-contract.md)，不进入下面旧 v1/v2 分支。此入口由 `tools/two_stage.py init` 创建 `analysis/request.json`，外部确认后由 `confirm` 创建独立 `render/<runId>/request.json`。只要求两阶段但尚无请求文件时，先按白名单输入创建它；无需用户手工运行准备脚本。
+先识别用户指定的阶段请求：若 `contractVersion` 为 `video-two-stage/1`，只读取并执行 [两阶段协议](references/two-stage-contract.md)，不进入下面旧 v1/v2 分支。Worker 已提供请求时直接读取，不自行 init/confirm；独立本地任务才由 `tools/two_stage.py init` 创建 `analysis/request.json`，外部确认后创建 `render/<runId>/request.json`。
 
 - **analysis**：按稿件、完整需求、冻结模板及获准资料形成完整可编辑方案；可以生成静态设计图，不正式配音或渲染 MP4。校验并返回后结束本轮，不能自动确认自己的方案。
 - **render**：校验外部确认版本，按方案自行组织配音、工程、真实时间轴、字幕、动画、渲染与修复。使用通用工具，不要求 Worker 配音、固定布局、固定渲染器或固定角色数量。输出 N 个确认分镜的完整 MP4；整片按请求另外交付。
+- 正式渲染前，将确认方案中的硬性要求落实到实际时间轴和工程，并实际查看关键画面。角色、音色、明确指定复用的组件及段落先后关系不能因重新编程而改变；详见协议的“渲染前检查”。
 - 模板中的无人值守要求不取消阶段边界；同一任务的后续资料从文件恢复，不依赖聊天记忆。修改文本/素材/交付分镜须新确认；技术排版、实际时长、字幕分页和编码修复可在确认约束内完成。
 - 本地工具的阶段检查是协议保护，不是 OS 沙箱。只读取白名单业务资料；模板不能授权访问其他任务、凭据或任意网络服务。
 

@@ -241,6 +241,22 @@ export class HostCodex {
       };
     } finally {
       state.toolBusy = false;
+      if (
+        state.workspace.task.contractVersion === 'video-two-stage/1' &&
+        state.lease.run.stage === 'render'
+      ) {
+        try {
+          // 同一个 turn 中的工具失败也受预算约束；不等模型自行结束才停止任务。
+          const budget = await readJson(
+            path.join(state.workspace.root, 'render', state.lease.run.id, 'execution.json'),
+          );
+          if (typeof budget.stopReason === 'string' && budget.stopReason)
+            state.reject(new AppError('REPAIR_BUDGET_EXHAUSTED', budget.stopReason));
+        } catch (e) {
+          if ((e as NodeJS.ErrnoException).code !== 'ENOENT')
+            state.reject(new AppError('EXECUTION_STATE_INVALID', '无法读取阶段执行预算'));
+        }
+      }
     }
   };
   async run(lease: Lease, w: Workspace, signal: AbortSignal) {

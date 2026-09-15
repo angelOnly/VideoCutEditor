@@ -23,9 +23,10 @@ SCHEMA = Path(__file__).resolve().parents[1] / '.claude/skills/video-pipeline/re
 
 
 class StageError(ValueError):
-    def __init__(self, code, message, retryable=False):
+    def __init__(self, code, message, retryable=False, details=None):
         super().__init__(message)
         self.code, self.retryable = code, retryable
+        self.details = details
 
 
 def require(value, message, code='INVALID_CONTRACT'):
@@ -125,6 +126,8 @@ def active_processes(root):
 def failure(request_path, step, exc):
     payload = {'status': 'failed', 'step': step, 'error': {'code': getattr(exc, 'code', 'EXECUTION_FAILED'),
                'message': str(exc), 'retryable': getattr(exc, 'retryable', False)}}
+    if getattr(exc, 'details', None):
+        payload['diagnostics'] = exc.details
     if request_path:
         try:
             request = read(request_path); schema(request, 'request')
@@ -326,6 +329,9 @@ def execution(request_path, action):
         require(not active_processes(root), '本任务仍有活跃制作进程，请先检查已有进程', 'TASK_BUSY')
         path = Path(request_path).resolve().parent / 'execution.json'
         state = read(path) if path.exists() else {'elapsedSeconds': 0, 'repairRounds': 0, 'operations': []}
+        require(not state.get('stopReason'), state.get('stopReason', ''), 'REPAIR_BUDGET_EXHAUSTED')
+        require(state['repairRounds'] == 0 or state['repairRounds'] < request['limits']['repairRounds'],
+                '修复轮数已耗尽', 'REPAIR_BUDGET_EXHAUSTED')
         # 进程被杀时按剩余墙钟保守计费；正常外部等待不计入阶段预算。
         if state.get('activeSince'):
             state['elapsedSeconds'] += max(0, time.time() - state['activeSince'])
@@ -335,6 +341,20 @@ def execution(request_path, action):
         write(path, state)
         try:
             yield root, request, remaining
+        except Exception as exc:
+            # 工具内部失败也计数，不依赖模型主动调用 repair 或结束 turn。
+            code = getattr(exc, 'code', 'EXECUTION_FAILED')
+            previous = state.setdefault('failures', {}).get(action, {})
+            count = previous.get('consecutive', 0) + 1 if previous.get('code') == code else 1
+            state['failures'][action] = {'code': code, 'consecutive': count, 'message': str(exc)}
+            state['repairRounds'] += 1
+            state.setdefault('repairs', []).append({'action': action, 'code': code, 'reason': str(exc), 'at': time.time()})
+            if count >= 3 or state['repairRounds'] >= request['limits']['repairRounds']:
+                state['stopReason'] = f'{action} 连续失败 {count} 次，累计失败/修复 {state["repairRounds"]} 次；最后错误 {code}: {exc}'
+                raise StageError('REPAIR_BUDGET_EXHAUSTED', state['stopReason'], details=getattr(exc, 'details', None)) from exc
+            raise
+        else:
+            state.setdefault('failures', {}).pop(action, None)
         finally:
             state['elapsedSeconds'] += time.time() - state.pop('activeSince')
             state['operations'].append({'action': action, 'endedAt': time.time()})
@@ -349,6 +369,8 @@ def repair(request_path, reason):
         require(state['repairRounds'] < request['limits']['repairRounds'], '修复轮数已耗尽', 'BUDGET_EXHAUSTED')
         state['repairRounds'] += 1
         state.setdefault('repairs', []).append({'reason': reason, 'at': time.time()})
+        if state['repairRounds'] >= request['limits']['repairRounds']:
+            state['stopReason'] = '手工修复已用尽阶段修复预算'
         write(path, state)
         return state
 

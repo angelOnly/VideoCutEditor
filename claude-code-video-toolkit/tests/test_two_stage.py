@@ -14,7 +14,7 @@ sys.path.insert(0,str(ROOT/'tools'))
 from two_stage import (StageError, checkpoint, confirm, digest, init_job, json_digest, load_request,
                        local, read, repair, status, validate, write, execution)
 from cached_tts import synthesize_cached
-from stage_media import supervise, ffmpeg, validate_mp4, extract_frames, validate_delivery, compare_audio, assemble, render_scene
+from stage_media import supervise, ffmpeg, validate_mp4, extract_frames, validate_delivery, compare_audio, compare_samples, assemble, render_scene, mux_scene
 
 
 class Fixture(unittest.TestCase):
@@ -121,12 +121,51 @@ class ContractTests(Fixture):
 
     def test_limits_persist_across_resume(self):
         render=self.render_request()
-        for _ in range(10):repair(render,'实际修复')
-        with self.assertRaises(StageError):repair(render,'不能重置预算')
         with execution(render,'one'):pass
         before=read(render.parent/'execution.json')['elapsedSeconds']
         with execution(render,'two'):pass
         self.assertGreaterEqual(read(render.parent/'execution.json')['elapsedSeconds'],before)
+        for _ in range(10):repair(render,'实际修复')
+        with self.assertRaises(StageError):repair(render,'不能重置预算')
+        with self.assertRaises(StageError):
+            with execution(render,'不能绕过修复预算'):pass
+
+    def test_tool_failures_stop_same_turn_without_explicit_repair(self):
+        render=self.render_request()
+        for i in range(3):
+            with self.assertRaises(StageError) as error:
+                with execution(render,'render:scene_1'):
+                    raise StageError('AUDIO_MISMATCH','音频不同步',details={'deltaMs':42})
+            self.assertEqual(error.exception.code,'REPAIR_BUDGET_EXHAUSTED' if i==2 else 'AUDIO_MISMATCH')
+        state=read(render.parent/'execution.json')
+        self.assertEqual(state['repairRounds'],3);self.assertTrue(state['stopReason'])
+        with self.assertRaises(StageError):
+            with execution(render,'render:scene_2'):self.fail('预算耗尽后仍执行')
+        self.assertEqual(len(read(render.parent/'execution.json')['operations']),3)
+
+    def test_success_resets_consecutive_failures_but_not_total_budget(self):
+        render=self.render_request()
+        for _ in range(2):
+            with self.assertRaises(StageError):
+                with execution(render,'render:scene_1'):raise StageError('MEDIA_INVALID','失败')
+        with execution(render,'render:scene_1'):pass
+        with self.assertRaises(StageError):
+            with execution(render,'render:scene_1'):raise StageError('MEDIA_INVALID','新失败')
+        state=read(render.parent/'execution.json')
+        self.assertEqual(state['repairRounds'],3)
+        self.assertEqual(state['failures']['render:scene_1']['consecutive'],1)
+        self.assertNotIn('stopReason',state)
+
+    def test_zero_retry_budget_allows_initial_work_but_no_retry(self):
+        self.spec['limits']={'executionSeconds':60,'repairRounds':0}
+        self.request=Path(init_job(self.base/'no-retry',self.spec)['request']);self.job=self.request.parent.parent
+        self.plan_path=self.job/'analysis/plan.json';write(self.plan_path,self.plan)
+        render=self.render_request()
+        with execution(render,'render:scene_1'):pass
+        with self.assertRaises(StageError):
+            with execution(render,'render:scene_2'):raise StageError('MEDIA_INVALID','首次失败')
+        with self.assertRaises(StageError):
+            with execution(render,'render:scene_2'):self.fail('零修复预算仍重试')
 
     def test_formal_tts_rejects_analysis_before_any_provider_call(self):
         from stage_tts import generate
@@ -214,6 +253,19 @@ class SupervisorTests(unittest.TestCase):
             self.assertEqual(error.exception.code,'RENDER_TIMEOUT')
 
 
+class AudioDiagnosticsTests(unittest.TestCase):
+    def test_delay_is_reported_but_never_compensated_to_pass(self):
+        import random
+        rng=random.Random(7); values=[]; previous=0
+        for _ in range(16000):
+            previous=round(.92*previous+.08*rng.randint(-12000,12000));values.append(previous)
+        shifted=[0]*341+values
+        with self.assertRaises(StageError) as error:compare_samples(values,shifted)
+        self.assertEqual(error.exception.code,'AUDIO_MISMATCH')
+        self.assertAlmostEqual(error.exception.details['estimatedOffsetMs'],42.625,delta=.2)
+        self.assertLess(error.exception.details['correlationAtZero'],.9)
+
+
 class MediaTests(Fixture):
     def setUp(self):
         super().setUp()
@@ -268,6 +320,14 @@ class MediaTests(Fixture):
         path=self.job/self.manifest['scenes'][0]['path'];path.write_bytes(b'bad')
         with self.assertRaises(StageError):validate_mp4(path,self.req['outputSpec'],10)
 
+    def test_mux_cannot_silently_cut_audio_to_fit_video(self):
+        video=self.job/self.manifest['scenes'][0]['path'];mix=video.with_name('long.wav')
+        ffmpeg('-f','lavfi','-i','sine=frequency=440:sample_rate=48000','-t','1.1',mix)
+        target=video.with_name('must-not-exist.mp4')
+        with self.assertRaises(StageError) as error:mux_scene(video,mix,target,self.req['outputSpec'],10)
+        self.assertEqual(error.exception.details['step'],'mix')
+        self.assertFalse(target.exists())
+
 
 @unittest.skipUnless(os.environ.get('VIDEOCUT_TEST_MODULES') and os.environ.get('VIDEOCUT_TEST_BROWSER'), '指定本机 Remotion 依赖与浏览器才运行真实渲染')
 class RemotionTests(Fixture):
@@ -290,6 +350,44 @@ registerRoot(()=> <Composition id="SceneOne" component={Frame} durationInFrames=
         self.assertFalse(first['reused']);self.assertTrue(second['reused']);self.assertEqual(first['sha256'],second['sha256'])
         self.assertEqual({e['frame'] for e in first['evidence']},{0,5,9})
         with self.assertRaises(StageError):render_scene(*((*options[:6],11,*options[7:])))
+
+    def test_actual_remotion_audio_stays_synchronous_and_mux_retry_reuses_frames(self):
+        # 覆盖线上失败的非整秒边界；真实 Remotion 混音含延迟音效，不用 FFmpeg 色块替代。
+        self.spec['outputSpec']['fps']=30
+        self.request=Path(init_job(self.base/'other-job',self.spec)['request'])
+        self.job=self.request.parent.parent
+        _,req=load_request(self.request);self.plan['inputDigest']=json_digest(req['snapshot'])
+        self.plan_path=self.job/'analysis/plan.json';write(self.plan_path,self.plan)
+        render=self.render_request()
+        project=self.job/'project';(project/'src').mkdir(parents=True);(project/'public').mkdir()
+        modules=Path(os.environ['VIDEOCUT_TEST_MODULES']).resolve()
+        (project/'node_modules').symlink_to(modules,target_is_directory=True)
+        write(project/'package.json',{'name':'media-sync-test','private':True})
+        ffmpeg('-f','lavfi','-i','sine=frequency=431:sample_rate=48000','-t','5.8',project/'public/voice.wav')
+        ffmpeg('-f','lavfi','-i','sine=frequency=723:sample_rate=48000','-t','0.3',project/'public/effect.wav')
+        (project/'src/index.tsx').write_text("""
+import React from 'react';
+import {registerRoot,Composition,AbsoluteFill,Audio,Sequence,staticFile} from 'remotion';
+const Frame=()=> <AbsoluteFill style={{background:'#123456'}}><Audio src={staticFile('voice.wav')} volume={0.6}/><Sequence from={18} durationInFrames={9}><Audio src={staticFile('effect.wav')} volume={0.2}/></Sequence></AbsoluteFill>;
+registerRoot(()=> <Composition id="Sync" component={Frame} durationInFrames={170} fps={30} width={320} height={240} calculateMetadata={({props})=>({durationInFrames:props.frames})} defaultProps={{frames:170}}/>);
+""")
+        for frames in (170,171):
+            write(project/'props.json',{'frames':frames})
+            options=(render,'scene_1','project','project/src/index.tsx','Sync','project/props.json',frames,
+                     os.environ.get('VIDEOCUT_TEST_NODE','node'),str(modules),os.environ['VIDEOCUT_TEST_BROWSER'])
+            if frames==170:
+                with patch('stage_media.mux_scene',side_effect=StageError('AUDIO_MISMATCH','模拟封装失败')):
+                    with self.assertRaises(StageError):render_scene(*options)
+                with patch('stage_media.supervise',side_effect=AssertionError('不能重渲染')):
+                    result=render_scene(*options)
+                self.assertTrue(result['renderReused'])
+            else:result=render_scene(*options)
+            self.assertGreater(result['audioCheck']['correlation'],.90)
+            self.assertEqual(result['frames'],frames)
+            mixed=self.job/result['mix']['path']
+            self.assertEqual(digest(mixed),result['mix']['sha256'])
+            # 不能只换回裸 TTS：Remotion 混音中的音量与音效必须保留。
+            self.assertNotEqual(digest(mixed),digest(project/'public/voice.wav'))
 
 
 if __name__=='__main__':unittest.main()

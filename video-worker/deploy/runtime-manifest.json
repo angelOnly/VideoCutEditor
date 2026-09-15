@@ -5,9 +5,9 @@
   "defaultExecutor": "host-app-server",
   "taskIsolation": "bubblewrap-systemd-user",
   "remotionVersion": "4.0.425",
-  "runtimeSourceSha256": "61b1c2a9c27bbcb1f91181795f809d8f219a22d5aafc3f4aad79ebbc928ef034",
+  "runtimeSourceSha256": "9c548e94d89e6d69efd11c971308aafad867cbd8f22018b0a3cb7c870585dffc",
   "files": {
-    "claude-code-video-toolkit/.claude/skills/video-pipeline/SKILL.md": "f885899a535479760f96343a1a93434709f6d49236a562303134948cb3094d46",
+    "claude-code-video-toolkit/.claude/skills/video-pipeline/SKILL.md": "43495c9f497fc2fe57a5782d4678fa8edbf5103e7429ab4843f4dd4da6969d90",
     "claude-code-video-toolkit/.claude/skills/video-pipeline/agents/openai.yaml": "71afe3d03707f064298527f6ad4a1549e44c0de7d45c38acd91fa4ee6e441570",
     "claude-code-video-toolkit/.claude/skills/video-pipeline/references/analysis-v2.schema.json": "08fe80754a3ae591c5ea70068754fad98c774add91e2135102dc239aba51d42b",
     "claude-code-video-toolkit/.claude/skills/video-pipeline/references/response-v2.schema.json": "0fff7bbb010cb5efc71b197e6ca5555340bdc37b7c4ee347e123db520d052aa1",
@@ -15,7 +15,7 @@
     "claude-code-video-toolkit/.claude/skills/video-pipeline/references/task-contract.md": "b63313d8f860d1d234d1d85a6923912eb1733363e5810a00ac385777e48ae5fa",
     "claude-code-video-toolkit/.claude/skills/video-pipeline/references/task-v2.schema.json": "775a8471751010a72ab3ecb6949d2275f55ab5c45b37859f93783b2e75fc2a90",
     "claude-code-video-toolkit/.claude/skills/video-pipeline/references/technical-routing.md": "c3da2b84a348d65e2b4f46541226c2f5fc3bb0b6a39bbd9fea19b12131c84f1a",
-    "claude-code-video-toolkit/.claude/skills/video-pipeline/references/two-stage-contract.md": "8de5fccfd446493077ac23018e17faa2e89d2c2b872c7fcdc5791b96622f9edc",
+    "claude-code-video-toolkit/.claude/skills/video-pipeline/references/two-stage-contract.md": "0c12f40492a7025e4c8df17d55e906de24d3a827169febc29d75a125ac41064d",
     "claude-code-video-toolkit/.claude/skills/video-pipeline/references/two-stage.schema.json": "b2cbd1c5518244f4222a5fecee6ece19d7ba25feb50c19a7583b8b86d55df0b5",
     "claude-code-video-toolkit/.claude/skills/video-pipeline/references/v2-contract.md": "844b2f0b6c0cc281d2663ca3c317cf352c6cb134e99428f590c688f31a3bdeef",
     "claude-code-video-toolkit/.claude/skills/video-pipeline/references/worker-contract.md": "d620e6f5eace3c383c3a73126d3af405322dff349a75a64a90de8d2f5cdcd44a",
@@ -37,11 +37,11 @@
     "claude-code-video-toolkit/tools/doubao_tts.py": "c94224ad605dab9ccaa6db69faf91a494d063e1ab7b56b37bcc36b47f5606ee1",
     "claude-code-video-toolkit/tools/generate_dialogue_audio.py": "2af11064f2067b9b51aa580af4e438e45932d53de08ffda70fe0b59fd749cc5b",
     "claude-code-video-toolkit/tools/inspect_assets.py": "c8b4fe8e2b8fdddee70316d969ee24e39508ef99d77a2a98487d8db3081706cd",
-    "claude-code-video-toolkit/tools/render_scene.cjs": "d7c8d389df12955169f750eea321883c86eaf05c23769a63f877969016b5198b",
+    "claude-code-video-toolkit/tools/render_scene.cjs": "f5c22a04e1346bf26f82cfcb3a2f82a3aaeb293dda424617d58714b49df19907",
     "claude-code-video-toolkit/tools/render_segments.py": "3c9f9190937ba91288567f668c3628b51e80c4dc8bfaeff1812e8c3ab8d9717e",
-    "claude-code-video-toolkit/tools/stage_media.py": "91e98e3ec30a39dbe3ad7e2e96f577b20486c7c61a64896dc0a86ddc2a01d0b1",
+    "claude-code-video-toolkit/tools/stage_media.py": "ecc985a951b478bd61f9948b6fc57a54a5a9abe421ae96272206d5d63121744b",
     "claude-code-video-toolkit/tools/stage_tts.py": "46ac3af5b04470bb27008f73f85fc4a3415512c8f9d402f9edac85029b6262ce",
-    "claude-code-video-toolkit/tools/two_stage.py": "1701e43c7473e078409a74d71f4b8eb8e82458e8af2929330ded0afd1eed8500",
+    "claude-code-video-toolkit/tools/two_stage.py": "b43848bf8bdc155c93104811dfbe778b0e8e12106231aca66072b77c4fe5aa7f",
     "claude-code-video-toolkit/tools/voiceover.py": "8aa120b0099e7b4bf757e93f1f9250990d910ac67e79fae97302c0587a4d4c9d",
     "claude-code-video-toolkit/tools/worker_stage.py": "90485c1ebaec19d313a8d48ce98046deaa94780a774208a8df93aa38041eeade",
     "claude-code-video-toolkit/tools/worker_tts.py": "8430ea0874a8829d147db3c06be469f1e5bb19534fb456de681cf0b862dc1e4c",
@@ -84,8 +84,8 @@
     "video-worker/src/infrastructure/validation.ts": "8d469a57574ff42a7567257c257d98e535ee0c352aeced4e6b62b3bcb6065031",
     "video-worker/src/infrastructure/workspace.ts": "33738fe89775d4ac0f3e0eb5377278e8040d751a5d10ed225814f7fecd44eb44",
     "video-worker/src/integrations/ifeng/mapper.ts": "52834c94443702db52e658bfca75ec56b1f9f9768296a40ef31e8d8bdde93ab3",
-    "video-worker/src/runner/codex-host.ts": "67ac1ea8d0c102fc18da0a2f7ab689567b1ab8cbda2a9d5867467767a8b47100",
+    "video-worker/src/runner/codex-host.ts": "d800f86ee089ffd6628130be37768258ac3d751acd083d6b806ca64788e4bf49",
     "video-worker/src/runner/codex.ts": "349eb738c4503352b2fb0be396e57678b593f8b04eb2028ed35591a8ea24acd9",
-    "video-worker/src/runner/prompts.ts": "5d23a5af10f509db4fa3c668a13d0255c6440848dc6525017ce5aa9264d699c4"
+    "video-worker/src/runner/prompts.ts": "903a36d7a182d8e5843cb53575b99c908e7dad343d1185fc569a844ac3649b49"
   }
 }

@@ -60,9 +60,12 @@ def compare_audio(media, reference, allow_silence=False):
 
 
 def compare_samples(a, b, allow_silence=False):
-    require(a and b and abs(len(a) - len(b)) <= 400, '混音与成片音轨长度不符', 'AUDIO_MISMATCH')
+    require(a and b, '混音或成片音轨为空', 'AUDIO_MISMATCH')
+    details = {'referenceSamples8000Hz': len(a), 'decodedSamples8000Hz': len(b),
+               'lengthDeltaMs': (len(b) - len(a)) / 8}
     require(max(abs(v) for v in b) < 32767, '音频可能削波', 'AUDIO_CLIPPING')
     if max(abs(v) for v in a) < 32:
+        require(abs(len(a) - len(b)) <= 400, f'混音与成片音轨长度不符：{details}', 'AUDIO_MISMATCH')
         require(allow_silence and max(abs(v) for v in b) < 32, '口播镜头不能交付静音', 'SILENT_AUDIO')
         return {'correlation': None, 'silent': True}
     n = min(len(a), len(b)); step = max(1, n // 16000)
@@ -70,8 +73,26 @@ def compare_samples(a, b, allow_silence=False):
     aa = sum(a[i] ** 2 for i in indexes); bb = sum(b[i] ** 2 for i in indexes)
     correlation = sum(a[i] * b[i] for i in indexes) / math.sqrt(max(1, aa * bb))
     # 不搜索最佳延迟：补偿后相关并不能证明实际交付同步。
-    require(correlation > .90, '实际音轨与确认混音不同或存在时间偏移', 'AUDIO_MISMATCH')
+    if abs(len(a) - len(b)) > 400 or correlation <= .90:
+        details['correlationAtZero'] = correlation
+        # 延迟搜索仅供诊断，绝不补偿后放行不同步的成片。
+        details.update(audio_offset(a, b))
+        raise StageError('AUDIO_MISMATCH', f'实际音轨与混音不同步或长度不符：{details}', details=details)
     return {'correlation': correlation, 'silent': False}
+
+
+def audio_offset(a, b):
+    # 取能量最高的短窗口，避开片头静音；限制运算量。
+    width = min(len(a), 16000)
+    start = max(range(0, max(1, len(a) - width + 1), 8000),
+                key=lambda k: sum(a[i] ** 2 for i in range(k, k + width, 16)))
+    def score(shift):
+        indexes = range(max(start, -shift), min(start + width, len(b) - shift), 8)
+        aa = sum(a[i] ** 2 for i in indexes); bb = sum(b[i + shift] ** 2 for i in indexes)
+        return sum(a[i] * b[i + shift] for i in indexes) / math.sqrt(max(1, aa * bb))
+    _, coarse = max((score(s), s) for s in range(-800, 801, 8))
+    value, shift = max((score(s), s) for s in range(coarse - 7, coarse + 8))
+    return {'estimatedOffsetMs': shift / 8, 'diagnosticCorrelation': value}
 
 
 def validate_mp4(path, spec, frames):
@@ -83,12 +104,17 @@ def validate_mp4(path, spec, frames):
     v, a = videos[0], audios[0]
     require(v['codec_name'] == 'h264' and v['pix_fmt'] == 'yuv420p' and a['codec_name'] == 'aac', '编码规格不符', 'MEDIA_INVALID')
     require((v['width'], v['height']) == (spec['width'], spec['height']), '分辨率不符', 'MEDIA_INVALID')
-    require(abs(float(Fraction(v['avg_frame_rate'])) - spec['fps']) < .001, '帧率不符', 'MEDIA_INVALID')
+    require(abs(float(Fraction(v['avg_frame_rate'])) - spec['fps']) < .001,
+            f'帧率不符：预期 {spec["fps"]}，实际 {v["avg_frame_rate"]}', 'MEDIA_INVALID')
     require(int(v['nb_read_frames']) == frames, '实际解码帧数不符', 'MEDIA_INVALID')
     require(abs(float(v['duration']) - frames / spec['fps']) <= 1 / spec['fps'], '视频时长不符', 'MEDIA_INVALID')
     for stream in (v, a):
         require(abs(float(stream.get('start_time', 999))) <= .001, '音视频起点不是 0', 'TIMESTAMP_OFFSET')
-    require(abs(float(a['duration']) - frames / spec['fps']) <= max(.05, 1 / spec['fps']), '音轨覆盖不足或超长', 'AUDIO_MISMATCH')
+    expected = frames / spec['fps']
+    if abs(float(a['duration']) - expected) > max(.05, 1 / spec['fps']):
+        details = {'expectedSeconds': expected, 'audioSeconds': float(a['duration']),
+                   'deltaMs': (float(a['duration']) - expected) * 1000, 'step': 'mux'}
+        raise StageError('AUDIO_MISMATCH', f'音轨覆盖不足或超长：{details}', details=details)
     ffmpeg('-xerror', '-i', path, '-map', '0:v:0', '-map', '0:a:0', '-f', 'null', '-')
     return {'sha256': digest(path), 'frames': frames, 'durationSeconds': frames / spec['fps']}
 
@@ -216,6 +242,23 @@ def project_fingerprint(project):
     return entries
 
 
+def mux_scene(video, mix, output, spec, frames, timeout=600):
+    """只封装画面和已完成的全量混音，不改写口播、音效或业务时间轴。"""
+    seconds = frames / spec['fps']
+    info = audio_info(mix)
+    # 无损混音应与 Composition 等长；不靠裁掉有效语音强行匹配画面。
+    if abs(info['durationSeconds'] - seconds) > max(1 / info['sampleRate'], 1 / 48000) + 1e-6:
+        details = {'step': 'mix', 'expectedSeconds': seconds, 'mixSeconds': info['durationSeconds']}
+        raise StageError('AUDIO_MISMATCH', f'无损混音与实际时间轴不等长：{details}', details=details)
+    samples = round(seconds * 48000)
+    ffmpeg('-y', '-copyts', '-i', video, '-i', mix, '-map', '0:v:0', '-map', '1:a:0',
+           '-c:v', 'copy', '-af', f'aresample=48000,apad,atrim=end_sample={samples},asetpts=PTS-STARTPTS',
+           '-c:a', 'aac', '-b:a', '192k', '-movflags', '+faststart', output, timeout=timeout)
+    report = validate_mp4(output, spec, frames)
+    report['audioCheck'] = compare_audio(output, mix, allow_silence=True)
+    return report
+
+
 def render_scene(request_path, scene_id, project_name, entry_name, composition, props_name, frames, node, modules, browser):
     identifier(scene_id)
     with execution(request_path, 'render:' + scene_id) as (root, request, budget):
@@ -237,28 +280,47 @@ def render_scene(request_path, scene_id, project_name, entry_name, composition, 
             old = read(marker)
             if old['fingerprint'] == fingerprint and old['sha256'] == digest(out):
                 return {**validate_mp4(out, request['outputSpec'], frames), 'path': str(out.relative_to(root)),
-                        'evidence': extract_frames(root, request, scene_id, out, frames), 'reused': True}
+                        'mix': old.get('mix'), 'evidence': extract_frames(root, request, scene_id, out, frames), 'reused': True}
         work = Path(request_path).resolve().parent / 'work'; work.mkdir(exist_ok=True)
-        temp = Path(tempfile.mkdtemp(prefix=scene_id+'-', dir=work))
+        # 编码和封装分开缓存：只修封装时复用原画面及 PCM，不再次启动浏览器。
+        raw_marker = work / (scene_id + '.raw.json')
+        raw = read(raw_marker) if raw_marker.exists() else None
+        raw_reused = False
+        if raw and raw.get('fingerprint') == fingerprint:
+            try:
+                video = local(root, raw['video']); mix = local(root, raw['mix'])
+                raw_reused = digest(video) == raw['videoSha256'] and digest(mix) == raw['mixSha256']
+            except (OSError, ValueError, KeyError):
+                pass
+        temp = video.parent if raw_reused else Path(tempfile.mkdtemp(prefix=scene_id+'-', dir=work))
         try:
             done = temp / 'done.json'; target = temp / 'scene.mp4'
-            config = {'entry': str(entry), 'project': str(project), 'composition': composition, 'props': props, 'modules': str(modules),
-                      'browser': browser, 'output': str(target), 'done': str(done), 'bundle': str(temp/'bundle'),
-                      'spec': request['outputSpec'], 'frames': frames}
-            write(temp / 'config.json', config)
-            recovery = supervise([node, str(Path(__file__).with_name('render_scene.cjs')), str(temp/'config.json')],
-                                 project, work / (scene_id+'.log'), done, budget)
-            info = validate_mp4(target, request['outputSpec'], frames)
+            recovery = raw.get('recovery', {}) if raw_reused else {}
+            if not raw_reused:
+                video, mix = temp / 'video.mp4', temp / 'mix.wav'
+                config = {'entry': str(entry), 'project': str(project), 'composition': composition, 'props': props, 'modules': str(modules),
+                          'browser': browser, 'output': str(video), 'audio': str(mix), 'done': str(done), 'bundle': str(temp/'bundle'),
+                          'spec': request['outputSpec'], 'frames': frames}
+                write(temp / 'config.json', config)
+                recovery = supervise([node, str(Path(__file__).with_name('render_scene.cjs')), str(temp/'config.json')],
+                                     project, work / (scene_id+'.log'), done, budget)
+                write(raw_marker, {'fingerprint': fingerprint, 'video': str(video.relative_to(root)),
+                                   'mix': str(mix.relative_to(root)), 'videoSha256': digest(video),
+                                   'mixSha256': digest(mix), 'recovery': recovery})
+            info = mux_scene(video, mix, target, request['outputSpec'], frames, budget)
             load_request(request_path, 'render')
             os.replace(target, out)
-            write(marker, {'fingerprint': fingerprint, **info, **recovery})
+            mixed = {'path': str(mix.relative_to(root)), 'sha256': digest(mix)}
+            write(marker, {'fingerprint': fingerprint, 'mix': mixed, **info, **recovery})
         except BaseException:
             # 失败媒体和配置保留在本次 work 中，供检查原故障区间。
             raise
         else:
-            shutil.rmtree(temp)
+            # 保留画面和混音用于封装修复，体积较大的临时网页可删除。
+            if (temp / 'bundle').exists(): shutil.rmtree(temp / 'bundle')
         evidence = extract_frames(root, request, scene_id, out, frames)
-        return {**info, 'path': str(out.relative_to(root)), 'evidence': evidence, 'reused': False}
+        return {**info, 'path': str(out.relative_to(root)), 'mix': mixed, 'evidence': evidence,
+                'reused': False, 'renderReused': raw_reused}
 
 
 def extract_frames(root, request, scene_id, path, frames):

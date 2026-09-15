@@ -18,7 +18,8 @@ const {selectComposition, renderMedia, openBrowser} = require(path.join(c.module
     }
     await renderMedia({composition, serveUrl, inputProps: c.props, outputLocation: c.output,
       puppeteerInstance: browser, browserExecutable: c.browser, codec: 'h264', pixelFormat: 'yuv420p',
-      audioCodec: 'aac', audioBitrate: '192k', imageFormat: 'png', concurrency: 1,
+      // 保留 Remotion 的完整混音，避免 ADTS 中间文件丢失 AAC 编码延迟信息。
+      audioCodec: 'pcm-16', separateAudioTo: c.audio, imageFormat: 'png', concurrency: 1,
       forSeamlessAacConcatenation: false, enforceAudioTrack: true, logLevel: 'error',
       onProgress: p => console.log(JSON.stringify({progress: p.progress}))});
     // 完成标记在关闭浏览器之前写入；父进程仍须独立验证 MP4。

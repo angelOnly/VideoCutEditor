@@ -258,6 +258,80 @@ test('four native Codex tasks route by thread/turn, persist identity, resume, an
   }
 });
 
+test('阶段工具耗尽预算后中断当前 turn 并清理执行进程', async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'host-budget-')),
+    db = await database();
+  const c = config({ executor: 'host', dataRoot: dir, mediaRoot: dir }),
+    queue = new Queue(db);
+  const tasks = new Tasks(new TaskRepository(db), c),
+    rpc = new FakeRpc();
+  const stopped: string[] = [];
+  let running: Promise<void> | undefined;
+  try {
+    await tasks.analysis(tenant, analysis('budget-task'));
+    const lease = (await queue.claim('test'))!;
+    const w = await new Workspaces(c, db, new Storage(c)).prepare(lease, tenant);
+    // 这里只测试执行器对阶段预算的处理，媒体工具由桩模拟。
+    lease.run.stage = 'render';
+    w.task = {
+      ...w.task,
+      contractVersion: 'video-two-stage/1',
+      taskId: lease.run.task_id,
+      runId: lease.run.id,
+      stage: 'render',
+    };
+    const processes: any = {
+      run: async () => {
+        const folder = path.join(w.root, 'render', lease.run.id);
+        await mkdir(folder, { recursive: true });
+        await writeFile(
+          path.join(folder, 'execution.json'),
+          JSON.stringify({ stopReason: '同一媒体错误连续三次', repairRounds: 3 }),
+        );
+        // 即使命令以 0 退出或吞掉错误，预算仍必须执行。
+        return 'failed';
+      },
+      stop: async (id: string) => {
+        stopped.push(id);
+      },
+    };
+    const host = new HostCodex(c, rpc, queue, processes);
+    running = host.run(lease, w, new AbortController().signal);
+    void running.catch(() => {});
+    await until(async () =>
+      Boolean(
+        (await db.query('SELECT turn_id FROM host_executions WHERE run_id=$1', [lease.run.id]))
+          .rows[0]?.turn_id,
+      ),
+    );
+    const ctx = (await db.query('SELECT * FROM host_executions WHERE run_id=$1', [lease.run.id]))
+      .rows[0];
+    await rpc.handleRequest!('item/tool/call', {
+      threadId: ctx.thread_id,
+      turnId: ctx.turn_id,
+      tool: 'video_exec',
+      arguments: { command: 'render' },
+    });
+    await assert.rejects(running, /同一媒体错误连续三次/);
+    assert.ok(rpc.calls.some((x) => x.method === 'turn/interrupt'));
+    assert.ok(stopped.includes(lease.run.id));
+    // 此处不提前释放队列名额，由外层在确认进程清理后更新终态。
+    assert.equal(
+      (
+        await db.query('SELECT count(*)::int n FROM execution_slots WHERE run_id=$1', [
+          lease.run.id,
+        ])
+      ).rows[0].n,
+      1,
+    );
+  } finally {
+    for (const thread of rpc.turns.keys()) rpc.complete(thread);
+    await Promise.allSettled(running ? [running] : []);
+    await db.close();
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test('app-server stdio initializes once, checks ChatGPT login and rejects in-flight requests when server exits', async () => {
   const dir = await mkdtemp(path.join(os.tmpdir(), 'host-rpc-'));
   const executable = path.join(dir, 'codex');
