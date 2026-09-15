@@ -7,7 +7,12 @@ import os from 'node:os';
 import { randomUUID } from 'node:crypto';
 import { setTimeout } from 'node:timers/promises';
 import { config, database, analysis, tenant } from './helpers.js';
-import { AppServer, codexEnvironment, type Rpc } from '../src/infrastructure/app-server.js';
+import {
+  AppServer,
+  codexEnvironment,
+  codexOverrides,
+  type Rpc,
+} from '../src/infrastructure/app-server.js';
 import { HostProcesses, bubblewrapArgs, jobUnit } from '../src/infrastructure/host-processes.js';
 import { HostCodex, threadConfig } from '../src/runner/codex-host.js';
 import { Workspaces } from '../src/infrastructure/workspace.js';
@@ -16,6 +21,14 @@ import { Queue } from '../src/infrastructure/queue.js';
 import { Tasks } from '../src/application/tasks.js';
 import { TaskRepository } from '../src/infrastructure/task-repository.js';
 import { prompt } from '../src/runner/prompts.js';
+
+test('动态工具保留执行宿主，同时关闭内置命令和外部工具', () => {
+  const features = codexOverrides.features as Record<string, boolean>;
+  assert.equal(features.code_mode_host, true);
+  for (const name of ['shell_tool', 'unified_exec', 'apps', 'plugins'])
+    assert.equal(features[name], false);
+  assert.deepEqual(codexOverrides.mcp_servers, {});
+});
 
 class FakeRpc extends EventEmitter implements Rpc {
   healthy = true;

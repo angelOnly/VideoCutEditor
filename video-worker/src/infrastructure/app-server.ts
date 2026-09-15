@@ -37,7 +37,6 @@ export const disabledFeatures = [
   'computer_use',
   'image_generation',
   'code_mode',
-  'code_mode_host',
   'memories',
   'shell_snapshot',
   'workspace_dependencies',
@@ -46,7 +45,11 @@ export const disabledFeatures = [
   'goals',
 ];
 export const codexOverrides: Record<string, unknown> = {
-  features: Object.fromEntries(disabledFeatures.map((name) => [name, false])),
+  // 动态工具也依赖执行宿主；具体文件和命令仍由 video_* 工具进入隔离环境。
+  features: {
+    ...Object.fromEntries(disabledFeatures.map((name) => [name, false])),
+    code_mode_host: true,
+  },
   mcp_servers: {},
   web_search: 'disabled',
   shell_environment_policy: { inherit: 'none' },

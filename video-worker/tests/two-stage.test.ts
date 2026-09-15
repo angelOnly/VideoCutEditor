@@ -367,3 +367,36 @@ test('模板适配器支持动态正文；错误模板 ID 不进入执行', asyn
     await new Promise<void>((resolve, reject) => server.close((e) => (e ? reject(e) : resolve())));
   }
 });
+
+test('执行失败保留原因，身份不符仍拒绝', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'worker-response-'));
+  try {
+    await mkdir(path.join(root, 'output'));
+    const response = {
+      contractVersion: 'video-two-stage/1',
+      taskId: 'task',
+      runId: 'run',
+      stage: 'analysis',
+      status: 'failed',
+      artifact: null,
+      error: { code: 'EXECUTION_HOST_DISABLED', message: '执行主机已禁用', retryable: true },
+    };
+    const w: any = { root, assets: [], task: { contractVersion: response.contractVersion } };
+    const l: any = { run: { task_id: 'task', id: 'run', stage: 'analysis' } };
+    await writeJson(path.join(root, 'output/agent-response.json'), response);
+    await assert.rejects(
+      validate({} as any, l, w, new AbortController().signal),
+      /EXECUTION_HOST_DISABLED: 执行主机已禁用/,
+    );
+    await writeJson(path.join(root, 'output/agent-response.json'), {
+      ...response,
+      taskId: 'other',
+    });
+    await assert.rejects(
+      validate({} as any, l, w, new AbortController().signal),
+      /候选协议或执行身份不符/,
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});

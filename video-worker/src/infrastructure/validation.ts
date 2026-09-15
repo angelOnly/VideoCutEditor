@@ -16,10 +16,15 @@ export async function validate(sandbox: Sandbox, l: Lease, w: Workspace, signal:
       response.contractVersion !== w.task.contractVersion ||
       response.taskId !== l.run.task_id ||
       response.runId !== l.run.id ||
-      response.stage !== l.run.stage ||
-      response.status !== 'candidate'
+      response.stage !== l.run.stage
     )
       throw new AppError('VALIDATION_FAILED', '候选协议或执行身份不符');
+    if (response.status === 'failed')
+      throw new AppError(
+        'VALIDATION_FAILED',
+        `${response.error?.code ?? 'AGENT_FAILED'}: ${response.error?.message ?? 'Agent 返回失败'}`,
+      );
+    if (response.status !== 'candidate') throw new AppError('VALIDATION_FAILED', '缺少候选响应');
     const file = await safeFile(w.root, response.artifact);
     const report = await sandbox.validate(l, w, signal);
     if (!report.passed)
