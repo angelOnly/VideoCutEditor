@@ -19,6 +19,9 @@ export async function validate(sandbox: Sandbox, l: Lease, w: Workspace, signal:
       response.stage !== l.run.stage
     )
       throw new AppError('VALIDATION_FAILED', '候选协议或执行身份不符');
+    // 缺少执行能力需外部补齐环境；重新启动同一模型 turn 不会恢复能力。
+    if (response.status === 'failed' && response.error?.code === 'CAPABILITY_MISSING')
+      throw new AppError('CAPABILITY_MISSING', response.error?.message ?? '执行环境缺少必需能力');
     if (response.status === 'failed')
       throw new AppError(
         'VALIDATION_FAILED',

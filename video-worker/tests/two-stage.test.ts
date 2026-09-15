@@ -16,6 +16,7 @@ import { publishResult } from '../src/application/results.js';
 import { command } from '../src/infrastructure/process.js';
 import { bubblewrapArgs } from '../src/infrastructure/host-processes.js';
 import { validate } from '../src/infrastructure/validation.js';
+import { executeRun } from '../src/application/execute-run.js';
 
 async function setup() {
   const root = await mkdtemp(path.join(os.tmpdir(), 'worker-stages-'));
@@ -368,6 +369,46 @@ test('模板适配器支持动态正文；错误模板 ID 不进入执行', asyn
   }
 });
 
+test('缺少能力不重开模型 turn，保存失败回调并释放名额', async () => {
+  const h = await setup();
+  try {
+    await h.tasks.analysis(h.t, analysis());
+    const lease = (await h.q.claim('worker'))!;
+    let calls = 0;
+    const sandbox: any = {
+      run: async (l: any, w: any) => {
+        calls++;
+        await writeJson(path.join(w.root, 'output/agent-response.json'), {
+          contractVersion: w.task.contractVersion,
+          taskId: l.run.task_id,
+          runId: l.run.id,
+          stage: l.run.stage,
+          status: 'failed',
+          artifact: null,
+          error: { code: 'CAPABILITY_MISSING', message: '缺少声学对齐能力', retryable: true },
+        });
+      },
+      stop: async () => {},
+    };
+    await executeRun(h.c, h.q, sandbox, lease);
+    const status = await h.repo.query(h.t.id, 'task1');
+    assert.equal(calls, 1);
+    assert.equal(status.taskState, 'failed');
+    assert.equal(status.latestRun.error.code, 'CAPABILITY_MISSING');
+    assert.equal(status.latestRun.error.retryable, false);
+    assert.equal(
+      (await h.db.query('SELECT * FROM execution_slots WHERE run_id IS NOT NULL')).rows.length,
+      0,
+    );
+    const event = (
+      await h.db.query('SELECT payload FROM callback_events WHERE run_id=$1', [lease.run.id])
+    ).rows[0];
+    assert.equal(event.payload.status, 1);
+  } finally {
+    await h.close();
+  }
+});
+
 test('执行失败保留原因，身份不符仍拒绝', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'worker-response-'));
   try {
@@ -388,6 +429,14 @@ test('执行失败保留原因，身份不符仍拒绝', async () => {
       validate({} as any, l, w, new AbortController().signal),
       /EXECUTION_HOST_DISABLED: 执行主机已禁用/,
     );
+    await writeJson(path.join(root, 'output/agent-response.json'), {
+      ...response,
+      error: { code: 'CAPABILITY_MISSING', message: '没有可用的声学对齐能力', retryable: true },
+    });
+    await assert.rejects(validate({} as any, l, w, new AbortController().signal), {
+      code: 'CAPABILITY_MISSING',
+      retryable: false,
+    });
     await writeJson(path.join(root, 'output/agent-response.json'), {
       ...response,
       taskId: 'other',
