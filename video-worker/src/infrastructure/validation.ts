@@ -11,6 +11,23 @@ export async function validate(sandbox: Sandbox, l: Lease, w: Workspace, signal:
     if ((await hashFile(await safeFile(w.root, a.path))) !== a.sha256)
       throw new AppError('INPUT_CHANGED', '任务输入快照被修改');
   const response = await readJson(await safeFile(w.root, 'output/agent-response.json'));
+  if (w.task.contractVersion === 'video-two-stage/1') {
+    if (
+      response.contractVersion !== w.task.contractVersion ||
+      response.taskId !== l.run.task_id ||
+      response.runId !== l.run.id ||
+      response.stage !== l.run.stage ||
+      response.status !== 'candidate'
+    )
+      throw new AppError('VALIDATION_FAILED', '候选协议或执行身份不符');
+    const file = await safeFile(w.root, response.artifact);
+    const report = await sandbox.validate(l, w, signal);
+    if (!report.passed)
+      throw new AppError('VALIDATION_FAILED', report.error?.message ?? '候选未通过终检');
+    if ((await hashFile(file)) !== report.artifactSha256)
+      throw new AppError('VALIDATION_FAILED', '终检后候选发生变化');
+    return readJson(file);
+  }
   const responseSchema = await readJson(
     path.join(
       process.env.TOOLKIT_ROOT ??

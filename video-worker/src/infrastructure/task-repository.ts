@@ -52,6 +52,29 @@ export class TaskRepository {
           input.field_5 !== task.config.digitalHumanAccountId
         )
           fail('CONFIG_CONFLICT', '模板或数字人账号与任务配置不一致', 409);
+        if (task.config.executionProtocol === 'video-two-stage/1') {
+          if (!input.plan) fail('CONFIRMED_PLAN_REQUIRED', '请提交完整 plan 确认快照');
+          if (input.plan.taskId !== task.id) fail('CONFIG_CONFLICT', '方案任务 ID 不匹配');
+          const previous = (
+            await q.query('SELECT plan FROM plan_versions WHERE task_id=$1 AND version=$2', [
+              task.id,
+              version,
+            ])
+          ).rows[0]?.plan;
+          if (!previous?.plan || input.plan.inputDigest !== previous.plan.inputDigest)
+            fail('STALE_PLAN', '方案输入快照不匹配', 409);
+          if (
+            input.dataList.length !== input.plan.scenes.length ||
+            input.dataList.some(
+              (s: any, i: number) =>
+                s.id !== input.plan.scenes[i].id ||
+                s.content !== input.plan.scenes[i].text ||
+                (s.production !== undefined &&
+                  digest(s.production) !== digest(input.plan.scenes[i].production)),
+            )
+          )
+            fail('CONFIG_CONFLICT', 'dataList 与完整 plan 不一致');
+        }
         version++;
       }
       const run = (
@@ -64,7 +87,12 @@ export class TaskRepository {
       if (stage === 'render')
         await q.query(
           "INSERT INTO plan_versions(task_id,version,run_id,kind,plan) VALUES($1,$2,$3,'confirmed',$4)",
-          [task.id, version, run.id, { dataList: input.dataList }],
+          [
+            task.id,
+            version,
+            run.id,
+            { dataList: input.dataList, ...(input.plan ? { plan: input.plan } : {}) },
+          ],
         );
       await q.query(
         'UPDATE tasks SET state=$2,config=$3,plan_version=$4,latest_run=$5,updated_at=now() WHERE id=$1',

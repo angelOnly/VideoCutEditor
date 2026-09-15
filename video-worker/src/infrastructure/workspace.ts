@@ -10,6 +10,8 @@ import { Storage } from './storage.js';
 import { hashFile, writeJson, readJson, copyTree, safeFile, ownTree } from './files.js';
 import { assertInternalTask } from '../contracts/internal.js';
 import { Queue } from './queue.js';
+import { prepareStage } from './stage-workspace.js';
+import { TemplateProvider } from './template-provider.js';
 import { sceneHash } from '../domain/scene.js';
 export interface Workspace {
   root: string;
@@ -47,6 +49,22 @@ export class Workspaces {
       await mkdir(path.join(root, d), { recursive: true });
       await chmod(path.join(root, d), this.config.executor === 'host' ? 0o700 : 0o777);
     }
+    const isStage = task.config.executionProtocol === 'video-two-stage/1';
+    let frozenTemplate: any;
+    if (isStage && l.run.stage === 'analysis') {
+      const existing = (await this.db.query('SELECT prepared FROM runs WHERE id=$1', [l.run.id]))
+        .rows[0].prepared;
+      frozenTemplate =
+        existing?.template ??
+        (await new TemplateProvider(this.config).read(task.config.templateId));
+      if (!existing?.template)
+        await new Queue(this.db).withLease(l, async (q) => {
+          await q.query('UPDATE runs SET prepared=$2 WHERE id=$1', [
+            l.run.id,
+            { ...existing, template: frozenTemplate },
+          ]);
+        });
+    }
     const refs =
       l.run.stage === 'analysis'
         ? [
@@ -54,9 +72,10 @@ export class Workspaces {
             ...l.run.input.otherMaterial.videoInfoList.map((x: any) => ({ ...x, kind: 'video' })),
           ]
         : l.run.input.dataList.flatMap((s: any) => [
-            ...s.extraData.picInfoList.map((x: any) => ({ ...x, kind: 'image' })),
-            ...s.extraData.videoInfoList.map((x: any) => ({ ...x, kind: 'video' })),
+            ...(s.extraData?.picInfoList ?? []).map((x: any) => ({ ...x, kind: 'image' })),
+            ...(s.extraData?.videoInfoList ?? []).map((x: any) => ({ ...x, kind: 'video' })),
           ]);
+    if (frozenTemplate) refs.push(...frozenTemplate.attachments);
     if (task.config.narration) refs.push({ ...task.config.narration, kind: 'audio' });
     const prepared = (await this.db.query('SELECT prepared FROM runs WHERE id=$1', [l.run.id]))
       .rows[0].prepared;
@@ -69,7 +88,7 @@ export class Workspaces {
         continue;
       }
       seen.set(ref.assetId, ref.url);
-      const frozen = prepared?.assets.find((a: any) => a.assetId === ref.assetId);
+      const frozen = prepared?.assets?.find((a: any) => a.assetId === ref.assetId);
       let resolved: { file: string; relative: string };
       if (frozen) resolved = { file: frozen.snapshotPath, relative: frozen.sourceKey };
       else {
@@ -148,13 +167,14 @@ export class Workspaces {
         snapshotPath: snapshot,
       });
     }
-    if (!prepared)
+    if (!prepared?.assets)
       await new Queue(this.db).withLease(l, async (q) => {
-        await q.query('UPDATE runs SET prepared=$2 WHERE id=$1 AND prepared IS NULL', [
+        await q.query('UPDATE runs SET prepared=$2 WHERE id=$1', [
           l.run.id,
-          { assets },
+          { ...prepared, assets },
         ]);
       });
+    if (isStage) return prepareStage(this.config, this.db, l, root, task, assets);
     const hashes = Object.fromEntries(assets.map((a) => [a.assetId, a.sha256]));
     const reuse: any[] = [];
     const sceneHashes: Record<string, string> = {};

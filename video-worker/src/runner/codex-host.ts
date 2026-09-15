@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { appendFile } from 'node:fs/promises';
+import { mkdir, appendFile } from 'node:fs/promises';
 import type { Config } from '../config.js';
 import type { Lease } from '../domain/task.js';
 import { AppError } from '../domain/task.js';
@@ -9,9 +9,39 @@ import type { Rpc } from '../infrastructure/app-server.js';
 import { codexOverrides } from '../infrastructure/app-server.js';
 import type { HostProcesses } from '../infrastructure/host-processes.js';
 import { readJson, writeJson } from '../infrastructure/files.js';
+import { stagePath, stageResponseSchema } from '../contracts/two-stage.js';
+import { randomUUID } from 'node:crypto';
 import { prompt } from './prompts.js';
 
 export const dynamicTools = [
+  {
+    type: 'function',
+    name: 'video_tts',
+    description:
+      '按确认分镜生成配音。只在 render 使用；每镜文本必须完整，可给多人指定不同 speaker。外部保存收费凭证。',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        items: {
+          type: 'array',
+          minItems: 1,
+          items: {
+            type: 'object',
+            additionalProperties: false,
+            properties: {
+              id: { type: 'string' },
+              sceneId: { type: 'string' },
+              text: { type: 'string' },
+              speaker: { type: 'string' },
+            },
+            required: ['id', 'sceneId', 'text', 'speaker'],
+          },
+        },
+      },
+      required: ['items'],
+      additionalProperties: false,
+    },
+  },
   {
     type: 'function',
     name: 'video_exec',
@@ -50,6 +80,7 @@ export function threadConfig(config: Config, w: Workspace) {
   };
 }
 interface Active {
+  toolBusy?: boolean;
   lease: Lease;
   workspace: Workspace;
   threadId: string;
@@ -120,8 +151,54 @@ export class HostCodex {
     await this.queue.withLease(state.lease, async () => {});
     if (state.ended || state.signal.aborted || this.active.get(params.threadId) !== state)
       throw new Error('Stale tool call');
+    if (state.toolBusy) throw new AppError('TASK_BUSY', '同一任务一次只能执行一个工具');
+    state.toolBusy = true;
     try {
       let text: string;
+      if (params.tool === 'video_tts') {
+        if (
+          state.workspace.task.contractVersion !== 'video-two-stage/1' ||
+          state.lease.run.stage !== 'render'
+        )
+          throw new AppError('STAGE_FORBIDDEN', '当前阶段禁止配音');
+        const cache = path.join(this.config.dataRoot, state.lease.run.task_id, 'tool-cache');
+        await mkdir(cache, { recursive: true, mode: 0o700 });
+        const script = path.join(cache, randomUUID() + '.json');
+        await writeJson(script, {
+          taskId: state.lease.run.task_id,
+          runId: state.lease.run.id,
+          token: state.lease.token,
+          items: params.arguments?.items,
+        });
+        // 清单是可信层从动态工具参数保存的快照，不执行模型提供的 Python 或 shell。
+        const localScript = path.join(state.workspace.root, 'tool-audio', 'tts-request.json');
+        await writeJson(localScript, params.arguments?.items);
+        const out = await this.processes.run(
+          state.lease.run.id,
+          state.workspace,
+          [
+            this.config.python,
+            path.join(this.config.toolkitRoot, 'tools/worker_stage.py'),
+            'tts',
+            '--request',
+            path.join(state.workspace.root, stagePath(state.workspace.task)),
+            '--script',
+            localScript,
+            '--cache',
+            cache,
+          ],
+          state.signal,
+          'tool',
+          cache,
+          true,
+        );
+        await this.queue.withLease(state.lease, async () => {});
+        const value = JSON.parse(out.trim());
+        return {
+          success: !value.error,
+          contentItems: [{ type: 'inputText', text: JSON.stringify(value) }],
+        };
+      }
       if (
         params.tool === 'video_exec' &&
         typeof params.arguments?.command === 'string' &&
@@ -161,6 +238,8 @@ export class HostCodex {
         success: false,
         contentItems: [{ type: 'inputText', text: e instanceof Error ? e.message : 'Tool failed' }],
       };
+    } finally {
+      state.toolBusy = false;
     }
   };
   async run(lease: Lease, w: Workspace, signal: AbortSignal) {
@@ -168,7 +247,7 @@ export class HostCodex {
     const threadRow = (
       await this.queue.db.query('SELECT thread_id FROM tasks WHERE id=$1', [lease.run.task_id])
     ).rows[0];
-    const existing = threadRow.thread_id;
+    const existing = w.task.contractVersion === 'video-two-stage/1' ? null : threadRow.thread_id;
     const args = {
       cwd: w.root,
       runtimeWorkspaceRoots: [w.root],
@@ -232,12 +311,15 @@ export class HostCodex {
         );
       });
       signal.throwIfAborted();
-      const outputSchema = await readJson(
-        path.join(
-          this.config.toolkitRoot,
-          '.agents/skills/video-pipeline/references/response-v2.schema.json',
-        ),
-      );
+      const outputSchema =
+        w.task.contractVersion === 'video-two-stage/1'
+          ? stageResponseSchema
+          : await readJson(
+              path.join(
+                this.config.toolkitRoot,
+                '.agents/skills/video-pipeline/references/response-v2.schema.json',
+              ),
+            );
       state.requested = true;
       const start = await this.rpc.request('turn/start', {
         threadId,

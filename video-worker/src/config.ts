@@ -17,6 +17,8 @@ const tenantSchema = z.object({
 export type Tenant = z.infer<typeof tenantSchema>;
 export interface Config {
   executor: 'host' | 'docker';
+  executionProtocol?: 'video-two-stage/1' | 'legacy';
+  templateApiUrl?: string;
   codexPath: string;
   codexHome: string;
   hostBrowser: string;
@@ -46,7 +48,14 @@ export interface Config {
   ttsVoice: string;
   ttsResourceId: string;
   python: string;
-  templates: Record<string, { path: string; version: string }>;
+  templates: Record<
+    string,
+    {
+      path: string;
+      version: string;
+      attachments?: { assetId: string; url: string; kind: string }[];
+    }
+  >;
   runtimeVersion: string;
 }
 export function loadConfig(envFile = path.resolve(serviceRoot, '../.env')): Config {
@@ -99,6 +108,10 @@ export function loadConfig(envFile = path.resolve(serviceRoot, '../.env')): Conf
     ? JSON.parse(readFileSync(hostRuntimeFile, 'utf8'))
     : {};
   return {
+    executionProtocol: z
+      .enum(['video-two-stage/1', 'legacy'])
+      .parse(process.env.WORKER_PROTOCOL ?? 'legacy'),
+    templateApiUrl: process.env.TEMPLATE_API_URL || undefined,
     hostBrowser:
       process.env.REMOTION_BROWSER_EXECUTABLE || hostRuntime.browser || '/usr/bin/chromium',
     executor: z.enum(['host', 'docker']).parse(process.env.WORKER_EXECUTOR ?? 'host'),

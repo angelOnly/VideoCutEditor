@@ -18,6 +18,13 @@ for (const directory of [
 ])
   await collect(directory);
 for (const f of [
+  'generate_dialogue_audio.py',
+  'two_stage.py',
+  'stage_media.py',
+  'stage_tts.py',
+  'cached_tts.py',
+  'worker_stage.py',
+  'render_scene.cjs',
   'render_segments.py',
   'inspect_assets.py',
   'worker_tts.py',

@@ -19,7 +19,8 @@
     "test:media": "RUN_MEDIA_TESTS=1 tsx --test tests/media.test.ts",
     "format": "prettier --write src tests scripts config deploy/*.json deploy/*.mjs ../docker-compose.yml",
     "format:check": "prettier --check src tests scripts config deploy/*.json deploy/*.mjs ../docker-compose.yml",
-    "host:check": "./deploy/start-worker.sh host-check"
+    "host:check": "./deploy/start-worker.sh host-check",
+    "test:stages": "STAGE_TEST_PYTHON=.venv/bin/python3 RUN_STAGE_MEDIA=1 tsx --test tests/two-stage.test.ts"
   },
   "dependencies": {
     "@openai/codex-sdk": "0.154.0",

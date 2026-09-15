@@ -1,4 +1,17 @@
 export function prompt(task: any, job = '/workspace/job', toolkit = '/opt/toolkit') {
+  if (task.contractVersion === 'video-two-stage/1') {
+    const request =
+      task.stage === 'analysis' ? 'analysis/request.json' : `render/${task.runId}/request.json`;
+    return `使用 $video-pipeline，先阅读 ${toolkit}/.agents/skills/video-pipeline/SKILL.md 及 references/two-stage-contract.md。
+读取 ${job}/${request}；任务、原文、完整要求、冻结模板和确认方案是本轮唯一业务来源。不得参考历史样片、其他任务或未授权资料。
+本轮只执行 ${task.stage}，结束后返回 candidate 或 failed，不自行确认、不发送回调。
+analysis：理解素材并给出完整可编辑方案，时长未测量需标注估算；不调用正式 TTS 或生成 MP4。
+render：严格按确认方案执行；角色、音色、画面编程和复用由你依模板决定，不能改稿、镜头数量或擅换素材。用 video_tts 工具提交配音清单（每条 id/sceneId/text/speaker），默认男女音色可读取 tools/generate_dialogue_audio.py 的 DEFAULT_SPEAKERS。不要直接运行收费 CLI；用通用 stage_media.py 渲染并校验 N 个完整分镜 MP4。
+通用依赖位于 ${toolkit}/templates/ifeng-scenes/node_modules，只允许使用依赖，不参考旧固定模板源码。可在 project 中链接该 node_modules。所有读写/命令通过 video_exec，实际看图通过 video_view_image。
+请求目录中的 request.json 只读，其余阶段产物可写；input、confirmation、job.json、history 和 tool-audio 只读。cache/project/output 可写。收费凭证由外部保存。
+无需运行 init/confirm。候选由 Worker 只读终检。已有 output/repair-feedback.json 时修复其中问题，修复轮数由外部管理。
+最终 JSON：contractVersion=${task.contractVersion}，taskId=${task.taskId}，runId=${task.runId}，stage=${task.stage}，status=candidate|failed，artifact 为任务内方案或 manifest 相对路径（失败为 null），error 成功为 null、失败为 {code,message,retryable}。`;
+  }
   return `使用 video-pipeline Skill，先读取 ${toolkit}/.agents/skills/video-pipeline/SKILL.md 和 references/v2-contract.md。
 这是已授权的无人值守 ${task.operation} 任务。可信任务描述在 ${job}/task.json，输入目录只读。
 只在 ${job}/project、${job}/output、${job}/cache 写入产物。不要发送回调，不上传文件，不安装依赖，不调用收费配音或数字人服务。

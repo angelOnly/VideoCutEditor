@@ -32,6 +32,35 @@ else: raise RuntimeError('readonly input was writable')
       new AbortController().signal,
       'agent',
     );
+    if (c.executionProtocol === 'video-two-stage/1') {
+      const stage = {
+        ...w,
+        task: { contractVersion: 'video-two-stage/1', stage: 'analysis', runId: id },
+      } as Workspace;
+      await mkdir(path.join(root, 'analysis/work'), { recursive: true });
+      await mkdir(path.join(root, 'tool-audio'), { recursive: true });
+      for (const f of ['analysis/request.json', '.execution.lock', '.operation.lock'])
+        await writeFile(path.join(root, f), '{}');
+      await processes.run(
+        id,
+        stage,
+        [
+          c.python,
+          '-c',
+          `import pathlib,sys;sys.path.insert(0,sys.argv[2]);import worker_stage,two_stage,jsonschema
+r=pathlib.Path(sys.argv[1]); assert two_stage.SCHEMA.is_file()
+(r/'analysis/result.json').write_text('{}')
+try: (r/'analysis/request.json').write_text('changed')
+except OSError: pass
+else: raise RuntimeError('阶段请求可写')
+print('two-stage isolation passed')`,
+          root,
+          path.join(c.toolkitRoot, 'tools'),
+        ],
+        new AbortController().signal,
+        'agent',
+      );
+    }
     await processes.run(
       id,
       w,

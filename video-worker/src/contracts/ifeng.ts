@@ -134,7 +134,9 @@ export const renderRequest = z
     basePlanVersion: z.number().int().positive(),
     field_5: z.string().max(128),
     templateId: id,
-    dataList: scenes,
+    dataList: z.array(z.record(z.string(), z.unknown())).min(1).max(200),
+    // 新协议使用完整方案往返，避免丢失模板定义的制作信息。
+    plan: z.record(z.string(), z.unknown()).optional(),
   })
   .strict();
 export type Scene = z.infer<typeof scene>;

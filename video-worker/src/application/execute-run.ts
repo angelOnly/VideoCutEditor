@@ -53,8 +53,10 @@ export async function executeRun(
     const tenant = config.tenants.find((t) => t.id === l.run.tenant);
     if (!tenant) throw new AppError('TENANT_UNAVAILABLE', '调用方配置不存在');
     w = await workspaces.prepare(l, tenant);
-    await queue.heartbeat(l, 'audio');
-    await prepareAudio(config, queue, l, w, abort.signal, sandbox);
+    if (w.task.contractVersion !== 'video-two-stage/1') {
+      await queue.heartbeat(l, 'audio');
+      await prepareAudio(config, queue, l, w, abort.signal, sandbox);
+    }
     for (;;) {
       if (abort.signal.aborted) throw pulseError ?? new AppError('WORKER_STOPPED', 'Worker 停止');
       await queue.heartbeat(l, 'codex');
@@ -76,8 +78,8 @@ export async function executeRun(
           response = await readJson(path.join(w.root, 'output/agent-response.json'));
         } catch {}
         if (
-          response?.jobId === l.run.id &&
-          response?.operation === l.run.stage &&
+          (response?.jobId ?? response?.runId) === l.run.id &&
+          (response?.operation ?? response?.stage) === l.run.stage &&
           response?.status === 'failed' &&
           !response.error?.retryable
         )

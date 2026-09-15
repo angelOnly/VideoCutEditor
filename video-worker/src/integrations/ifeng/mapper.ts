@@ -29,11 +29,17 @@ export function callback(eventId: string, run: Run, task: any, result: any, erro
     ...(run.stage === 'render' ? { resultVersion: task.result_version } : {}),
     dataInfo: {
       templateId: task.config.templateId,
+      ...(result.previews ? { previews: result.previews } : {}),
       ...(run.stage === 'analysis'
-        ? { durationMode: 'audio' }
+        ? {
+            durationMode: result.dataList.every((s: any) => s.durationSource === 'measured')
+              ? 'audio'
+              : 'estimated',
+          }
         : { sceneCount: result.dataList.length, ...task.config.outputSpec }),
     },
     dataList: result.dataList,
+    ...(result.plan ? { plan: result.plan } : {}),
   };
 }
 export const callbackPath = (stage: Stage) =>

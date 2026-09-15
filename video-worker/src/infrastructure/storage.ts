@@ -40,8 +40,17 @@ export class Storage {
     token: number,
     sceneId: string,
     source: string,
+    extension = '.mp4',
   ) {
-    const key = path.posix.join('tasks', taskKey, 'results', `${runId}-${token}`, `${sceneId}.mp4`);
+    if (!/^[A-Za-z0-9][A-Za-z0-9_.-]*$/.test(sceneId) || !/^\.[a-zA-Z0-9]+$/.test(extension))
+      throw new AppError('PATH_FORBIDDEN', '发布文件名无效');
+    const key = path.posix.join(
+      'tasks',
+      taskKey,
+      'results',
+      `${runId}-${token}`,
+      `${sceneId}${extension}`,
+    );
     const target = path.join(this.config.mediaRoot, key);
     await mkdir(path.dirname(target), { recursive: true });
     const tmp = target + '.' + randomUUID() + '.tmp';

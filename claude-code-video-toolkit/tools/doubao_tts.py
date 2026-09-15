@@ -29,13 +29,14 @@ def build_request(
     resource_id: str = DEFAULT_RESOURCE_ID,
     speaker: str = DEFAULT_SPEAKER,
     user_id: str = "claude-code-video-toolkit",
+    request_id: str | None = None,
 ) -> tuple[dict, dict]:
     """Build one authenticated request for the Doubao TTS V3 API."""
     headers = {
         "Content-Type": "application/json",
         "X-Api-Key": api_key,
         "X-Api-Resource-Id": resource_id,
-        "X-Api-Request-Id": str(uuid.uuid4()),
+        "X-Api-Request-Id": request_id or str(uuid.uuid4()),
     }
     payload = {
         "user": {"uid": user_id},
@@ -126,11 +127,12 @@ def generate_audio(
     api_key: str | None = None,
     timeout: tuple[int, int] = (10, 90),
     verbose: bool = True,
+    request_id: str | None = None,
 ) -> dict:
     """Synthesize *text* to an MP3, returning the common toolkit result shape."""
     text = text.strip()
     if not text:
-        return {"success": False, "error": "Cannot synthesize empty text"}
+        return {"success": False, "submitted": False, "error": "Cannot synthesize empty text"}
 
     api_key = api_key or get_doubao_tts_api_key()
     resource_id = resource_id or get_doubao_tts_resource_id() or DEFAULT_RESOURCE_ID
@@ -138,12 +140,13 @@ def generate_audio(
     if not api_key:
         return {
             "success": False,
+            "submitted": False,
             "error": "No Doubao API key found. Add DOUBAO_TTS_API_KEY to .env.",
         }
 
     path = Path(output_path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    headers, payload = build_request(text, api_key, resource_id, speaker)
+    headers, payload = build_request(text, api_key, resource_id, speaker, request_id=request_id)
 
     try:
         response = requests.post(
@@ -159,9 +162,9 @@ def generate_audio(
         finally:
             response.close()
     except (requests.RequestException, RuntimeError, ValueError, UnicodeDecodeError) as exc:
-        return {"success": False, "error": str(exc)}
+        return {"success": False, "submitted": True, "request_id": headers["X-Api-Request-Id"], "error": str(exc)}
 
     path.write_bytes(audio)
     if verbose:
         print(f"Saved Doubao TTS audio to: {path}")
-    return _audio_result(path, text, speaker, resource_id)
+    return {**_audio_result(path, text, speaker, resource_id), "submitted": True, "request_id": headers["X-Api-Request-Id"]}

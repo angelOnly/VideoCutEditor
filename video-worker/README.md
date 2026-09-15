@@ -115,3 +115,92 @@ systemctl --user start videocut-worker
 ```
 
 真实 Codex 四任务并行/登录刷新、豆包、Ubuntu 本机隔离和编辑平台真实回调仍需使用部署配置进行联调；当前开发机的本地测试不声称已完成这些外部环境验收。
+
+## 模板驱动两阶段执行（2026-09-15）
+
+新链路使用 toolkit 的 `video-two-stage/1`。Worker 不预配音、不选择重做镜头、不使用固定布局渲染器；Codex 读取冻结模板、完整要求与阶段请求，执行分析或制作。现有数据库、4 个执行槽位、租约、取消和回调 outbox 继续使用。
+
+为避免未经 Ubuntu 验收自动切换线上任务，默认仍是 `legacy`。在根 `.env` 中显式设置以下两项可启用新提交任务；不用复制新的 `.env`：
+
+```dotenv
+WORKER_EXECUTOR=host
+WORKER_PROTOCOL=video-two-stage/1
+```
+
+已存在任务沿用提交时记录的协议，新旧任务不会在 render 时混用。双人财经无需专用 Worker 分支，但模板、头像、Logo、音效和允许复用源码必须显式配置为本次资料；未提供的资料不会自动从历史项目补齐。
+
+### 模板来源
+
+未设置 `TEMPLATE_API_URL` 时，Worker 按 `config/templates.json` 读取本地模板，快照标注 `source=fixture`。`path` 指向 toolkit 内的 Markdown 文件；旧目录配置暂按其中的 README.md 读取，这只是联调资料，不代表已配置财经双人模板。允许为条目添加 `attachments`，每项为 `assetId/url/kind`；`url` 必须为获准媒体根下的文件路径，`kind` 为 `image/video/audio/reference/source/font`。
+
+设置 `TEMPLATE_API_URL` 后，适配器以 GET 查询参数 `templateId` 读取以下标准化响应。目前尚未接入实际平台模板接口；若其报文不同，只调整 `TemplateProvider`，不要在 Worker 增加布局分支。
+
+```json
+{
+  "id": "finance_dialogue",
+  "version": "1",
+  "content": "1920×1080，双主持人布局，谁说话谁高亮。正文按确认稿件制作……",
+  "attachments": [
+    {"assetId": "logo", "url": "/home/ops/jiangzb/videos/input/logo.png", "kind": "image"}
+  ]
+}
+```
+
+模板在领取 analysis 时固化，重试和 render 使用同一快照。不会在 render 时重新读取远端模板。原稿、制作要求及素材也绑定文件摘要。
+
+### 提交与确认
+
+分析提交沿用 `getAiVideoEditingAnalysisData`。返回分析回调与任务查询中的 `plan` 为完整内部方案，`dataList` 为平台展示投影。未配音的时长标记为 `estimated`。
+
+任务查询响应中 `data.plan.plan` 是完整方案，`data.plan.dataList` 是分镜列表。编辑确认提交到 `getAiVideoEditingData`：
+
+```json
+{
+  "schemaVersion": 2,
+  "requestId": "render_confirm_001",
+  "taskId": "业务任务ID",
+  "basePlanVersion": 1,
+  "field_5": "原数字人账号ID",
+  "templateId": "finance_dialogue",
+  "plan": {"说明": "此处必须提交查询得到的完整 plan 对象，保留全部字段；本示例不直接用于请求"},
+  "dataList": [{"说明": "此处提交与 plan 对应的完整分镜列表"}]
+}
+```
+
+`plan.taskId` 是内部任务 UUID，不要改成业务 `taskId`。编辑文本、制作信息时，同步更新对应 `dataList.content/production`；改稿需在该镜的 `editReason` 写明理由，并保留原稿映射。素材替换在 `dataList.extraData` 提交 `assetId/url`，同步调整 `plan.scenes[].assetRefs/production`。Worker 验证输入快照与确认版本，保存完整确认；不会猜测缺失的制作字段。无完整方案、版本过期或两个表示冲突时拒绝提交。
+
+Codex 制作时通过 `video_tts` 提交口播与实际音色；可信通道校验文本并调用现有豆包工具。普通 `video_exec` 无网络、凭据或收费账本访问权限。通用渲染使用 `stage_media.py`，只读终检使用 `worker_stage.py check`。成功后发布 N 条分镜 MP4 与实际素材路径，回调重送不重新制作。
+
+### 本地机械测试与 Ubuntu 验收
+
+```bash
+cd /home/ops/jiangzb/VideoCutEditor/video-worker
+pnpm build
+pnpm test
+pnpm test:stages
+```
+
+本轮本机验证：Worker 24 项通过、3 项环境相关集成测试跳过；两阶段工具 32 项和可信桥接 3 项通过，共 59 项通过。包含新建短 Remotion 工程渲染及两条合成 MP4 的终检、发布测试；TypeScript 构建通过。未执行真实付费 TTS 或 Ubuntu 业务验收。
+
+`test:stages` 需要安装脚本创建的 `.venv`、FFmpeg/ffprobe。它创建合成色块与音频，测试数据库→analysis→外部确认→render 请求→真实 MP4 终检→发布→回调数据；不访问 Codex 或付费 TTS，不代表财经视频主观效果通过。
+
+启用根 `.env` 的新协议后，部署仍执行：
+
+```bash
+cd /home/ops/jiangzb/VideoCutEditor
+bash video-worker/deploy/install-host.sh
+docker compose up -d --build --remove-orphans
+systemctl --user status videocut-worker --no-pager -l
+journalctl --user -u videocut-worker -f
+```
+
+安装预检增加了两阶段 Schema/工具可见性、阶段目录可写及请求文件只读检查。仍需在 Ubuntu 完成真实双人财经任务和另一种模板测试、4 并发/第 5～6 个排队、运行中取消，以及实际模板 API、编辑页面和回调服务联调。
+
+### 失败、恢复和边界
+
+- 无效方案在可信终检失败；Worker 的修复次数统计一次“候选被拒绝后重新提交”，由数据库统一计数。阶段总时限覆盖模型与工具调用，重试不重置数据库 deadline。
+- 收费请求的 pending/unknown 状态放在任务级 `tool-cache`，进程中断后仍保留；结果未知时不会自动再次收费，需核查供应商结果。
+- 重试/新 render 读取本任务历史资料和工程，旧进程记录只作历史证据；不会按跨 namespace 的旧 PID 杀进程。停止及释放槽位仍由 systemd/cgroup 与租约控制。
+- analysis 不恢复旧 render 产物到当前输出，避免将历史 MP4 误判为本轮副作用。跨阶段预览和实测音频证据需放在 `analysis/` 或 `input/`。
+- 新方案的角色/布局/动效信息保存在开放的 `production` 中；完整方案往返需要编辑端支持。此处已实现服务端契约，未宣称外部编辑端已适配。
+- 当前受控能力是 shell、看图和豆包 TTS；未开放任意 MCP、其他供应商或网络。新增能力按独立工具适配，不放入 Worker 制作逻辑。

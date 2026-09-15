@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { access, realpath, mkdir, chmod, rm } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
+import { stagePath } from '../contracts/two-stage.js';
 import { writeJson } from './files.js';
 import type { Config } from '../config.js';
 import type { Workspace } from './workspace.js';
@@ -18,8 +19,16 @@ export const admittedToolkit = [
   '.agents/skills/remotion-best-practices',
   '.agents/skills/remotion',
   '.agents/skills/ffmpeg',
-  'templates/ifeng-scenes',
+  'templates/ifeng-scenes/node_modules',
+  '.claude/skills/video-pipeline/references/two-stage.schema.json',
   ...[
+    'generate_dialogue_audio.py',
+    'two_stage.py',
+    'stage_media.py',
+    'stage_tts.py',
+    'cached_tts.py',
+    'worker_stage.py',
+    'render_scene.cjs',
     'config.py',
     'voiceover.py',
     'doubao_tts.py',
@@ -51,7 +60,10 @@ export function bubblewrapArgs(
   ])
     args.push('--ro-bind-try', file, file);
   args.push('--proc', '/proc', '--dev', '/dev', '--tmpfs', '/tmp', '--tmpfs', '/dev/shm');
-  for (const relative of admittedToolkit) {
+  for (const relative of [
+    ...admittedToolkit,
+    ...(w.task?.contractVersion === 'video-two-stage/1' ? [] : ['templates/ifeng-scenes']),
+  ]) {
     const source = path.join(config.toolkitRoot, relative);
     args.push('--ro-bind', source, source);
   }
@@ -67,7 +79,18 @@ export function bubblewrapArgs(
       args.push('--bind', p, p);
     }
   }
-  if (mode === 'tool') {
+  if (w.task?.contractVersion === 'video-two-stage/1' && mode !== 'validate') {
+    const request = path.join(w.root, stagePath(w.task));
+    const phase = path.dirname(request);
+    args.push('--bind', phase, phase, '--ro-bind', request, request);
+    for (const name of ['.operation.lock', '.execution.lock'])
+      args.push('--bind', path.join(w.root, name), path.join(w.root, name));
+    if (tts) {
+      const audio = path.join(w.root, 'tool-audio');
+      args.push('--bind', audio, audio);
+    }
+  }
+  if (mode === 'tool' && w.task?.contractVersion !== 'video-two-stage/1') {
     const audio = path.join(w.root, 'input/audio');
     args.push('--bind', audio, audio);
   }
@@ -165,7 +188,10 @@ export class HostProcesses {
     if (this.busy.has(runId)) throw new Error('One command at a time per task');
     if (
       tts &&
-      (mode !== 'tool' || argv[1] !== path.join(this.config.toolkitRoot, 'tools/worker_tts.py'))
+      (mode !== 'tool' ||
+        !['worker_tts.py', 'worker_stage.py'].some(
+          (f) => argv[1] === path.join(this.config.toolkitRoot, 'tools', f),
+        ))
     )
       throw new Error('Network is only available to the trusted TTS adapter');
     const env: NodeJS.ProcessEnv = {

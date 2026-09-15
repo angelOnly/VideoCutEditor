@@ -1,4 +1,6 @@
 import path from 'node:path';
+import { stagePath } from '../contracts/two-stage.js';
+import { readJson } from './files.js';
 import { createHash } from 'node:crypto';
 import type { Config } from '../config.js';
 import type { Lease } from '../domain/task.js';
@@ -83,6 +85,28 @@ export class HostSandbox implements Sandbox {
     );
   }
   async validate(l: Lease, w: Workspace, signal: AbortSignal) {
+    if (w.task.contractVersion === 'video-two-stage/1') {
+      const response = await readJson(path.join(w.root, 'output/agent-response.json'));
+      return JSON.parse(
+        (
+          await this.processes.run(
+            l.run.id,
+            w,
+            [
+              this.config.python,
+              path.join(this.config.toolkitRoot, 'tools/worker_stage.py'),
+              'check',
+              '--request',
+              path.join(w.root, stagePath(w.task)),
+              '--artifact',
+              response.artifact,
+            ],
+            signal,
+            'validate',
+          )
+        ).trim(),
+      );
+    }
     const script =
       w.task.operation === 'analysis' ? 'validate_analysis.py' : 'validate_segments.py';
     const out = await this.processes.run(

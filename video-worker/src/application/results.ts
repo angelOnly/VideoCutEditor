@@ -1,3 +1,4 @@
+import { publishStage } from './stage-results.js';
 import { randomUUID } from 'node:crypto';
 import type { Lease } from '../domain/task.js';
 import type { Tenant } from '../config.js';
@@ -14,6 +15,8 @@ export async function publishResult(
   tenant: Tenant,
   candidate: any,
 ) {
+  if (w.task?.contractVersion === 'video-two-stage/1')
+    return publishStage(queue, storage, l, w, tenant, candidate);
   let artifacts: any[] = [];
   if (l.run.stage === 'render') {
     for (const [order, confirmed] of l.run.input.dataList.entries()) {
