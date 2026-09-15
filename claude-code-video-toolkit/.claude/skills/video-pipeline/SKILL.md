@@ -47,7 +47,7 @@ v2 不运行下方 v1 的整片编排或 `validate_delivery.py`。分别使用 `
 | project | 将已准入模板复制到 `project/`，填内容、素材路径、字体及布局 | `project-manifest.json`，含入口、composition、渲染 argv、模板版本 |
 | timeline | 以实际音频为基准对齐画面、字幕及音效；扣除转场重叠，计算总帧数 | `timeline.json`，详见任务契约 |
 | quality_check | 渲染每场开头/中间/末尾及转场关键帧，检查内容、字幕边界、黑屏、占位符、音频削波 | `quality-report.json`，检查项、截图和问题定位 |
-| rendering | 用模板实际入口完整渲染，输出 H.264/yuv420p MP4，必要音轨为 AAC | `output/video.mp4` 与 `render.log` |
+| rendering | Remotion 使用下方共享导出入口；其他项目用模板入口。输出 H.264/yuv420p MP4，必要音轨为 AAC | `output/video.mp4` 与 `render.log` |
 | delivery_check | 完整解码、核对参数/时长/阶段证据、计算摘要 | `validation.json`，通过后输出 `candidate` |
 
 技术细节按需读 [技术路由](references/technical-routing.md)。不要一次加载所有 Skill。每阶段完成以临时文件 + rename 写 `checkpoint.json`，记录 `stage`、`inputSha256`、产物哈希、尝试次数；Worker 的数据库状态为唯一外部状态源，模型不把任务标为 succeeded。
@@ -62,6 +62,31 @@ v2 不运行下方 v1 的整片编排或 `validate_delivery.py`。分别使用 `
 - 可安全重试的临时网络故障，每个逻辑操作最多 10 次总尝试（含首次）；重试前依次等待 2、5、10、20、30、30、30、30、30 秒，遇 Retry-After 则遵守服务端等待要求。已成功的操作不重试；鉴权失败、必需输入缺失及未解决的依赖问题不盲目重试。收费请求仍遵循下方结果核对与防重复扣费规则。
 - 网络重试、同一渲染进程内部的浏览器自动恢复不逐次扣除工程/画面修复轮次，但仍计入总耗时；为修复故障而修改工程或渲染配置并验证，计为一轮。无 Worker 的本地任务默认总时限 14400 秒（4 小时），从首次执行起计时，续跑不重置；明确的任务限额或 Worker 剩余时间/费用约束优先，不凭空假设额外费用上限。
 - 已验证的配音以文本 + provider + voice + 模型参数 + 输入音频哈希缓存。收费请求结果不明时先查供应商请求记录；无幂等/查询能力则返回 `EXTERNAL_RESULT_UNKNOWN`，不重复扣费。
+
+## Remotion 整片导出入口（v1）
+
+v1 的普通 SDR Remotion 项目在画面检查通过后，统一使用共享导出工具，
+不要让每个任务重新编写色彩转换或手工重建混音脚本：
+
+```bash
+node "$TOOLKIT_ROOT/tools/render_delivery.mjs" --job-dir "$JOB_DIR"
+```
+
+`project-manifest.json` 必须提供相对任务目录的 `projectPath`、`entry` 和真实
+`compositionId`；可用 `inputPropsPath` 指定任务内 JSON、`publicPath` 指定素材目录。
+设置 `renderProfile: "sdr-bt709-pcm"`，把上述命令写入 `renderArgv`。依赖使用该
+project 的已安装版本；可用 `--browser-executable` 指定已安装浏览器。
+
+该工具按 task/timeline 校验整片规格，显式 BT.709/yuv420p 渲染画面；由同一
+composition 单独输出 PCM WAV，再编码 AAC 封装，不经过裸 AAC 中间音轨。
+它保留原混音、裁剪、淡入淡出，不固定平移 43ms，不重新生成配音，不二次压缩画面。
+参数、PCM、临时视频保存在任务 output 下的独立工作目录，检查通过后才替换
+`output/video.mp4`；结果为 `render-delivery.json`。失败保留旧成片，但本轮失败
+不能当作已交付。异常退出留下的锁只能在确认该导出进程已经结束后删除。
+
+该工具的窗口声波对齐检查只比较导出音轨与 composition 的 PCM 混音，不证明
+口播文本、字幕或最初的时间轴正确；原有画面检查、句段对齐和共享交付校验仍须执行。
+Python 视频项目继续使用自己的入口；HDR/透明输出和 v2 分段任务不套用此 SDR 工具。
 
 ## 交付与失败
 

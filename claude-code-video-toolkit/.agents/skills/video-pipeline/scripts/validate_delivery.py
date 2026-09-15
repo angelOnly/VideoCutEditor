@@ -86,6 +86,16 @@ def validate(root, timeout=600):
     require(abs(actual_fps - fps) < 0.001, 'Video FPS mismatch')
     require(not spec['requireAudio'] or bool(audios), 'Required audio stream missing')
     require(all(a['codec_name'] == 'aac' for a in audios), 'Expected AAC audio')
+    if stages['project-manifest'].get('renderProfile') == 'sdr-bt709-pcm':
+        require(v.get('color_range') == 'tv' and v.get('color_space') == 'bt709',
+                'Expected limited-range BT.709 delivery')
+        require(len(audios) == 1, 'Expected one final AAC mix')
+        require(abs(number(float(audios[0].get('duration', 'nan'))) - duration) <= 0.03,
+                'Final mix duration mismatch')
+        delivery = read(root, 'render-delivery.json')
+        require(delivery.get('passed') is True and delivery.get('jobId') == task['jobId'],
+                'Shared export did not complete successfully')
+        require(delivery.get('sha256') == sha256(video), 'Shared export hash mismatch')
     actual_duration = number(float(v.get('duration', probe['format']['duration'])))
     require(abs(actual_duration - duration) <= max(0.1, 2 / fps), 'Video duration mismatch')
     if v.get('nb_frames', 'N/A') != 'N/A':
