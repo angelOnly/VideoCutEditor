@@ -738,6 +738,18 @@
       "documentation": "docs/youtube-upload.md",
       "created": "2026-06-09",
       "updated": "2026-06-09"
+    },
+    "render_delivery": {
+      "path": "tools/render_delivery.mjs",
+      "description": "Full v1 SDR Remotion export with explicit BT.709, PCM intermediate mix and final AAC mux; no TTS",
+      "usage": "node tools/render_delivery.mjs --job-dir JOB",
+      "status": "beta",
+      "created": "2026-09-15",
+      "options": {
+        "job-dir": "v1 auto task directory with project-manifest.json and timeline.json",
+        "browser-executable": "Optional installed Chromium executable",
+        "concurrency": "Positive integer; default 4"
+      }
     }
   },
   "optionalComponents": {

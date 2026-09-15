@@ -17,6 +17,12 @@ An open-source, AI-native video production workspace for Claude Code, featuring:
 
 ---
 
+## 2026-09-15: Deterministic SDR delivery
+
+- Added a shared v1 Remotion export entry: explicit BT.709 video, composition PCM mix, final AAC mux.
+- Added bounded waveform checks and regression coverage; source/generated pipeline instructions use the same entry.
+- v2 segment rendering and non-Remotion workflows retain their existing contracts.
+
 ## Current Status
 
 **Phase:** 3 - Templates & Brands (nearly complete)

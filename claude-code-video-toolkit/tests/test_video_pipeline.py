@@ -60,6 +60,36 @@ class DeliveryGateTests(unittest.TestCase):
         self.assertEqual(result['sha256'], gate.sha256(self.video))
         self.assertEqual(result['sizeBytes'], self.video.stat().st_size)
 
+    def test_sdr_profile_requires_limited_bt709(self):
+        self.write('project-manifest', {'entry': 'test fixture', 'renderProfile': 'sdr-bt709-pcm'})
+        with self.assertRaisesRegex(gate.Invalid, 'limited-range BT.709'):
+            gate.validate(self.root)
+
+    def test_sdr_profile_checks_export_hash_and_audio_duration(self):
+        rendered = self.root / 'profile.mp4'
+        subprocess.run(['ffmpeg', '-nostdin', '-v', 'error', '-i', str(self.video),
+                        '-c:v', self.encoder, '-pix_fmt', 'yuv420p', '-color_range', 'tv',
+                        '-colorspace', 'bt709', '-c:a', 'copy', str(rendered)], check=True)
+        rendered.replace(self.video)
+        self.write('audio-manifest', {'clips': [{'path': 'output/video.mp4', 'sha256': gate.sha256(self.video), 'durationSec': 1}]})
+        self.write('project-manifest', {'entry': 'test fixture', 'renderProfile': 'sdr-bt709-pcm'})
+        self.write('render-delivery', {'passed': True, 'sha256': gate.sha256(self.video)})
+        self.assertTrue(gate.validate(self.root)['passed'])
+        self.write('render-delivery', {'passed': True, 'sha256': 'stale'})
+        with self.assertRaisesRegex(gate.Invalid, 'Shared export hash mismatch'):
+            gate.validate(self.root)
+        self.write('render-delivery', {'passed': False, 'sha256': gate.sha256(self.video)})
+        with self.assertRaisesRegex(gate.Invalid, 'did not complete'):
+            gate.validate(self.root)
+        padded = self.root / 'padded.mp4'
+        subprocess.run(['ffmpeg', '-nostdin', '-v', 'error', '-i', str(self.video),
+                        '-c:v', 'copy', '-af', 'apad=pad_dur=0.08', '-c:a', 'aac', str(padded)], check=True)
+        padded.replace(self.video)
+        self.write('audio-manifest', {'clips': [{'path': 'output/video.mp4', 'sha256': gate.sha256(self.video), 'durationSec': 1}]})
+        self.write('render-delivery', {'passed': True, 'sha256': gate.sha256(self.video)})
+        with self.assertRaisesRegex(gate.Invalid, 'Final mix duration mismatch'):
+            gate.validate(self.root)
+
     def test_wrong_resolution(self):
         self.task['output']['width'] = 640
         self.write('task', self.task)
