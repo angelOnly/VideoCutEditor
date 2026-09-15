@@ -5,7 +5,7 @@
   "defaultExecutor": "host-app-server",
   "taskIsolation": "bubblewrap-systemd-user",
   "remotionVersion": "4.0.425",
-  "runtimeSourceSha256": "c0b15922efad81ea999a96d3cce997f173c494b4d3ee0ce1309c17dbb415ff01",
+  "runtimeSourceSha256": "57f1b961270358274cbe10b4fba5c8bbfa51d720a68563c187541ef13497a942",
   "files": {
     "claude-code-video-toolkit/.claude/skills/video-pipeline/SKILL.md": "43495c9f497fc2fe57a5782d4678fa8edbf5103e7429ab4843f4dd4da6969d90",
     "claude-code-video-toolkit/.claude/skills/video-pipeline/agents/openai.yaml": "71afe3d03707f064298527f6ad4a1549e44c0de7d45c38acd91fa4ee6e441570",
@@ -15,7 +15,7 @@
     "claude-code-video-toolkit/.claude/skills/video-pipeline/references/task-contract.md": "b63313d8f860d1d234d1d85a6923912eb1733363e5810a00ac385777e48ae5fa",
     "claude-code-video-toolkit/.claude/skills/video-pipeline/references/task-v2.schema.json": "775a8471751010a72ab3ecb6949d2275f55ab5c45b37859f93783b2e75fc2a90",
     "claude-code-video-toolkit/.claude/skills/video-pipeline/references/technical-routing.md": "c3da2b84a348d65e2b4f46541226c2f5fc3bb0b6a39bbd9fea19b12131c84f1a",
-    "claude-code-video-toolkit/.claude/skills/video-pipeline/references/two-stage-contract.md": "0c12f40492a7025e4c8df17d55e906de24d3a827169febc29d75a125ac41064d",
+    "claude-code-video-toolkit/.claude/skills/video-pipeline/references/two-stage-contract.md": "7fa73e08ecaa25c139be2a80660ea5ced20121e0c92cc4db6ee5305c45c905a0",
     "claude-code-video-toolkit/.claude/skills/video-pipeline/references/two-stage.schema.json": "b2cbd1c5518244f4222a5fecee6ece19d7ba25feb50c19a7583b8b86d55df0b5",
     "claude-code-video-toolkit/.claude/skills/video-pipeline/references/v2-contract.md": "844b2f0b6c0cc281d2663ca3c317cf352c6cb134e99428f590c688f31a3bdeef",
     "claude-code-video-toolkit/.claude/skills/video-pipeline/references/worker-contract.md": "d620e6f5eace3c383c3a73126d3af405322dff349a75a64a90de8d2f5cdcd44a",
