@@ -328,6 +328,23 @@ class MediaTests(Fixture):
         self.assertEqual(error.exception.details['step'],'mix')
         self.assertFalse(target.exists())
 
+    def test_mux_normalizes_only_submillisecond_silent_padding(self):
+        import wave
+        video=self.job/self.manifest['scenes'][0]['path']
+        for delta,tail,allowed in [(16,b'\x00\x00',True),(-16,b'',True),
+                                    (16,b'\x01\x00',False),(96,b'\x00\x00',False)]:
+            with self.subTest(delta=delta,tail=tail):
+                mix=video.with_name('boundary.wav');target=video.with_name('boundary.mp4')
+                with wave.open(str(mix),'wb') as audio:
+                    audio.setparams((1,2,48000,0,'NONE','not compressed'))
+                    audio.writeframes(b'\x00\x00'*(48000+min(0,delta))+tail*max(0,delta))
+                if allowed:
+                    report=mux_scene(video,mix,target,self.req['outputSpec'],10)
+                    self.assertEqual(report['mixBoundaryAdjustmentSamples'],delta)
+                else:
+                    with self.assertRaises(StageError) as error:mux_scene(video,mix,target,self.req['outputSpec'],10)
+                    self.assertEqual(error.exception.code,'AUDIO_MISMATCH')
+
 
 @unittest.skipUnless(os.environ.get('VIDEOCUT_TEST_MODULES') and os.environ.get('VIDEOCUT_TEST_BROWSER'), '指定本机 Remotion 依赖与浏览器才运行真实渲染')
 class RemotionTests(Fixture):
@@ -368,10 +385,10 @@ registerRoot(()=> <Composition id="SceneOne" component={Frame} durationInFrames=
         (project/'src/index.tsx').write_text("""
 import React from 'react';
 import {registerRoot,Composition,AbsoluteFill,Audio,Sequence,staticFile} from 'remotion';
-const Frame=()=> <AbsoluteFill style={{background:'#123456'}}><Audio src={staticFile('voice.wav')} volume={0.6}/><Sequence from={18} durationInFrames={9}><Audio src={staticFile('effect.wav')} volume={0.2}/></Sequence></AbsoluteFill>;
+const Frame=()=> <AbsoluteFill style={{background:'#123456'}}><Audio src={staticFile('voice.wav')} volume={0.6}/><Sequence from={20} durationInFrames={9}><Audio src={staticFile('effect.wav')} volume={0.2}/></Sequence></AbsoluteFill>;
 registerRoot(()=> <Composition id="Sync" component={Frame} durationInFrames={170} fps={30} width={320} height={240} calculateMetadata={({props})=>({durationInFrames:props.frames})} defaultProps={{frames:170}}/>);
 """)
-        for frames in (170,171):
+        for frames in (170,171,236):
             write(project/'props.json',{'frames':frames})
             options=(render,'scene_1','project','project/src/index.tsx','Sync','project/props.json',frames,
                      os.environ.get('VIDEOCUT_TEST_NODE','node'),str(modules),os.environ['VIDEOCUT_TEST_BROWSER'])

@@ -246,16 +246,24 @@ def mux_scene(video, mix, output, spec, frames, timeout=600):
     """只封装画面和已完成的全量混音，不改写口播、音效或业务时间轴。"""
     seconds = frames / spec['fps']
     info = audio_info(mix)
-    # 无损混音应与 Composition 等长；不靠裁掉有效语音强行匹配画面。
-    if abs(info['durationSeconds'] - seconds) > max(1 / info['sampleRate'], 1 / 48000) + 1e-6:
+    # Remotion 的 adelay 将非整毫秒入场时间取整；尾部 padding 因而可能偏差不足 1ms。
+    # 只归一化这一量级的静音边界，绝不截掉有效声音来强行匹配画面。
+    sample_rate = info['sampleRate']
+    delta_samples = round((info['durationSeconds'] - seconds) * sample_rate)
+    if abs(delta_samples) > math.ceil(sample_rate / 1000):
         details = {'step': 'mix', 'expectedSeconds': seconds, 'mixSeconds': info['durationSeconds']}
         raise StageError('AUDIO_MISMATCH', f'无损混音与实际时间轴不等长：{details}', details=details)
+    if delta_samples > 0:
+        tail = ffmpeg('-i', mix, '-map', '0:a:0', '-af', f'atrim=start_sample={round(seconds * sample_rate)}',
+                      '-c:a', 'pcm_s16le', '-f', 's16le', '-')
+        require(not any(tail), '无损混音超出时间轴的尾部包含有效声音，不能截断', 'AUDIO_MISMATCH')
     samples = round(seconds * 48000)
     ffmpeg('-y', '-copyts', '-i', video, '-i', mix, '-map', '0:v:0', '-map', '1:a:0',
            '-c:v', 'copy', '-af', f'aresample=48000,apad,atrim=end_sample={samples},asetpts=PTS-STARTPTS',
            '-c:a', 'aac', '-b:a', '192k', '-movflags', '+faststart', output, timeout=timeout)
     report = validate_mp4(output, spec, frames)
     report['audioCheck'] = compare_audio(output, mix, allow_silence=True)
+    report['mixBoundaryAdjustmentSamples'] = delta_samples
     return report
 
 
