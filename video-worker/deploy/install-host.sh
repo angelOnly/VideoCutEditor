@@ -18,7 +18,7 @@ if [[ -f "$HOME/.config/systemd/user/videocut-worker.service" ]]; then
 fi
 # Avoid silently installing Node into an interactive-only nvm directory.
 sudo apt-get update
-sudo apt-get install -y curl ca-certificates xz-utils python3 python3-venv ffmpeg fonts-noto-cjk bubblewrap apparmor util-linux dbus-user-session
+sudo apt-get install -y curl ca-certificates xz-utils python3 python3-venv ffmpeg fonts-noto-cjk bubblewrap apparmor util-linux dbus-user-session ripgrep
 node_supported() {
   "$1" -e 'const [major, minor] = process.versions.node.split(".").map(Number); if (major < 22 || (major === 22 && minor < 13)) process.exit(1)'
 }
