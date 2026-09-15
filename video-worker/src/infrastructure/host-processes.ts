@@ -57,6 +57,7 @@ export function bubblewrapArgs(
     '/etc/ssl/certs',
     '/etc/resolv.conf',
     '/etc/nsswitch.conf',
+    '/etc/hosts',
     '/etc/passwd',
     '/etc/group',
   ])

@@ -16,10 +16,11 @@ export async function checkHostIsolation(c: Config, processes: HostProcesses) {
     await writeFile(other, 'private-sentinel');
     await writeFile(path.join(root, 'input/source.txt'), 'readonly-input');
     const w = { root } as Workspace;
-    const code = `import os,pathlib,sys
+    const code = `import os,pathlib,sys,socket
 root=pathlib.Path(sys.argv[1]); forbidden=pathlib.Path(sys.argv[2]); assert not forbidden.exists()
 assert not pathlib.Path(sys.argv[3]).exists()
 assert not pathlib.Path('/var/run/docker.sock').exists()
+assert any(a[4][0] in ('127.0.0.1','::1') for a in socket.getaddrinfo('localhost', 80))
 assert not os.environ.get('POSTGRES_PASSWORD') and not os.environ.get('DOUBAO_TTS_API_KEY')
 try: (root/'input/source.txt').write_text('changed')
 except OSError: pass
@@ -70,6 +71,24 @@ print('two-stage isolation passed')`,
     );
     for (const binary of ['ffmpeg', 'ffprobe'])
       await processes.run(id, w, [binary, '-version'], new AbortController().signal, 'agent');
+    if (c.executionProtocol === 'video-two-stage/1')
+      await processes.run(
+        id,
+        w,
+        [
+          c.python,
+          path.join(c.toolkitRoot, 'tools/stage_media.py'),
+          'preflight',
+          '--node',
+          process.execPath,
+          '--modules',
+          path.join(c.toolkitRoot, 'templates/ifeng-scenes/node_modules'),
+          '--browser',
+          c.hostBrowser,
+        ],
+        new AbortController().signal,
+        'agent',
+      );
   } catch (cause) {
     const message = cause instanceof Error ? cause.message : String(cause);
     if (
