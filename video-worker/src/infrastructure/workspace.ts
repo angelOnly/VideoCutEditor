@@ -54,9 +54,10 @@ export class Workspaces {
     if (isStage && l.run.stage === 'analysis') {
       const existing = (await this.db.query('SELECT prepared FROM runs WHERE id=$1', [l.run.id]))
         .rows[0].prepared;
+      const frozenPath = path.join(this.config.dataRoot, task.id, 'inputs', 'templates', l.run.id);
       frozenTemplate =
         existing?.template ??
-        (await new TemplateProvider(this.config).read(task.config.templateId));
+        (await new TemplateProvider(this.config).read(task.config.templateId, frozenPath));
       if (!existing?.template)
         await new Queue(this.db).withLease(l, async (q) => {
           await q.query('UPDATE runs SET prepared=$2 WHERE id=$1', [

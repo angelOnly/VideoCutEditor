@@ -19,6 +19,8 @@ export interface Config {
   executor: 'host' | 'docker';
   executionProtocol?: 'video-two-stage/1' | 'legacy';
   templateApiUrl?: string;
+  customTemplateApiBaseUrl?: string;
+  customTemplatePackageOrigins: string[];
   codexPath: string;
   codexHome: string;
   hostBrowser: string;
@@ -51,8 +53,10 @@ export interface Config {
   templates: Record<
     string,
     {
-      path: string;
-      version: string;
+      path?: string;
+      version?: string;
+      archivePath?: string;
+      document?: string;
       attachments?: { assetId: string; url: string; kind: string }[];
     }
   >;
@@ -112,6 +116,12 @@ export function loadConfig(envFile = path.resolve(serviceRoot, '../.env')): Conf
       .enum(['video-two-stage/1', 'legacy'])
       .parse(process.env.WORKER_PROTOCOL ?? 'legacy'),
     templateApiUrl: process.env.TEMPLATE_API_URL || undefined,
+    customTemplateApiBaseUrl: process.env.CUSTOM_TEMPLATE_API_BASE_URL || undefined,
+    customTemplatePackageOrigins: (process.env.CUSTOM_TEMPLATE_PACKAGE_ORIGINS ?? '')
+      .split(',')
+      .map((origin) => origin.trim())
+      .filter(Boolean)
+      .map((origin) => new URL(z.string().url().parse(origin)).origin),
     hostBrowser:
       process.env.REMOTION_BROWSER_EXECUTABLE || hostRuntime.browser || '/usr/bin/chromium',
     executor: z.enum(['host', 'docker']).parse(process.env.WORKER_EXECUTOR ?? 'host'),

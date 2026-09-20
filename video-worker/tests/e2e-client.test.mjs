@@ -19,7 +19,10 @@ test('真实接口客户端：准备白名单、重复提交同一 requestId、�
     const body = chunks.length ? JSON.parse(Buffer.concat(chunks).toString()) : null;
     assert.equal(req.headers.authorization, 'Bearer test-client-key');
     let data;
-    if (req.method === 'POST' && req.url.endsWith('/getAiVideoEditingAnalysisData')) {
+    if (
+      req.method === 'POST' &&
+      req.url === '/narrate/ai_video_director/getAiVideoEditingAnalysisData'
+    ) {
       submissions.push(body);
       data = { taskId: body.taskId, runId: 'analysis-run', state: 'queued', stage: 'analysis' };
       current = {
@@ -33,7 +36,10 @@ test('真实接口客户端：准备白名单、重复提交同一 requestId、�
           dataList: [{ id: 's1', content: '第一句。' }],
         },
       };
-    } else if (req.method === 'POST' && req.url.endsWith('/getAiVideoEditingData')) {
+    } else if (
+      req.method === 'POST' &&
+      req.url === '/narrate/ai_video_director/getAiVideoEditingData'
+    ) {
       renderBody = body;
       data = { taskId: body.taskId, runId: 'render-run', state: 'queued', stage: 'render' };
       current = {
@@ -44,7 +50,13 @@ test('真实接口客户端：准备白名单、重复提交同一 requestId、�
           { id: 's1', content: '第一句。', dur: 1, url: path.join(root, 'media/scene.mp4') },
         ],
       };
-    } else data = current;
+    } else if (req.method === 'GET' && req.url?.startsWith('/ai_video_director/tasks/'))
+      data = current;
+    else {
+      res.statusCode = 404;
+      res.end();
+      return;
+    }
     res.setHeader('content-type', 'application/json');
     res.end(JSON.stringify({ status: 0, data }));
   });

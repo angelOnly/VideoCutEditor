@@ -151,12 +151,13 @@ async function api(c, method, route, body) {
   );
   return value.data;
 }
-const endpoint = '/ai_video_director/';
+const workerEndpoint = '/narrate/ai_video_director/';
+const managementEndpoint = '/ai_video_director/';
 async function state(c) {
   return readJson(path.join(c.state, 'current.json'));
 }
 async function query(c, s) {
-  return api(c, 'GET', endpoint + 'tasks/' + encodeURIComponent(s.taskId));
+  return api(c, 'GET', managementEndpoint + 'tasks/' + encodeURIComponent(s.taskId));
 }
 async function analysis(c, args) {
   const prepared = await readJson(path.join(c.state, 'prepared.json'));
@@ -187,7 +188,12 @@ async function analysis(c, args) {
     await save(path.join(c.state, 'current.json'), s);
     await save(path.join(c.state, s.taskId, 'analysis-request.json'), s.analysis);
   }
-  const accepted = await api(c, 'POST', endpoint + 'getAiVideoEditingAnalysisData', s.analysis);
+  const accepted = await api(
+    c,
+    'POST',
+    workerEndpoint + 'getAiVideoEditingAnalysisData',
+    s.analysis,
+  );
   console.log(JSON.stringify(accepted, null, 2));
   console.log('已提交 analysis。使用 status --wait 查看结果；此阶段不会自动提交 render。');
 }
@@ -252,7 +258,11 @@ async function render(c, args) {
     await save(path.join(c.state, s.taskId, 'render-request.json'), s.render);
   }
   console.log(
-    JSON.stringify(await api(c, 'POST', endpoint + 'getAiVideoEditingData', s.render), null, 2),
+    JSON.stringify(
+      await api(c, 'POST', workerEndpoint + 'getAiVideoEditingData', s.render),
+      null,
+      2,
+    ),
   );
   console.log('已由外部客户端确认方案并提交 render；真正的 Codex 执行仍由 Worker 调度。');
 }

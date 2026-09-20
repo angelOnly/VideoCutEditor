@@ -68,6 +68,7 @@ export function config(overrides: Partial<Config> = {}): Config {
     dockerUid: '1000:1000',
     dockerMemory: '1g',
     dockerCpus: '1',
+    customTemplatePackageOrigins: [],
     ttsVoice: 'test',
     ttsResourceId: 'seed-tts-2.0',
     python: process.env.PYTHON ?? 'python3',

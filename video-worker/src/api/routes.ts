@@ -31,16 +31,14 @@ export function createApi(db: Database, config: Config) {
   });
   api.setErrorHandler((e: any, req, reply) => {
     if (e instanceof ZodError)
-      return reply
-        .code(400)
-        .send({
-          status: 1,
-          msg: 'INVALID_REQUEST',
-          error: {
-            code: 'INVALID_REQUEST',
-            issues: e.issues.map((i) => ({ path: i.path, message: i.message })),
-          },
-        });
+      return reply.code(400).send({
+        status: 1,
+        msg: 'INVALID_REQUEST',
+        error: {
+          code: 'INVALID_REQUEST',
+          issues: e.issues.map((i) => ({ path: i.path, message: i.message })),
+        },
+      });
     if (e instanceof AppError)
       return reply
         .code(e.httpStatus)
@@ -54,11 +52,11 @@ export function createApi(db: Database, config: Config) {
     await db.query('SELECT 1');
     return { status: 0 };
   });
-  api.post('/ai_video_director/getAiVideoEditingAnalysisData', async (req, reply) => {
+  api.post('/narrate/ai_video_director/getAiVideoEditingAnalysisData', async (req, reply) => {
     const r = await tasks.analysis(tenants.get(req)!, req.body);
     return reply.code(202).send(r);
   });
-  api.post('/ai_video_director/getAiVideoEditingData', async (req, reply) => {
+  api.post('/narrate/ai_video_director/getAiVideoEditingData', async (req, reply) => {
     const r = await tasks.render(tenants.get(req)!, req.body);
     return reply.code(202).send(r);
   });

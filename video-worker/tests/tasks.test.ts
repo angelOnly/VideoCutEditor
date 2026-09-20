@@ -144,7 +144,7 @@ test('HTTP authentication and malformed contracts are rejected before queue writ
   const db = await database(),
     api = createApi(db, config());
   try {
-    const route = '/ai_video_director/getAiVideoEditingAnalysisData';
+    const route = '/narrate/ai_video_director/getAiVideoEditingAnalysisData';
     assert.equal(
       (await api.inject({ method: 'POST', url: route, payload: analysis() })).statusCode,
       401,
@@ -164,6 +164,39 @@ test('HTTP authentication and malformed contracts are rejected before queue writ
     assert.equal(
       (await api.inject({ method: 'POST', url: route, headers, payload: analysis() })).statusCode,
       202,
+    );
+    assert.equal(
+      (
+        await api.inject({
+          method: 'POST',
+          url: '/ai_video_director/getAiVideoEditingAnalysisData',
+          headers,
+          payload: analysis('old-route'),
+        })
+      ).statusCode,
+      404,
+    );
+    assert.equal(
+      (
+        await api.inject({
+          method: 'POST',
+          url: '/narrate/ai_video_director/getAiVideoEditingData',
+          headers,
+          payload: {},
+        })
+      ).statusCode,
+      400,
+    );
+    assert.equal(
+      (
+        await api.inject({
+          method: 'POST',
+          url: '/ai_video_director/getAiVideoEditingData',
+          headers,
+          payload: {},
+        })
+      ).statusCode,
+      404,
     );
     assert.equal(
       (await api.inject({ url: '/ai_video_director/tasks/task1', headers })).json().data.latestRun

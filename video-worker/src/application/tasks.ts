@@ -12,7 +12,8 @@ export class Tasks {
   async analysis(tenant: Tenant, body: unknown) {
     const input = analysisRequest.parse(body);
     const template = this.config.templates[input.plugin.templateId];
-    if (!template && !this.config.templateApiUrl) fail('TEMPLATE_UNSUPPORTED', '未配置模板来源');
+    if (!template && !this.config.templateApiUrl && !this.config.customTemplateApiBaseUrl)
+      fail('TEMPLATE_UNSUPPORTED', '未配置模板来源');
     return this.repo.submit(tenant.id, 'analysis', input, {
       executionProtocol: this.config.executionProtocol ?? 'legacy',
       requirements: input.otherRequirements,

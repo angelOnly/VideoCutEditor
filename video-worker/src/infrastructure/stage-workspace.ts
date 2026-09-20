@@ -9,6 +9,44 @@ import type { Workspace } from './workspace.js';
 import { writeJson, readJson, hashFile, copyTree, safeFile } from './files.js';
 import { protocol, assertStage, stagePath } from '../contracts/two-stage.js';
 import { Queue } from './queue.js';
+
+async function freezeInputTree(root: string): Promise<void> {
+  for (const child of await readdir(root, { withFileTypes: true })) {
+    const target = path.join(root, child.name);
+    if (child.isDirectory()) await freezeInputTree(target);
+    else if (child.isFile()) await chmod(target, 0o444);
+    else throw new AppError('INPUT_SNAPSHOT_INVALID', '输入快照包含非普通文件');
+  }
+  await chmod(root, 0o555);
+}
+async function snapshotInput(root: string) {
+  const snapshot: Record<string, string> = {};
+  async function visit(relative: string): Promise<void> {
+    const directory = path.join(root, relative);
+    for (const child of await readdir(directory, { withFileTypes: true })) {
+      const name = path.posix.join(relative, child.name);
+      if (child.isDirectory()) await visit(name);
+      else if (child.isFile()) snapshot[name] = await hashFile(await safeFile(root, name));
+      else throw new AppError('INPUT_SNAPSHOT_INVALID', '输入快照包含非普通文件');
+    }
+  }
+  await visit('input');
+  return snapshot;
+}
+async function verifySnapshot(base: string, snapshot: Record<string, string>) {
+  for (const [name, hash] of Object.entries(snapshot)) {
+    if (!name.startsWith('input/'))
+      throw new AppError('INPUT_SNAPSHOT_INVALID', '输入快照路径无效');
+    let current: string;
+    try {
+      current = await hashFile(await safeFile(base, name.slice(6)));
+    } catch (error) {
+      if (error instanceof AppError) throw error;
+      throw new AppError('INPUT_SNAPSHOT_INVALID', '原始输入快照缺失');
+    }
+    if (current !== hash) throw new AppError('INPUT_SNAPSHOT_INVALID', '原始输入快照损坏');
+  }
+}
 // 与 Python json_digest 的排序、分隔符一致；snapshot 只包含字符串映射。
 export function snapshotDigest(snapshot: Record<string, string>) {
   const value =
@@ -39,35 +77,68 @@ export async function prepareStage(
     l.run.stage === 'analysis' ? l.run.id : (task.config.analysisRunId ?? 'missing'),
   );
   if (l.run.stage === 'analysis') {
-    await mkdir(base, { recursive: true });
-    await writeFile(path.join(root, 'input/script.txt'), task.config.script);
-    await writeJson(path.join(root, 'input/requirements.json'), {
-      requirements: task.config.requirements,
-      plugin: { digitalHumanId: task.config.digitalHumanId },
-      narration: task.config.narration,
-    });
-    const template = (await db.query('SELECT prepared FROM runs WHERE id=$1', [l.run.id])).rows[0]
-      .prepared.template;
-    await writeFile(path.join(root, 'input/template.md'), template.content);
-    await writeJson(path.join(root, 'input/template.json'), {
-      id: template.id,
-      version: template.version,
-      source: template.source,
-      document: 'input/template.md',
-      attachments: template.attachments.map((a: any) => a.assetId),
-    });
-    await writeJson(path.join(root, 'input/assets.json'), {
-      assets: assets.map((a) => ({ id: a.assetId, path: a.path, kind: a.kind, sha256: a.sha256 })),
-    });
-    // 快照只在可信准备阶段写入，同 run 重试从已冻结模板和素材恢复。
-    for (const file of await readdir(base)) await chmod(path.join(base, file), 0o600);
-    await copyTree(path.join(root, 'input'), base);
-    await queue.withLease(l, async (q) => {
-      await q.query('UPDATE tasks SET config=$2 WHERE id=$1', [
-        task.id,
-        { ...task.config, analysisRunId: l.run.id },
-      ]);
-    });
+    const prepared = (await db.query('SELECT prepared FROM runs WHERE id=$1', [l.run.id])).rows[0]
+      .prepared;
+    if (prepared.stageSnapshot) {
+      // 重试直接恢复首次冻结输入，不能重新读取模板或覆盖不可变快照。
+      await verifySnapshot(base, prepared.stageSnapshot);
+      await copyTree(base, path.join(root, 'input'));
+    } else {
+      await mkdir(base, { recursive: true });
+      await writeFile(path.join(root, 'input/script.txt'), task.config.script);
+      await writeJson(path.join(root, 'input/requirements.json'), {
+        requirements: task.config.requirements,
+        plugin: { digitalHumanId: task.config.digitalHumanId },
+        narration: task.config.narration,
+      });
+      const template = (await db.query('SELECT prepared FROM runs WHERE id=$1', [l.run.id])).rows[0]
+        .prepared.template;
+      if (template.frozenPath) {
+        const expected = path.join(config.dataRoot, task.id, 'inputs', 'templates', l.run.id);
+        if (template.frozenPath !== expected)
+          throw new AppError('INPUT_SNAPSHOT_INVALID', '模板冻结目录不匹配');
+        await copyTree(expected, path.join(root, 'input/template'));
+        await writeJson(path.join(root, 'input/template.json'), {
+          id: template.id,
+          version: template.version,
+          source: template.source,
+          archiveSha256: template.archiveSha256,
+          name: template.name,
+          description: template.description,
+          updatedAt: template.updatedAt,
+          packageName: template.packageName,
+          root: `input/template/${template.rootDirectory}`,
+          document: `input/template/${template.document}`,
+          files: template.files,
+        });
+      } else {
+        await writeFile(path.join(root, 'input/template.md'), template.content);
+        await writeJson(path.join(root, 'input/template.json'), {
+          id: template.id,
+          version: template.version,
+          source: template.source,
+          document: 'input/template.md',
+          attachments: template.attachments.map((a: any) => a.assetId),
+        });
+      }
+      await writeJson(path.join(root, 'input/assets.json'), {
+        assets: assets.map((a) => ({
+          id: a.assetId,
+          path: a.path,
+          kind: a.kind,
+          sha256: a.sha256,
+        })),
+      });
+      // 快照只在可信准备阶段写入，同 run 重试从已冻结模板和素材恢复。
+      await copyTree(path.join(root, 'input'), base);
+      await freezeInputTree(base);
+      await queue.withLease(l, async (q) => {
+        await q.query('UPDATE tasks SET config=$2 WHERE id=$1', [
+          task.id,
+          { ...task.config, analysisRunId: l.run.id },
+        ]);
+      });
+    }
   } else {
     // 先恢复原始稿件/模板及素材，再加入编辑明确替换的新素材。
     const replacements = assets.map((a) => ({ ...a }));
@@ -83,10 +154,7 @@ export async function prepareStage(
     ).rows[0]?.prepared;
     if (!originalPrepared?.stageSnapshot)
       throw new AppError('INPUT_SNAPSHOT_INVALID', '缺少分析快照登记');
-    for (const [name, hash] of Object.entries(originalPrepared.stageSnapshot)) {
-      if ((await hashFile(await safeFile(base, name.slice(6)))) !== hash)
-        throw new AppError('INPUT_SNAPSHOT_INVALID', '原始输入快照损坏');
-    }
+    await verifySnapshot(base, originalPrepared.stageSnapshot);
     for (const file of await readdir(path.join(root, 'input')))
       await chmod(path.join(root, 'input', file), 0o600);
     await copyTree(base, path.join(root, 'input'));
@@ -100,12 +168,7 @@ export async function prepareStage(
     await writeJson(path.join(root, 'input/assets.json'), manifest);
     for (const a of assets) a.path = replacements.find((x) => x.assetId === a.assetId).path;
   }
-  const snapshot: Record<string, string> = {};
-  for (const file of await readdir(path.join(root, 'input'))) {
-    const relative = 'input/' + file;
-    snapshot[relative] = await hashFile(await safeFile(root, relative));
-    await chmod(path.join(root, relative), 0o444);
-  }
+  const snapshot = await snapshotInput(root);
   if (l.run.stage === 'analysis')
     await queue.withLease(l, async (q) => {
       const prepared = (await q.query('SELECT prepared FROM runs WHERE id=$1', [l.run.id])).rows[0]
