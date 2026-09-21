@@ -107,6 +107,14 @@ test('host namespace hides shared roots, login and env; trusted tools alone may 
   assert.equal(policy.features.shell_tool, false);
   assert.equal(policy.features.plugins, false);
   assert.ok(!prompt({ operation: 'render' }, w.root, c.toolkitRoot).includes('${job}'));
+  assert.match(
+    prompt(
+      { contractVersion: 'video-two-stage/1', stage: 'render', runId: 'run-a' },
+      w.root,
+      c.toolkitRoot,
+    ),
+    /REMOTION_BROWSER_EXECUTABLE/,
+  );
 });
 
 test('两阶段渲染只授权当前 run 的 render 目录写入', () => {

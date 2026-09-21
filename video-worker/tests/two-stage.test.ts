@@ -424,6 +424,10 @@ test(
         ],
         { timeout: 60000, env: process.env },
       );
+      const manifest = await readJson(path.join(w.root, 'output/manifest.json'));
+      // 当前财经模板可使用结论字幕，不必把完整口播逐字烧录到画面。
+      manifest.scenes[0].captions = [{ text: '结论字幕', startSeconds: 0, endSeconds: 1 }];
+      await writeJson(path.join(w.root, 'output/manifest.json'), manifest);
       await writeJson(path.join(w.root, 'output/agent-response.json'), {
         contractVersion: w.task.contractVersion,
         taskId: w.task.taskId,

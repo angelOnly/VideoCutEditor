@@ -165,8 +165,8 @@ def validate_delivery(root, request, manifest):
         audio = local(root, actual['audio']['path'])
         require(digest(audio) == actual['audio']['sha256'], '混音摘要不符')
         report['audio'] = compare_audio(path, audio, allow_silence=not actual['text'].strip())
+        # 完整确认稿已由 actual['audio']['text'] 与 expected['text'] 校验；字幕可按模板做结论或句级展示。
         captions = actual['captions']; end = 0
-        require(''.join(c['text'] for c in captions) == expected['text'], '字幕缺字或与确认文本不符')
         for caption in captions:
             require(end <= caption['startSeconds'] < caption['endSeconds'] <= report['durationSeconds'], '字幕边界无效')
             end = caption['endSeconds']
