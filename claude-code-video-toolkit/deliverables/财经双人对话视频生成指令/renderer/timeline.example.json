@@ -1,0 +1,45 @@
+{
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "totalFrames": 330,
+  "title": "本期标题",
+  "bgm": {"src": "audio/bgm/immersed.mp3", "volume": 0.11},
+  "scenes": [
+    {
+      "id": "scene_001",
+      "from": 0,
+      "frames": 330,
+      "speaker": "female-host",
+      "summary": "一句关键结论",
+      "utterances": [
+        {
+          "id": "scene_001_sentence_01",
+          "text": "示例口播。",
+          "src": "audio/本期句级配音.mp3",
+          "startFrame": 0,
+          "endFrameExclusive": 180
+        }
+      ],
+      "captions": [
+        {
+          "text": "示例口播。",
+          "startFrame": 0,
+          "endFrameExclusive": 180
+        }
+      ],
+      "visualBlocks": [
+        {
+          "id": "key_metric",
+          "kind": "metric",
+          "startFrame": 30,
+          "endFrameExclusive": 260,
+          "props": {"label": "重点指标", "value": "90%", "detail": "随本期稿件替换"}
+        }
+      ],
+      "sfx": [
+        {"src": "audio/sfx/data-tick-soft.wav", "frame": 30, "volume": 0.2}
+      ]
+    }
+  ]
+}

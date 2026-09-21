@@ -2,7 +2,7 @@
 
 仅在请求的 `contractVersion` 为 `video-two-stage/1` 时读取。旧 `schemaVersion: 1/2` 保持旧路由。相同协议支持独立本地任务和 Worker 执行：Worker 提供只读请求、确认快照、任务隔离及动态工具，负责队列和回调；Codex 负责按模板完成当前阶段，不自行发布或确认。文件协议本身不等于 OS 隔离。
 
-Worker 模式直接读取提供的 request，不运行下文的 init/confirm。所有命令使用 `video_exec`、看图使用 `video_view_image`、配音使用 `video_tts`；不运行收费 CLI、不读取 .env。下文 CLI 配音示例仅用于独立本地模式，不能覆盖 Worker 的工具约定。
+Worker 模式直接读取提供的 request，不运行下文的 init/confirm。Worker 只负责任务、隔离、状态和回调；Codex 决定何时使用 `video_exec`、`video_view_image` 与 `video_tts` 完成创作。所有命令使用 `video_exec`、看图使用 `video_view_image`、配音使用 `video_tts`；不运行收费 CLI、不读取 .env。下文 CLI 配音示例仅用于独立本地模式，不能覆盖 Worker 的工具约定。
 
 ## 1. 创建与识别任务
 
@@ -38,8 +38,8 @@ python3 "$TOOLKIT_ROOT/tools/two_stage.py" init --job-dir "$JOB_DIR" --spec /abs
 
 ## 2. analysis：输出完整方案后结束
 
-1. 读请求和输入快照，先核对 `two_stage.py status --request ...`。理解允许素材，按模板确定角色、发言、分镜、素材、布局、字幕及动效。明确每个交付镜头与内部视觉段落的区别；不能把片头/章节卡擅自变成多余交付项。
-2. 保存 `analysis/plan.json` 及阅读版、必要静态预览。JSON 结构由 [two-stage.schema.json](two-stage.schema.json) 的 `$defs.plan` 定义。制作细节完整保留在 `production`，它是开放对象，不受固定布局/音色枚举限制。
+1. 读请求和输入快照，先核对 `two_stage.py status --request ...`。理解允许素材，只确定原文对应分镜、发言角色、镜头目的和一句画面意图；不能把片头/章节卡擅自变成多余交付项。
+2. 保存 `analysis/plan.json` 及阅读版，不生成静态预览。JSON 结构由 [two-stage.schema.json](two-stage.schema.json) 的 `$defs.plan` 定义。`production` 只保存文本分镜意图，具体 TTS、字幕分页、视觉块参数和帧时间全部留给 Render。
 3. 使用 `two_stage.py validate` 校验。通过后返回 `analysis/result.json` 路径并结束 turn。正式 TTS/MP4 工具需要 render 请求，本轮不得调用。等待、确认和下一次提交在外部处理。
 
 方案必须包含：
@@ -58,15 +58,14 @@ python3 "$TOOLKIT_ROOT/tools/two_stage.py" init --job-dir "$JOB_DIR" --spec /abs
   "assetRefs": [],
   "production": {
     "speaker": "host",
-    "voice": "任务确认的实际音色",
-    "layout": {"description": "按模板自行设计"},
-    "captions": {"description": "按模板分页，render 使用实际音频时长"},
-    "visualBlocks": [{"id": "block_001", "description": "本镜口播与图解"}]
+    "sceneIntent": "解释核心判断",
+    "visualIntent": "使用一组递进数据卡说明因果",
+    "captionMode": "sentence"
   }
 }
 ```
 
-`assetRefs` 是本镜将实际使用的源素材 ID；模板示意图只作参考则不需宣称它出现在成片。生成图解与音频在 render 中另记。多个角色可以在同一镜中发言，制作描述明确文本归属。
+`assetRefs` 是本镜已知将实际使用的源素材 ID；模板示意图只作参考则不需宣称它出现在成片。生成图解与音频在 Render 中另记。多个角色可以在同一镜中发言，制作描述明确文本归属。`previews` 固定为空数组，Analysis 不生成任何媒体。
 
 无实际配音时 `timing.kind` 为 `estimated`，区分口播秒数和含内部片头等段落的总秒数；区间对应总秒数且必须包含估算值。提供实际音频则可用 `measured`，需 `audioFile/audioSha256`，在分析中实测，不能把估算伪称实测。
 
@@ -88,7 +87,7 @@ python3 "$TOOLKIT_ROOT/tools/two_stage.py" confirm \
 
 ## 4. render：Codex 组织制作
 
-读取 render 请求、原输入、同一模板快照、完整确认方案及本任务已有资料。先检查环境、字体和模板所需依赖，再调用收费服务。不要照搬 analysis 估算秒数，不删稿、换未确认素材或改变交付镜头来适配时长。
+读取 render 请求、原输入、同一模板快照、完整确认方案及本任务已有资料。Render 是本期最终创作阶段：先检查环境、字体和模板所需依赖，再调用收费服务；负责制作质量而不是只负责导出成功。不要照搬 Analysis 估算秒数，不删稿、换未确认素材或改变交付镜头来适配时长。
 
 ### 配音
 
@@ -100,7 +99,7 @@ Codex 决定角色与音色，调用通用配音工具；初版提供现有豆�
 ]
 ```
 
-同一镜可有多条发言，按顺序拼合必须等于该镜确认文本。可只提交本次需要制作的镜头，但每个提交镜头都必须包含其完整口播。
+同一镜可有多条发言，按顺序拼合必须等于该镜确认文本。财经双人模板按自然句或自然短句生成独立 TTS，避免依赖中文逐词对齐；每个提交镜头都必须包含其完整口播。
 
 ```bash
 python3 "$TOOLKIT_ROOT/tools/stage_tts.py" --request "$REQUEST" --script "$JOB_DIR/render/dialogue.json"
@@ -112,9 +111,9 @@ python3 "$TOOLKIT_ROOT/tools/stage_tts.py" --request "$REQUEST" --script "$JOB_D
 
 根据真实音频安排画面和字幕。TTS 成功后，使用音频清单和 `ffprobe` 读取每段音频的实际时长；同一镜的多段发言按确认顺序累加，得到实际起止帧。不得用 analysis 估算值或字数比例推算镜头总时长。当前协议不要求声学逐字或逐词时间戳，不检查或安装对齐工具；未配置对齐服务不得返回 `CAPABILITY_MISSING`。保留零时长、解码失败和音画总时长不一致等问题证据；没有实际试听时不得声称人耳验收。
 
-字幕的样式、文字范围和分页服从模板。财经双人模板使用句级或结论字幕，不要求把完整口播逐字烧录到画面；完整确认文本通过配音清单与音频清单核对。检查记录须引用工程实际使用的字幕数据及核对结果，不能只复制确认方案作为执行证据。
+字幕的样式、文字范围和分页服从模板。财经双人模板必须同时具有句级底部字幕和简短关键结论卡：结论卡不能替代字幕。每条句级字幕的起止时间取相应独立 TTS 的真实边界，不要求中文逐字或逐词对齐。检查记录须引用工程实际使用的字幕数据及核对结果，不能只复制确认方案作为执行证据。
 
-在 `project/` 创建独立正文工程。可以使用获准通用组件或源码；允许执行当前新工程，不固定 `templates/ifeng-scenes`。工程的依赖可链接受信的 node_modules，业务资源复制进本任务；不要链接历史正文目录。
+在 `project/` 创建独立正文工程。若冻结模板含 `renderer/renderer-manifest.json`，先读取清单，将 `renderer/` 复制到 `project/renderer/`，并将模板 `assets/` 复制到 `project/public/template-assets/`，再实际导入并复用人物舞台、句级字幕、章节、音频和图解基线组件；不得只另写外观相似的临时页面。基线组件固定栏目语言，本期图解、数据、动画参数和专属场景由 Codex 围绕当前稿件创作。工程的依赖可链接受信的 node_modules，业务资源复制进本任务；不得执行模板自带脚本、安装依赖或链接历史正文目录。
 
 ### 渲染前检查
 
@@ -124,6 +123,7 @@ python3 "$TOOLKIT_ROOT/tools/stage_tts.py" --request "$REQUEST" --script "$JOB_D
 - 时间轴列出每镜实际总帧数、每段发言的音频来源和按实际时长计算的起止帧、模板要求的字幕分页及其起止帧、每个已确认视觉段落的起止帧。区分口播长度与镜头总长度。要求“口播结束后出现”的段落应锚定口播结束，不能用“本镜倒数若干帧”覆盖尚未结束的口播。
 - 必须复用的源码应从获准快照导入或复制后实际调用，记录原素材 ID 与工程位置；仅列入素材清单或另写外观相似的组件不算复用。
 - 使用当前工程的 Remotion `renderStill` 等现有能力生成低成本关键帧，实际查看文字、人物、字幕和段落切换前后；在 `preflight-review.json` 记录看过的图片、帧号、检查结果及限制。技术依赖取 Worker 提供的 modules，不另找历史工程。静态图不能证明实际播放，音轨还须独立测量、解码并核对总时长。
+- 正式渲染后还必须审查人物切换、章节进退、至少一组连续句级字幕、关键数据出现和片尾收束的动态片段；发现静态 PPT 式画面、字幕缺失或节奏不符时，修工程后重渲染受影响镜头。
 - 若检查不通过，先修工程或时间轴；不得以“后续再调整”为由批量正式渲染。字幕显示效果、音频解码或音画总时长校验不通过时明确报告。
 
 同一次技术恢复继续以完整确认方案为准。旧失败工程可作本任务恢复材料，但不能覆盖确认要求；不得为绕过媒体错误改短已确认片头或改用其他组件。

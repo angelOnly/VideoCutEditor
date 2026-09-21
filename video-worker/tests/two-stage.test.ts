@@ -381,9 +381,19 @@ test('本机财经 ZIP 作为显式测试模板时保留入口和相对资源目
         file.path.endsWith('assets/video/intro/financial-intro-portrait-sfx-v1.mov'),
       ),
     );
+    assert.ok(
+      template.files.some((file: any) => file.path.endsWith('renderer/renderer-manifest.json')),
+    );
     assert.match(
       await readFile(path.join(workspace.root, template.document), 'utf8'),
       /财报揭秘室/,
+    );
+    assert.match(
+      await readFile(
+        path.join(workspace.root, 'input/template/财经双人对话视频生成指令/renderer/renderer-manifest.json'),
+        'utf8',
+      ),
+      /FinanceEpisode/,
     );
   } finally {
     await h.close();
@@ -425,7 +435,7 @@ test(
         { timeout: 60000, env: process.env },
       );
       const manifest = await readJson(path.join(w.root, 'output/manifest.json'));
-      // 当前财经模板可使用结论字幕，不必把完整口播逐字烧录到画面。
+      // 媒体夹具补齐终检要求的句级字幕结构。
       manifest.scenes[0].captions = [{ text: '结论字幕', startSeconds: 0, endSeconds: 1 }];
       await writeJson(path.join(w.root, 'output/manifest.json'), manifest);
       await writeJson(path.join(w.root, 'output/agent-response.json'), {

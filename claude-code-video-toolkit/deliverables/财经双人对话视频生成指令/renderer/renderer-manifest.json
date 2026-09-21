@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "entry": "src/index.ts",
+  "timelineModule": "src/timeline.ts",
+  "wholeComposition": "FinanceEpisode",
+  "sceneCompositionPrefix": "FinanceScene_",
+  "publicAssetRoot": "template-assets",
+  "requiredComponents": [
+    "FinancialDialogue.tsx",
+    "FinancialIntros.tsx",
+    "SpeakerStage.tsx",
+    "SubtitleLayer.tsx",
+    "VisualBlocks.tsx"
+  ],
+  "rules": [
+    "复制到任务 project 后使用已部署的 Remotion 依赖；不得执行模板自带脚本或安装依赖。",
+    "必须复用人物舞台、句级字幕、章节、音频和图解组件；本期图解参数与场景由 Codex 创作。",
+    "timeline.ts 是本期任务文件，必须由实际 TTS 时长生成，不得复用历史节目时间轴。"
+  ]
+}

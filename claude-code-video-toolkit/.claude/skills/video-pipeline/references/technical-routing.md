@@ -12,7 +12,7 @@
 | 探测、混音、转码 | `.agents/skills/ffmpeg/SKILL.md` | ffprobe 实测，混音 ducking、避免削波；全片解码检查 |
 | 单人配音 | `tools/voiceover.py` | 固定 provider 和音色，传 `--script`/`--output`/`--json`，不得省略稿件参数而等待 stdin；不读交互式 generate-voiceover wrapper |
 | 豆包双人 | `tools/generate_dialogue_audio.py` | JSON 数组 id/role/text，role 当前只支持 female/male；提供固定 speakers；不传 --force 重做已验证音频 |
-| 字幕 | 模板的字幕组件或分页方式；逐字高亮模板才按需使用 `tools/align_captions.py` 或 concept-explainer-short 的 gen_captions.py | 当前财经模板使用句级/结论字幕；以实际音频时长安排字幕显示。未配置对齐服务时继续按模板渲染，不得作为失败条件 |
+| 字幕 | 模板的字幕组件或分页方式；逐字高亮模板才按需使用 `tools/align_captions.py` 或 concept-explainer-short 的 gen_captions.py | 财经模板必须有句级底部字幕和结论卡；句级字幕绑定独立 TTS 的真实边界。未配置对齐服务时继续渲染，不得作为失败条件 |
 | 视觉优化 | `.agents/skills/frontend-design/SKILL.md` | 基于关键帧自动修复可读性，禁止进入 scene-review 对话 |
 
 ## 时间码陷阱
