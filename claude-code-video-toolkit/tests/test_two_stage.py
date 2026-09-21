@@ -1,5 +1,6 @@
 """新两阶段协议的行为测试；仅使用新建合成素材，不读取历史视频。"""
 import copy
+import errno
 import json
 import os
 from pathlib import Path
@@ -14,7 +15,7 @@ sys.path.insert(0,str(ROOT/'tools'))
 from two_stage import (StageError, checkpoint, confirm, digest, init_job, json_digest, load_request,
                        local, read, repair, status, validate, write, execution)
 from cached_tts import synthesize_cached
-from stage_media import supervise, ffmpeg, validate_mp4, extract_frames, validate_delivery, compare_audio, compare_samples, assemble, render_scene, mux_scene
+from stage_media import supervise, ffmpeg, validate_mp4, extract_frames, validate_delivery, compare_audio, compare_samples, assemble, render_scene, mux_scene, publish_file
 
 
 class Fixture(unittest.TestCase):
@@ -264,6 +265,25 @@ class AudioDiagnosticsTests(unittest.TestCase):
         self.assertEqual(error.exception.code,'AUDIO_MISMATCH')
         self.assertAlmostEqual(error.exception.details['estimatedOffsetMs'],42.625,delta=.2)
         self.assertLess(error.exception.details['correlationAtZero'],.9)
+
+
+class PublishFileTests(unittest.TestCase):
+    def test_cross_device_publish_copies_then_replaces(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory); source=root/'render'/'scene.mp4'; destination=root/'output'/'scene.mp4'
+            source.parent.mkdir();source.write_bytes(b'completed-media')
+            real_replace=os.replace
+            calls=0
+            def replace_once_cross_device(current, target):
+                nonlocal calls
+                calls += 1
+                if calls == 1:
+                    raise OSError(errno.EXDEV, '跨设备链接')
+                real_replace(current,target)
+            with patch('stage_media.os.replace', side_effect=replace_once_cross_device) as replace:
+                publish_file(source,destination)
+            self.assertEqual(destination.read_bytes(),b'completed-media')
+            self.assertEqual(replace.call_count,2)
 
 
 class MediaTests(Fixture):

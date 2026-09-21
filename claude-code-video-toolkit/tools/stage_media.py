@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 from array import array
+import errno
 from fractions import Fraction
 import json
 import math
@@ -36,6 +37,31 @@ def probe(path):
 
 def ffmpeg(*args, timeout=600):
     return command([os.environ.get('FFMPEG', 'ffmpeg'), '-nostdin', '-v', 'error', *map(str, args)], timeout)
+
+
+def publish_file(source, destination):
+    """发布媒体；跨挂载点时先在目标目录完整复制，再原子替换。"""
+    source, destination = Path(source), Path(destination)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        os.replace(source, destination)
+        return
+    except OSError as exc:
+        if exc.errno != errno.EXDEV:
+            raise
+
+    # Worker 的 render 与 output 目录可能分别被隔离挂载，不能直接 rename。
+    fd, temporary_name = tempfile.mkstemp(dir=destination.parent, prefix='.publish-', suffix=destination.suffix)
+    temporary = Path(temporary_name)
+    try:
+        with source.open('rb') as original, os.fdopen(fd, 'wb') as copied:
+            shutil.copyfileobj(original, copied)
+            copied.flush()
+            os.fsync(copied.fileno())
+        require(digest(temporary) == digest(source), '跨挂载发布后的媒体摘要不一致', 'MEDIA_INVALID')
+        os.replace(temporary, destination)
+    finally:
+        temporary.unlink(missing_ok=True)
 
 
 def audio_info(path):
@@ -317,7 +343,7 @@ def render_scene(request_path, scene_id, project_name, entry_name, composition, 
                                    'mixSha256': digest(mix), 'recovery': recovery})
             info = mux_scene(video, mix, target, request['outputSpec'], frames, budget)
             load_request(request_path, 'render')
-            os.replace(target, out)
+            publish_file(target, out)
             mixed = {'path': str(mix.relative_to(root)), 'sha256': digest(mix)}
             write(marker, {'fingerprint': fingerprint, 'mix': mixed, **info, **recovery})
         except BaseException:
@@ -369,7 +395,7 @@ def assemble(request_path, manifest_path):
             info = validate_mp4(temp/'whole.mp4', request['outputSpec'], frames)
             compare_audio(temp/'whole.mp4', temp/'mix.wav', allow_silence=all(not s['text'].strip() for s in manifest['scenes']))
             load_request(request_path, 'render')
-            output = folder/'video.mp4'; os.replace(temp/'whole.mp4', output)
+            output = folder/'video.mp4'; publish_file(temp/'whole.mp4', output)
             manifest['wholeVideo'] = {'path': str(output.relative_to(root)), **info}
             write(manifest_path, manifest)
         return manifest['wholeVideo']
