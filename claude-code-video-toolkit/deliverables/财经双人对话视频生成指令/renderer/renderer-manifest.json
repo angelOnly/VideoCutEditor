@@ -2,6 +2,7 @@
   "schemaVersion": 1,
   "entry": "src/index.ts",
   "timelineModule": "src/timeline.ts",
+  "sentenceAudioValidator": "scripts/verify-sentence-audio.mjs",
   "wholeComposition": "FinanceEpisode",
   "sceneCompositionPrefix": "FinanceScene_",
   "publicAssetRoot": "template-assets",
@@ -13,8 +14,8 @@
     "VisualBlocks.tsx"
   ],
   "rules": [
-    "复制到任务 project 后使用已部署的 Remotion 依赖；不得执行模板自带脚本或安装依赖。",
+    "复制到任务 project/renderer 后使用已部署的 Remotion 依赖；不安装依赖。只允许执行 sentenceAudioValidator 指向的只读校验脚本。",
     "必须复用人物舞台、句级字幕、章节、音频和图解组件；本期图解参数与场景由 Codex 创作。",
-    "timeline.ts 是本期任务文件，必须由实际 TTS 时长生成，不得复用历史节目时间轴。"
+    "timeline.ts 和 render/<runId>/timeline.json 是本期任务文件，必须由每句独立 TTS 的实际时长生成，不得复用历史节目时间轴或按比例切字幕。"
   ]
 }

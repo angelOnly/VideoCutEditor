@@ -23,6 +23,7 @@
       ],
       "captions": [
         {
+          "utteranceId": "scene_001_sentence_01",
           "text": "示例口播。",
           "startFrame": 0,
           "endFrameExclusive": 180

@@ -385,6 +385,11 @@ test('本机财经 ZIP 作为显式测试模板时保留入口和相对资源目
       file.path.endsWith('renderer/renderer-manifest.json'),
     );
     assert.ok(rendererManifest);
+    assert.ok(
+      template.files.some((file: any) =>
+        file.path.endsWith('renderer/scripts/verify-sentence-audio.mjs'),
+      ),
+    );
     assert.match(
       await readFile(path.join(workspace.root, template.document), 'utf8'),
       /财报揭秘室/,

@@ -9,6 +9,7 @@ export type Utterance = {
 };
 
 export type Caption = {
+  utteranceId: string;
   text: string;
   startFrame: number;
   endFrameExclusive: number;
