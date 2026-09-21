@@ -103,9 +103,27 @@ test('host namespace hides shared roots, login and env; trusted tools alone may 
   ]);
   const policy: any = threadConfig(c, w);
   assert.equal(policy.permissions.videocut.filesystem[w.root], 'read');
+  assert.equal(policy.permissions.videocut.filesystem[path.join(w.root, 'render', 'run-a')], undefined);
   assert.equal(policy.features.shell_tool, false);
   assert.equal(policy.features.plugins, false);
   assert.ok(!prompt({ operation: 'render' }, w.root, c.toolkitRoot).includes('${job}'));
+});
+
+test('两阶段渲染只授权当前 run 的 render 目录写入', () => {
+  const c = config({ executor: 'host' });
+  const root = '/jobs/task-a';
+  const policy: any = threadConfig(c, {
+    root,
+    task: {
+      contractVersion: 'video-two-stage/1',
+      stage: 'render',
+      runId: '0af7a560-79fb-49f2-8789-9ebda42d9981',
+    },
+  } as any);
+  const files = policy.permissions.videocut.filesystem;
+  assert.equal(files[path.join(root, 'render', '0af7a560-79fb-49f2-8789-9ebda42d9981')], 'write');
+  assert.equal(files[path.join(root, 'render')], undefined);
+  assert.equal(files[path.join(root, 'render', 'another-run')], undefined);
 });
 
 test('native process completion is checked with systemd and stop failures propagate', async () => {

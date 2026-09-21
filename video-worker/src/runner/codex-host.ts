@@ -70,6 +70,16 @@ export const dynamicTools = [
 export function threadConfig(config: Config, w: Workspace) {
   const filesystem: Record<string, any> = { ':minimal': 'read', [w.root]: 'read' };
   for (const d of ['project', 'output', 'cache']) filesystem[path.join(w.root, d)] = 'write';
+  if (
+    w.task?.contractVersion === 'video-two-stage/1' &&
+    w.task.stage === 'render' &&
+    typeof w.task.runId === 'string'
+  ) {
+    const renderRoot = path.resolve(w.root, 'render');
+    const runRoot = path.resolve(renderRoot, w.task.runId);
+    // 渲染阶段只能写入当前 run 的中间文件，不能扩大到同任务的其他 run。
+    if (path.dirname(runRoot) === renderRoot) filesystem[runRoot] = 'write';
+  }
   // Builtin commands are disabled. This profile also constrains any remaining file tools.
   return {
     ...codexOverrides,
