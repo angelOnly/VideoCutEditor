@@ -193,6 +193,7 @@ def validate_delivery(root, request, manifest):
         report['audio'] = compare_audio(path, audio, allow_silence=not actual['text'].strip())
         # 完整确认稿已由 actual['audio']['text'] 与 expected['text'] 校验；字幕可按模板做结论或句级展示。
         captions = actual['captions']; end = 0
+        require(captions or not actual['text'].strip(), '口播镜头缺少字幕', 'CAPTION_MISSING')
         for caption in captions:
             require(end <= caption['startSeconds'] < caption['endSeconds'] <= report['durationSeconds'], '字幕边界无效')
             end = caption['endSeconds']
