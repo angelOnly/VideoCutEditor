@@ -381,16 +381,17 @@ test('本机财经 ZIP 作为显式测试模板时保留入口和相对资源目
         file.path.endsWith('assets/video/intro/financial-intro-portrait-sfx-v1.mov'),
       ),
     );
-    assert.ok(
-      template.files.some((file: any) => file.path.endsWith('renderer/renderer-manifest.json')),
+    const rendererManifest = template.files.find((file: any) =>
+      file.path.endsWith('renderer/renderer-manifest.json'),
     );
+    assert.ok(rendererManifest);
     assert.match(
       await readFile(path.join(workspace.root, template.document), 'utf8'),
       /财报揭秘室/,
     );
     assert.match(
       await readFile(
-        path.join(workspace.root, 'input/template/财经双人对话视频生成指令/renderer/renderer-manifest.json'),
+        path.join(workspace.root, 'input/template', rendererManifest.path),
         'utf8',
       ),
       /FinanceEpisode/,
