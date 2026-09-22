@@ -28,6 +28,7 @@ for (const f of [
   'cached_tts.py',
   'worker_stage.py',
   'render_scene.cjs',
+  'render_batch.py',
   'doubao_tts.py',
   'voiceover.py',
   'config.py',
