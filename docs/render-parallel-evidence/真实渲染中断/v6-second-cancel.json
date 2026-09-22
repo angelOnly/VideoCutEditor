@@ -1,0 +1,34 @@
+{
+  "argv": [
+    "/Users/jiang/Documents/VideoCutEditor/video-worker/.venv/bin/python3",
+    "-B",
+    "projects/render-parallel-20260923/cache/render-and-audit.py"
+  ],
+  "exitCode": 1,
+  "reason": "external_media_contention",
+  "wallSeconds": 372.3064161729999,
+  "blockingProcesses": [
+    {
+      "pid": 43599,
+      "ppid": 1,
+      "pgid": 43599,
+      "started": "Tue Sep 22 21:46:42 2026",
+      "cpu": 1.1,
+      "rssKiB": 107516,
+      "command": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome about:blank --allow-pre-commit-input --disable-background-networking --enable-features=NetworkService,NetworkServiceInProcess --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-default-apps --disable-dev-shm-usage --no-proxy-server --proxy-server='direct://' --proxy-bypass-list=* --force-gpu-mem-available-mb=4096 --disable-hang-monitor --disable-extensions --allow-chrome-scheme-url --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --disable-sync --force-color-profile=srgb --metrics-recording-only --mute-audio --no-first-run --video-threads=1 --enable-automation --password-store=basic --use-mock-keychain --enable-blink-features=IdleDetection --export-tagged-pdf --intensive-wake-up-throttling-policy=0 --headless=old --no-sandbox --disable-setuid-sandbox --disable-background-media-suspend --allow-running-insecure-content --disable-component-update --disable-domain-reliability --disable-features=AudioServiceOutOfProcess,IsolateOrigins,site-per-process,Translate,BackForwardCache,AvoidUnnecessaryBeforeUnloadCheckSync,IntensiveWakeUpThrottling,LocalNetworkAccessChecks,BlockInsecurePrivateNetworkRequests,PrivateNetworkAccessSendPreflights,PrivateNetworkAccessRespectPreflightResults --disable-print-preview --disable-site-isolation-trials --disk-cache-size=268435456 --hide-scrollbars --no-default-browser-check --no-pings --font-render-hinting=none --no-zygote --ignore-gpu-blocklist --enable-unsafe-webgpu --remote-debugging-port=0 --user-data-dir=/Users/jiang/Documents/VideoCutEditor/claude-code-video-toolkit/projects/local-two-stage-tests/full-retest-20260922/render/render_001/work/scene_011-m5gu12k1/runtime/puppeteer_dev_chrome_profile-thUrqZ"
+    }
+  ],
+  "peakAggregateRssKiB": 1487096,
+  "peakCpuPercent": 744.1,
+  "externalIdleBaselinePeakRssKiB": 1135968,
+  "sampledCpuSecondsEstimate": 459.4712612031786,
+  "cleanup": {
+    "complete": true,
+    "errors": [],
+    "signals": [],
+    "remainingProcesses": []
+  },
+  "executionError": null,
+  "rawMetrics": "claude-code-video-toolkit/projects/render-parallel-20260923/evidence/guard-1790100759177511000/metrics.json",
+  "performanceEligible": false
+}
