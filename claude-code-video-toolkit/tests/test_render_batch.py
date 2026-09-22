@@ -206,6 +206,14 @@ class BatchTests(Fixture):
         self.assertEqual(supervisor.call_count, 2)
         self.assertEqual(digest(self.job/repaired['mix']['path']), repaired['mix']['sha256'])
 
+    def test_cleanup_failure_stops_dispatching_remaining_scenes(self):
+        self.args.slots = 1
+        with patch('stage_media.supervise', side_effect=self.build), patch('stage_media.render_scene', side_effect=StageError('PROCESS_CLEANUP_FAILED', '仍有自有进程')) as render:
+            with self.assertRaises(StageError) as error: render_batch(self.args)
+        self.assertEqual(error.exception.code, 'PROCESS_CLEANUP_FAILED')
+        self.assertEqual(render.call_count, 1)
+        self.assertEqual(read(self.dir/'progress.json')['failures'][0]['code'], 'PROCESS_CLEANUP_FAILED')
+
     def test_duplicate_scene_rejected(self):
         write(self.job/'scenes.json', [self.scenes[0], self.scenes[0]])
         with self.assertRaises(StageError): freeze_batch(self.args)

@@ -221,7 +221,7 @@ def render_batch(args):
                                 failures.append(error)
                                 write(batch_dir / 'results' / scene_id / (attempt + '.json'),
                                       {'version': manifest['version'], 'attemptId': attempt, 'error': error})
-                                if error['code'] in ('TASK_CANCELLED', 'BUDGET_EXHAUSTED', 'TIMELINE_STALE',
+                                if error['code'] in ('PROCESS_CLEANUP_FAILED', 'TASK_CANCELLED', 'BUDGET_EXHAUSTED', 'TIMELINE_STALE',
                                                      'STALE_CONFIRMATION', 'INPUT_CHANGED', 'CONFIRMATION_CHANGED', 'CACHE_CORRUPT'):
                                     stop.set()
                                     raise
