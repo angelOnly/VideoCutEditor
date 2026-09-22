@@ -25,10 +25,34 @@
 }
 ```
 
-cold 使用全新应用缓存，warm 紧接着复用该缓存；两者都重新渲染。不能安全清除系统页缓存，报告明确记录这一限制。每轮轮换四组顺序，任何时刻只运行一个对照组。共 24 次测量。保存每阶段 stdout/stderr、墙钟、采样 RSS/CPU 原始序列，汇总中位数和极差。RSS 是进程组 RSS 之和，可能重复计算共享页；CPU 是 `ps` 百分比积分估计，短进程可能漏采，不能写成内核精确资源记账。模型创作不属于此基准。
+cold 使用全新应用缓存，warm 紧接着复用该缓存；两者都重新渲染。不能安全清除系统页缓存，报告明确记录这一限制。每轮轮换四组顺序，任何时刻只运行一个对照组。共 24 次测量。跨 `setsid` 沿父子链登记 PID、启动时间和 PGID，后代重挂父进程后继续跟踪，排除 PID 复用。保存每阶段 stdout/stderr、墙钟、采样 RSS/CPU 原始序列，汇总中位数和极差。RSS 是已确认自有后代进程 RSS 之和，可能重复计算共享页；CPU 是 `ps` 百分比积分估计，短进程可能漏采，不能写成内核精确资源记账。模型创作不属于此基准。
 
-资源守卫只读扫描 `ps`，识别原路径命令及其后代媒体进程。原测试正在渲染时暂缓启动，等待时间单列。运行中原测试恢复媒体占用时，驱动写 `VIDEOCUT_BATCH_CANCEL_FILE`，终止自有独立进程组（先 TERM，8 秒后必要时 KILL），从不向原进程发信号。该轮记为污染并终止整场基准；重新运行必须另选新输出目录，避免把已变热的失败重试伪装成冷启动。内存超限或阶段失败也停止，不强行继续 3 路。没有原路径或祖先线索的外部媒体进程无法归属，本守卫不能替代运行前的人工只读进程核对。
+资源守卫只读扫描 `ps`，识别原路径命令及其后代媒体进程。原测试正在渲染时暂缓启动，等待时间单列。运行中原测试恢复媒体占用时，驱动写 `VIDEOCUT_BATCH_CANCEL_FILE`，给协调器 8 秒合作取消，再终止已登记的自有派生进程组（先 TERM，8 秒后必要时 KILL），从不向原进程发信号。该轮记为污染并终止整场基准；重新运行必须另选新输出目录，避免把已变热的失败重试伪装成冷启动。内存超限或阶段失败也停止，不强行继续 3 路。没有原路径或祖先线索的外部媒体进程无法归属，本守卫不能替代运行前的人工只读进程核对。
 
 成功结果也可能缺少实际媒体质量检查；配置必须含独立终检阶段才能用于发布判断。`qualified` 仅表示执行矩阵完整，并不代表成片验收。驱动测试使用短 Python 进程，绝不当作真实渲染性能或真实多代理证据。
 
 轻量验证：`python3 video-worker/tests/render-benchmark.test.py`。
+
+## 本次 18 镜实际工程适配
+
+主控合并章节并同步所有 props 后，使用 `render-benchmark-adapter.py --generate` 生成 settings、四组配置并从 `c68f7d0` 导出原版 tools/schema。配置生成后若修改工程，应重新生成配置与结果目录。示例（在仓库根执行）：
+
+```sh
+python3 -B video-worker/scripts/render-benchmark-adapter.py --generate \
+  --settings "$PWD/claude-code-video-toolkit/projects/render-parallel-20260923/evidence/bench-final.json" \
+  --source "$PWD/claude-code-video-toolkit/projects/render-parallel-20260923" \
+  --output "$PWD/claude-code-video-toolkit/projects/render-parallel-20260923/benchmark-final" \
+  --protected-root /Users/jiang/Documents/VideoCutEditor \
+  --python /Users/jiang/Documents/VideoCutEditor/video-worker/.venv/bin/python3 \
+  --node /Users/jiang/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node \
+  --modules /Users/jiang/Documents/VideoCutEditor/claude-code-video-toolkit/examples/hello-world/node_modules \
+  --browser '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+```
+
+输出 `bench-final.benchmark.json` 可直接传给基准驱动。生成、准备步骤均不调用模型、TTS 或媒体渲染。每轮只复制 input、project、57 段既有配音、confirmation、时间轴及 props；重新分配 taskId 并重算确认/请求摘要，不复制预算、工作缓存、成功结果。node_modules 仅建立到已安装依赖的只读使用链接，渲染运行时写入由工具限制在独立工作目录。完整矩阵顺序执行，不并发不同组。
+
+当前 Remotion bundle 禁用应用缓存。因此 cold/warm 在本适配中只表示首次及紧邻重复运行，**不代表可控系统冷缓存，也不代表 warm 命中应用编译缓存**；各轮都重新打包、渲染18镜4112帧并合片。新实现同一轮18镜共享一次bundle，旧实现每镜打包；旧实现打包细项为 null，不能补造精确数值。新打包耗时在 `render.json.metrics.bundleSeconds` 中。
+
+每轮分别记录 prepare、freeze、render、assemble、check。技术合片复用正式媒体工具的混音规则，技术检查验证确认原文、全部 MP4 解码、帧数/规格/音频一致性、合片边界及全量解码像素摘要。首个旧串行建立像素参考，此后任何不同都会停止结论。它**不生成生产 review、Worker 成功账本或声称人工已看**；`technical-check.json` 明确标记未人工试听、未视觉审查。最终候选仍需主控独立视觉审查，不能把这里的像素参考当作已经审美验收。
+
+大文件位于每轮 `artifacts`，基准驱动记录摘要后清理；各轮 `render.json`、`technical-check.json`、合片摘要、日志和资源采样保留。最终供人工审查的候选请另用同一冻结工程正常渲染保存，不能把已被清理的基准路径当交付路径。

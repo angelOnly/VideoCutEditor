@@ -29,6 +29,26 @@ class BenchmarkTest(unittest.TestCase):
         self.assertEqual(summary['interrupted'], 1)
         self.assertTrue(summary['qualified'])
 
+    def test_detached_descendants_remain_owned_after_reparenting(self):
+        rows = [dict(pid=10, ppid=1, pgid=10, started='a'),
+                dict(pid=11, ppid=10, pgid=11, started='b')]
+        known = {}
+        self.assertEqual(len(bench.track_owned(rows, 10, known)), 2)
+        rows = [dict(pid=11, ppid=1, pgid=11, started='b'),
+                dict(pid=10, ppid=1, pgid=10, started='new-unrelated')]
+        self.assertEqual([p['pid'] for p in bench.track_owned(rows, 10, known)], [11])
+
+    def test_real_detached_child_is_sampled_and_cancelled(self):
+        with tempfile.TemporaryDirectory() as directory:
+            folder = Path(directory)
+            child = "import time; a=bytearray(24*1024*1024); time.sleep(30)"
+            code = "import subprocess,sys,time; subprocess.Popen([sys.executable,'-c',sys.argv[1]], start_new_session=True); time.sleep(30)"
+            result = bench.execute([sys.executable, '-c', code, child], directory,
+                                   os.environ.copy(), folder, '/unrelated-protected-path', 2, .02, 1000000)
+            self.assertEqual(result['reason'], 'timeout')
+            self.assertGreater(result['peakAggregateRssKiB'], 24000)
+            self.assertNotEqual(result['exitCode'], 0)
+
     def test_cleanup_records_hash_and_rejects_escape(self):
         with tempfile.TemporaryDirectory() as directory:
             folder = Path(directory)

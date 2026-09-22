@@ -16,13 +16,13 @@ MEDIA = re.compile(r'ffmpeg|ffprobe|remotion|render[_-](?:scene|batch)|chrome.*(
 
 
 def processes():
-    output = subprocess.check_output(['ps', '-axo', 'pid=,ppid=,pgid=,rss=,%cpu=,command='], text=True)
+    output = subprocess.check_output(['ps', '-axo', 'pid=,ppid=,pgid=,rss=,%cpu=,lstart=,command='], text=True)
     result = []
     for line in output.splitlines():
-        parts = line.split(None, 5)
-        if len(parts) == 6:
+        parts = line.split(None, 10)
+        if len(parts) == 11:
             result.append(dict(pid=int(parts[0]), ppid=int(parts[1]), pgid=int(parts[2]),
-                               rssKiB=int(parts[3]), cpu=float(parts[4]), command=parts[5]))
+                               rssKiB=int(parts[3]), cpu=float(parts[4]), started=' '.join(parts[5:10]), command=parts[10]))
     return result
 
 
@@ -35,11 +35,11 @@ def descendants(rows, seeds):
         ids = newer
 
 
-def blockers(rows, protected_root, own_group=None):
+def blockers(rows, protected_root, own_group=None, own_pids=()):
     # 原工作区命令及其子孙中的媒体进程；永远不向这些 PID 发信号。
-    roots = {p['pid'] for p in rows if protected_root in p['command'] and p['pgid'] != own_group}
+    roots = {p['pid'] for p in rows if protected_root in p['command'] and p['pgid'] != own_group and p['pid'] not in own_pids}
     protected = descendants(rows, roots)
-    return [p for p in rows if p['pid'] in protected and p['pgid'] != own_group and MEDIA.search(p['command'])]
+    return [p for p in rows if p['pid'] in protected and p['pgid'] != own_group and p['pid'] not in own_pids and MEDIA.search(p['command'])]
 
 
 def sha256(path):
@@ -66,16 +66,38 @@ def persist(path, data):
     tmp.replace(path)
 
 
-def stop_group(proc):
+def track_owned(rows, root_pid, known):
+    # 渲染监督器会 setsid；跨进程组沿父子链登记 PID + 启动时间，避免漏算或误杀重用 PID。
+    live = {p['pid'] for p in rows if known.get(p['pid']) == (p.get('started'), p['pgid'])}
+    ids = descendants(rows, live | ({root_pid} if root_pid not in known else set()))
+    own = [p for p in rows if p['pid'] in ids]
+    for process in own:
+        known[process['pid']] = (process.get('started'), process['pgid'])
+    return own
+
+
+def stop_group(proc, known=None, cooperative=False):
+    known = known if known is not None else {}
+    if cooperative:
+        deadline = time.monotonic() + 8
+        while time.monotonic() < deadline:
+            proc.poll()
+            if not track_owned(processes(), proc.pid, known):
+                return
+            time.sleep(.1)
     for sig, seconds in [(signal.SIGTERM, 8), (signal.SIGKILL, 2)]:
-        try:
-            os.killpg(proc.pid, sig)
-        except ProcessLookupError:
-            return
+        rows = track_owned(processes(), proc.pid, known)
+        for pgid in {p['pgid'] for p in rows}:
+            if pgid == os.getpgrp():
+                continue
+            try:
+                os.killpg(pgid, sig)
+            except ProcessLookupError:
+                pass
         deadline = time.monotonic() + seconds
         while time.monotonic() < deadline:
             proc.poll()
-            if not any(p['pgid'] == proc.pid for p in processes()):
+            if not track_owned(processes(), proc.pid, known):
                 return
             time.sleep(.1)
     proc.wait(timeout=2)
@@ -87,12 +109,13 @@ def execute(argv, cwd, env, folder, protected_root, timeout, interval, max_rss_k
     last = start
     samples = []
     reason = None
+    known = {}
     with (folder / 'stdout.log').open('w') as out, (folder / 'stderr.log').open('w') as err:
         proc = subprocess.Popen(argv, cwd=cwd, env=env, stdout=out, stderr=err, start_new_session=True)
         try:
             while proc.poll() is None:
                 rows = processes()
-                own = [p for p in rows if p['pgid'] == proc.pid]
+                own = track_owned(rows, proc.pid, known)
                 rss = sum(p['rssKiB'] for p in own)
                 cpu = sum(p['cpu'] for p in own)
                 now = time.monotonic()
@@ -100,7 +123,7 @@ def execute(argv, cwd, env, folder, protected_root, timeout, interval, max_rss_k
                 last = now
                 peak_rss, peak_cpu = max(peak_rss, rss), max(peak_cpu, cpu)
                 samples.append({'seconds': now-start, 'rssKiB': rss, 'cpuPercent': cpu})
-                busy = blockers(rows, protected_root, proc.pid)
+                busy = blockers(rows, protected_root, proc.pid, {p['pid'] for p in own})
                 if busy:
                     reason = 'external_media_contention'
                 elif now-start > timeout:
@@ -111,12 +134,12 @@ def execute(argv, cwd, env, folder, protected_root, timeout, interval, max_rss_k
                     cancel = env.get('VIDEOCUT_BATCH_CANCEL_FILE')
                     if cancel:
                         Path(cancel).write_text(reason + '\n')
-                    stop_group(proc)
+                    stop_group(proc, known, cooperative=bool(cancel))
                     break
                 time.sleep(interval)
         finally:
             # 包括 Ctrl-C、异常和正常父进程退出后留下的自有子进程。
-            stop_group(proc)
+            stop_group(proc, known)
     return {'argv': argv, 'exitCode': proc.returncode, 'reason': reason,
             'wallSeconds': time.monotonic()-start, 'peakAggregateRssKiB': peak_rss,
             'peakCpuPercent': peak_cpu, 'sampledCpuSecondsEstimate': cpu_integral, 'samples': samples}
@@ -181,7 +204,7 @@ def run(config):
     root.mkdir(parents=True)
     frozen = fingerprint(config['immutableInputs'])
     report = {'schemaVersion': 1, 'config': config, 'frozenInputs': frozen, 'runs': [], 'externalWaitSeconds': 0,
-              'measurementNotes': ['RSS 为采样时自有进程组 RSS 之和（共享页可能重复），不是系统精确峰值。',
+              'measurementNotes': ['RSS 为采样时自有后代进程 RSS 之和（共享页可能重复），不是系统精确峰值。',
                                    'CPU 为 ps 百分比积分估计，短进程可能漏采；所有组采用相同采样。',
                                    'cold 表示新建应用缓存；不清除系统页缓存。warm 复用紧邻 cold 缓存，但必须重渲而非复用成片。']}
     def save():
