@@ -20,7 +20,7 @@ export const dynamicTools = [
     type: 'function',
     name: 'video_tts',
     description:
-      '按确认分镜生成配音。只在 render 使用；每镜文本必须完整，可给多人指定不同 speaker。外部保存收费凭证。',
+      '按确认分镜生成配音。只在 render 使用；每镜文本必须完整。speaker 仅表示栏目角色，Worker 会替换为服务器已获准的实际音色，外部保存收费凭证。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -69,6 +69,18 @@ export const dynamicTools = [
     },
   },
 ];
+
+// 模型可选择栏目角色，但不能把任意字符串作为供应商音色 ID 透传。
+export function authorizeTtsItems(value: unknown, approvedSpeaker: string) {
+  if (!Array.isArray(value) || !approvedSpeaker)
+    throw new AppError('INVALID_TTS_REQUEST', '配音清单或服务器音色配置无效');
+  return value.map((item) => {
+    if (!item || typeof item !== 'object')
+      throw new AppError('INVALID_TTS_REQUEST', '配音条目无效');
+    const { id, sceneId, text } = item as Record<string, unknown>;
+    return { id, sceneId, text, speaker: approvedSpeaker };
+  });
+}
 export function threadConfig(config: Config, w: Workspace) {
   const filesystem: Record<string, any> = { ':minimal': 'read', [w.root]: 'read' };
   if (w.task?.stage === 'render')
@@ -213,16 +225,17 @@ export class HostCodex {
           throw new AppError('STAGE_FORBIDDEN', '当前阶段禁止配音');
         const cache = path.join(this.config.dataRoot, state.lease.run.task_id, 'tool-cache');
         await mkdir(cache, { recursive: true, mode: 0o700 });
+        const items = authorizeTtsItems(params.arguments?.items, this.config.ttsVoice);
         const script = path.join(cache, randomUUID() + '.json');
         await writeJson(script, {
           taskId: state.lease.run.task_id,
           runId: state.lease.run.id,
           token: state.lease.token,
-          items: params.arguments?.items,
+          items,
         });
         // 清单是可信层从动态工具参数保存的快照，不执行模型提供的 Python 或 shell。
         const localScript = path.join(state.workspace.root, 'tool-audio', 'tts-call.json');
-        await writeJson(localScript, params.arguments?.items);
+        await writeJson(localScript, items);
         const out = await this.processes.run(
           state.lease.run.id,
           state.workspace,
