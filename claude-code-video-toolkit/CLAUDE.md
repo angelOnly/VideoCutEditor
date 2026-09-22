@@ -74,8 +74,7 @@ npm run render   # Export
 ## Unattended production
 
 Explicit unattended video requests and trusted server tasks with `mode: auto`
-use `.agents/skills/video-pipeline/SKILL.md` (source:
-`.claude/skills/video-pipeline/SKILL.md`). Its automatic stage flow replaces
+统一使用 `.agents/skills/video-pipeline/SKILL.md`，该目录是唯一维护源，迁移脚本跳过此 Skill。其自动阶段流程替代
 the interactive planning, voice audition, scene approval and export confirmation
 steps for these tasks only. Do not enter `/video`, `/scene-review` or
 `/generate-voiceover` for automatic tasks. Preserve normal interactive behavior

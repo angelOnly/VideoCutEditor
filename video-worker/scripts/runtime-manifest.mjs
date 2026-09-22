@@ -13,8 +13,9 @@ async function collect(relative) {
 }
 for (const directory of [
   'video-worker/src',
+  'video-worker/migrations',
   'claude-code-video-toolkit/templates/ifeng-scenes',
-  'claude-code-video-toolkit/.claude/skills/video-pipeline',
+  'claude-code-video-toolkit/.agents/skills/video-pipeline',
 ])
   await collect(directory);
 for (const f of [
@@ -25,15 +26,16 @@ for (const f of [
   'cached_tts.py',
   'worker_stage.py',
   'render_scene.cjs',
-  'render_segments.py',
-  'inspect_assets.py',
-  'worker_tts.py',
   'doubao_tts.py',
   'voiceover.py',
   'config.py',
 ])
   files.push('claude-code-video-toolkit/tools/' + f);
-files.push('video-worker/pnpm-lock.yaml', 'video-worker/deploy/runner-runtime/pnpm-lock.yaml');
+files.push(
+  'video-worker/pnpm-lock.yaml',
+  'video-worker/config/templates.json',
+  'claude-code-video-toolkit/deliverables/财经双人对话视频生成指令.zip',
+);
 const hashes = {};
 for (const f of files.sort())
   hashes[f] = createHash('sha256')

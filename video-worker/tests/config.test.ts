@@ -17,7 +17,6 @@ test('one root env configures Worker without tenants.json; injected values and e
       [
         'MEDIA_ROOT=/shared/videos',
         'POSTGRES_PASSWORD=test_database_password',
-        'IFENG_API_KEY=test-interface-token-123',
         'IFENG_CALLBACK_SECRET=test-callback-secret-123',
         'IFENG_CALLBACK_BASE_URL=http://callback:9000',
         'IFENG_ALLOWED_INPUT_PREFIXES=input/a, input/b',
@@ -39,6 +38,7 @@ test('one root env configures Worker without tenants.json; injected values and e
         }),
       );
     const config = read();
+    assert.equal('apiKey' in config.tenant, false);
     assert.equal(config.tenant.inputRoot, '/shared/videos');
     assert.deepEqual(config.tenant.allowedInputPrefixes, ['input/a', 'input/b']);
     assert.equal(config.voice, 'test_speaker');
@@ -51,10 +51,8 @@ test('one root env configures Worker without tenants.json; injected values and e
     assert.equal(astra.effort, 'low');
     assert.equal(config.base, undefined);
     const overridden = read({
-      IFENG_API_KEY: 'injected-interface-token',
       DATABASE_URL: 'postgresql://injected/test',
     });
-    assert.equal(overridden.tenant.apiKey, 'injected-interface-token');
     assert.equal(overridden.db, 'postgresql://injected/test');
     await writeFile(tenantFile, JSON.stringify([{ ...config.tenant, id: 'explicit' }]));
     assert.equal(read({ TENANTS_FILE: tenantFile }).tenant.id, 'explicit');

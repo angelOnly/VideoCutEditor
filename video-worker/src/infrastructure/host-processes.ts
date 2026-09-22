@@ -17,10 +17,8 @@ export function jobUnit(runId: string) {
 export const admittedToolkit = [
   '.agents/skills/video-pipeline',
   '.agents/skills/remotion-best-practices',
-  '.agents/skills/remotion',
   '.agents/skills/ffmpeg',
   'templates/ifeng-scenes/node_modules',
-  '.claude/skills/video-pipeline/references/two-stage.schema.json',
   ...[
     'generate_dialogue_audio.py',
     'two_stage.py',
@@ -32,9 +30,6 @@ export const admittedToolkit = [
     'config.py',
     'voiceover.py',
     'doubao_tts.py',
-    'worker_tts.py',
-    'render_segments.py',
-    'inspect_assets.py',
   ].map((f) => `tools/${f}`),
 ];
 export function bubblewrapArgs(
@@ -63,10 +58,7 @@ export function bubblewrapArgs(
   ])
     args.push('--ro-bind-try', file, file);
   args.push('--proc', '/proc', '--dev', '/dev', '--tmpfs', '/tmp', '--tmpfs', '/dev/shm');
-  for (const relative of [
-    ...admittedToolkit,
-    ...(w.task?.contractVersion === 'video-two-stage/1' ? [] : ['templates/ifeng-scenes']),
-  ]) {
+  for (const relative of admittedToolkit) {
     const source = path.join(config.toolkitRoot, relative);
     args.push('--ro-bind', source, source);
   }
@@ -92,10 +84,6 @@ export function bubblewrapArgs(
       const audio = path.join(w.root, 'tool-audio');
       args.push('--bind', audio, audio);
     }
-  }
-  if (mode === 'tool' && w.task?.contractVersion !== 'video-two-stage/1') {
-    const audio = path.join(w.root, 'input/audio');
-    args.push('--bind', audio, audio);
   }
   if (cache) args.push('--bind', cache, cache);
   args.push(
@@ -192,7 +180,7 @@ export class HostProcesses {
     if (
       tts &&
       (mode !== 'tool' ||
-        !['worker_tts.py', 'worker_stage.py'].some(
+        !['worker_stage.py'].some(
           (f) => argv[1] === path.join(this.config.toolkitRoot, 'tools', f),
         ))
     )

@@ -1,28 +1,18 @@
-> v2 分析/分镜任务优先使用 [v2 文件协议](v2-contract.md)。以下旧单视频契约仅用于 schemaVersion=1；v2 服务位于同级 video-worker，媒体交付为本地文件路径。
-
 # 技术路由
 
-相对工具路径从工具库根目录运行；输入输出参数使用绝对任务路径。先检查本地命令 `--help`，不要把示例当作所有模板共用命令。
+本地完整制作和 Worker Render 共用下列技术方法。按需读取，不能因此扩大阶段授权或加载历史正文。
 
-| 需要 | 读取/执行 | 无人值守适配 |
-|---|---|---|
-| 模板识别 | `_internal/toolkit-registry.json`、指定模板 README 与 package.json | 注册表存在不等于已做服务端准入；检查依赖、入口、配置格式和素材约束 |
-| Remotion | `.agents/skills/remotion/SKILL.md`；按需读 `remotion-best-practices` 的 audio、sequencing、subtitles、measuring-text、calculate-metadata 规则 | 不启动 Studio 等人操作；用 CLI still/render 生成证据和完整视频 |
-| Python 模板 | `.agents/skills/moviepy/SKILL.md`、模板自身 build.py | 尊重模板实际 MoviePy 版本与配置格式 |
-| 探测、混音、转码 | `.agents/skills/ffmpeg/SKILL.md` | ffprobe 实测，混音 ducking、避免削波；全片解码检查 |
-| 单人配音 | `tools/voiceover.py` | 固定 provider 和音色，传 `--script`/`--output`/`--json`，不得省略稿件参数而等待 stdin；不读交互式 generate-voiceover wrapper |
-| 豆包双人 | `tools/generate_dialogue_audio.py` | JSON 数组 id/role/text，role 当前只支持 female/male；提供固定 speakers；不传 --force 重做已验证音频 |
-| 字幕 | 模板的字幕组件或分页方式；逐字高亮模板才按需使用 `tools/align_captions.py` 或 concept-explainer-short 的 gen_captions.py | 财经模板必须有句级底部字幕和结论卡；句级字幕绑定独立 TTS 的真实边界。未配置对齐服务时继续渲染，不得作为失败条件 |
-| 视觉优化 | `.agents/skills/frontend-design/SKILL.md` | 基于关键帧自动修复可读性，禁止进入 scene-review 对话 |
+| 需求 | 共用入口 | Worker 适配 |
+| --- | --- | --- |
+| Remotion 工程、动画与时间轴 | `.agents/skills/remotion-best-practices/SKILL.md`，按需 timing、sequencing、transitions、audio、measuring-text 规则 | 锁定依赖，不启动 Studio、不安装软件 |
+| 栏目人物、图解、字幕 | 冻结模板 renderer 及 renderer-manifest.json | 复制到 project 后实际导入，允许创作本期专属组件 |
+| 探测、混音、解码 | `.agents/skills/ffmpeg/SKILL.md`、FFprobe/FFmpeg | 通过 video_exec，按实际时长制作 |
+| 配音 | 共用制作流程的句级配音步骤 | video_tts；本地完整任务使用 stage_tts.py |
+| 渲染、抽帧、拼接 | tools/stage_media.py、tools/render_scene.cjs | Codex 提供工程入口、Composition、Props、实测帧数；浏览器取 REMOTION_BROWSER_EXECUTABLE |
+| 实际看图 | 模板关键帧与成片抽帧 | video_view_image；未查看不能写已审查 |
 
-## 时间码陷阱
+字幕跟随独立句级 TTS，保留原稿文字，不引入 ASR 或中文逐字逐词声学对齐。转场重叠、音频起止和全局偏移使用实际 fps；不套用固定 30fps 时间字段。
 
-`generate_dialogue_audio.py` 的 start_frame/duration_frames 固定按 30fps 生成。目标非 30fps 时以 start_seconds/duration_seconds 为事实重新计算帧，不能直接复用 frame 字段。旁白起止应按同一绝对秒时间轴取整，避免逐段四舍五入积累。timeline 的 fps 必须与 composition 一致。
+没有挂载的公共 lib、remotion-official 或历史工程不属于可用依赖。模板允许的只读 sentenceAudioValidator 只用于句级检查，不能执行任意模板脚本。检查工具不替代 Codex 的布局、动态图解和声音判断，也不证明人工全片听看已经完成。
 
-`sync_timing.py --apply` 仅用于其支持的配置结构。未经检查直接应用可能破坏模板。Remotion 的转场重叠会缩短总帧数，最终 totalFrames 需使用实际 composition 结果。
-
-## 自动画面检查
-
-逐场生成首个可见稳定帧、中间帧、尾帧以及转场交叠帧。查看实际图像；用 DOM/字体测量验证字幕边界与安全区。检查素材是否显示、文本是否完整、是否遗留占位符。报告绑定当前时间轴和渲染输入的哈希；修复后重做受影响截图。
-
-若运行环境没有图像查看能力，不把“截图存在”写成“视觉检查通过”；按模板要求用确定性布局检测补足，仍无法验证的必需检查返回 VALIDATION_FAILED。开发色块视频只用于测试校验器，不能作为生产模板回退。
+已有普通 SDR 本地工程可继续使用 tools/render_delivery.mjs 与 scripts/validate_delivery.py 做整片技术导出，它们只是共用制作流程下的导出适配；字段参考 task-contract.md。不能从该工具启动另一套 Worker 协议或固定布局流程。

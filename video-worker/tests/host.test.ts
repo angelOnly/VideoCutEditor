@@ -1,3 +1,4 @@
+import { writable } from './helpers.js';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
@@ -42,7 +43,11 @@ class FakeRpc extends EventEmitter implements Rpc {
       turnId,
       item: {
         type: 'agentMessage',
-        text: JSON.stringify({ status: 'candidate', marker: threadId }),
+        text: JSON.stringify({
+          status: 'candidate',
+          scenes: [{ text: '第一句。' }, { text: '第二句。' }],
+          error: null,
+        }),
       },
     });
     this.emit('notification', 'turn/completed', { threadId, turn: { id: turnId, status } });
@@ -103,10 +108,15 @@ test('host namespace hides shared roots, login and env; trusted tools alone may 
   ]);
   const policy: any = threadConfig(c, w);
   assert.equal(policy.permissions.videocut.filesystem[w.root], 'read');
-  assert.equal(policy.permissions.videocut.filesystem[path.join(w.root, 'render', 'run-a')], undefined);
+  assert.equal(
+    policy.permissions.videocut.filesystem[path.join(w.root, 'render', 'run-a')],
+    undefined,
+  );
   assert.equal(policy.features.shell_tool, false);
   assert.equal(policy.features.plugins, false);
-  assert.ok(!prompt({ operation: 'render' }, w.root, c.toolkitRoot).includes('${job}'));
+  assert.throws(() => prompt({ operation: 'render' }, w.root, c.toolkitRoot), {
+    code: 'PIPELINE_REVISION_EXPIRED',
+  });
   assert.match(
     prompt(
       { contractVersion: 'video-two-stage/1', stage: 'render', runId: 'run-a' },
@@ -205,7 +215,7 @@ test('four native Codex tasks route by thread/turn, persist identity, resume, an
       leases.push(lease);
       const w = await workspace.prepare(lease, tenant);
       ws.push(w);
-      assert.equal(w.task.template.path, path.join(c.toolkitRoot, 'templates/ifeng-scenes'));
+      assert.equal(w.task.stage, 'analysis');
       await assert.rejects(readFile(path.join(w.root, 'codex-home/auth.json')));
       const abort = new AbortController();
       aborts.push(abort);
@@ -228,15 +238,22 @@ test('four native Codex tasks route by thread/turn, persist identity, resume, an
     const contexts = (await db.query('SELECT * FROM host_executions')).rows;
     assert.equal(new Set(contexts.map((x) => x.thread_id)).size, 4);
     for (const ctx of contexts) {
-      const result = await rpc.handleRequest!('item/tool/call', {
-        threadId: ctx.thread_id,
-        turnId: ctx.turn_id,
-        tool: 'video_exec',
-        arguments: { command: 'echo ok' },
-      });
-      assert.equal(result.success, true);
-      assert.ok(commands.some((x) => x.id === ctx.run_id && x.root === ctx.workspace));
+      await assert.rejects(
+        rpc.handleRequest!('item/tool/call', {
+          threadId: ctx.thread_id,
+          turnId: ctx.turn_id,
+          tool: 'video_exec',
+          arguments: { command: 'echo ok' },
+        }),
+        { code: 'STAGE_FORBIDDEN' },
+      );
     }
+    assert.equal(commands.length, 0);
+    assert.ok(
+      rpc.calls
+        .filter((x) => x.method === 'thread/start')
+        .every((x) => x.params.dynamicTools.length === 0),
+    );
     await assert.rejects(
       rpc.handleRequest!('item/tool/call', {
         threadId: contexts[0].thread_id,
@@ -260,26 +277,13 @@ test('four native Codex tasks route by thread/turn, persist identity, resume, an
       const candidate = JSON.parse(
         await readFile(path.join(ws[i].root, 'output/agent-response.json'), 'utf8'),
       );
-      assert.equal(candidate.marker, ctx.thread_id);
+      assert.equal(candidate.runId, leases[i].run.id);
     }
-    // A repair round resumes the persisted thread; output/session.json cannot choose another task.
-    await writeFile(
-      path.join(ws[1].root, 'output/session.json'),
-      JSON.stringify({ threadId: 'attacker-thread' }),
-    );
-    const again = codex.run(leases[1], ws[1], new AbortController().signal);
-    void again.catch(() => {});
-    await until(() => rpc.calls.some((x) => x.method === 'thread/resume'));
-    const resumed = rpc.calls.find((x) => x.method === 'thread/resume');
-    assert.notEqual(resumed.params.threadId, 'attacker-thread');
-    const previous = contexts.find((x) => x.run_id === leases[1].run.id)!;
-    await until(() => rpc.turns.get(previous.thread_id) !== previous.turn_id);
-    rpc.complete(previous.thread_id);
-    await again;
   } finally {
     for (const thread of rpc.turns.keys()) rpc.complete(thread);
     await Promise.allSettled(running);
     await db.close();
+    await writable(dir);
     await rm(dir, { recursive: true, force: true });
   }
 });
@@ -354,6 +358,7 @@ test('阶段工具耗尽预算后中断当前 turn 并清理执行进程', async
     for (const thread of rpc.turns.keys()) rpc.complete(thread);
     await Promise.allSettled(running ? [running] : []);
     await db.close();
+    await writable(dir);
     await rm(dir, { recursive: true, force: true });
   }
 });
@@ -382,6 +387,7 @@ process.stdout.write(JSON.stringify({id:m.id,result})+'\\n');});`,
     assert.equal(server.healthy, false);
   } finally {
     await server.close();
+    await writable(dir);
     await rm(dir, { recursive: true, force: true });
   }
 });

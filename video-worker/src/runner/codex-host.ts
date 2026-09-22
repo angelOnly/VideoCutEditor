@@ -1,5 +1,7 @@
+import { analysisResponseSchema, normalizeAnalysis } from '../domain/storyboard.js';
+import { snapshotDigest } from '../infrastructure/stage-workspace.js';
 import path from 'node:path';
-import { mkdir, appendFile } from 'node:fs/promises';
+import { mkdir, appendFile, readFile } from 'node:fs/promises';
 import type { Config } from '../config.js';
 import type { Lease } from '../domain/task.js';
 import { AppError } from '../domain/task.js';
@@ -11,7 +13,7 @@ import type { HostProcesses } from '../infrastructure/host-processes.js';
 import { readJson, writeJson } from '../infrastructure/files.js';
 import { stagePath, stageResponseSchema } from '../contracts/two-stage.js';
 import { randomUUID } from 'node:crypto';
-import { prompt } from './prompts.js';
+import { prompt, loadPipeline } from './prompts.js';
 
 export const dynamicTools = [
   {
@@ -69,7 +71,8 @@ export const dynamicTools = [
 ];
 export function threadConfig(config: Config, w: Workspace) {
   const filesystem: Record<string, any> = { ':minimal': 'read', [w.root]: 'read' };
-  for (const d of ['project', 'output', 'cache']) filesystem[path.join(w.root, d)] = 'write';
+  if (w.task?.stage === 'render')
+    for (const d of ['project', 'output', 'cache']) filesystem[path.join(w.root, d)] = 'write';
   if (
     w.task?.contractVersion === 'video-two-stage/1' &&
     w.task.stage === 'render' &&
@@ -91,6 +94,8 @@ export function threadConfig(config: Config, w: Workspace) {
 }
 interface Active {
   toolBusy?: boolean;
+  lastEvent: number;
+  eventWrites: Promise<void>;
   lease: Lease;
   workspace: Workspace;
   threadId: string;
@@ -146,10 +151,26 @@ export class HostCodex {
       if (params.turn.status === 'completed') state.resolve();
       else state.reject(new AppError('CODEX_TURN_FAILED', `Codex turn ${params.turn.status}`));
     }
+    state.lastEvent = Date.now();
+    const progress = ['item/started', 'item/completed', 'turn/completed'].includes(method);
+    state.eventWrites = state.eventWrites
+      .then(async () => {
+        await this.queue.db.query(
+          'UPDATE host_executions SET last_event_at=now(),last_progress_at=CASE WHEN $3 THEN now() ELSE last_progress_at END WHERE run_id=$1 AND fencing_token=$2',
+          [state.lease.run.id, state.lease.token, progress],
+        );
+      })
+      .catch((e) => state.reject(e));
     // Only structural information; no model text, account details or input content in shared logs.
     void appendFile(
       path.join(state.workspace.root, 'output/events.jsonl'),
-      JSON.stringify({ type: method, turnId, time: new Date().toISOString() }) + '\n',
+      JSON.stringify({
+        type: method,
+        threadId: state.threadId,
+        turnId,
+        itemId: params.item?.id,
+        time: new Date().toISOString(),
+      }) + '\n',
     ).catch(() => {});
   };
   private handleRequest = async (method: string, params: any) => {
@@ -161,9 +182,28 @@ export class HostCodex {
     await this.queue.withLease(state.lease, async () => {});
     if (state.ended || state.signal.aborted || this.active.get(params.threadId) !== state)
       throw new Error('Stale tool call');
+    if (state.lease.run.stage !== 'render')
+      throw new AppError('STAGE_FORBIDDEN', '文本分镜阶段禁止制作工具');
     if (state.toolBusy) throw new AppError('TASK_BUSY', '同一任务一次只能执行一个工具');
     state.toolBusy = true;
+    const toolId = params.callId ?? params.itemId ?? randomUUID();
+    let toolStatus = 'failed';
     try {
+      await this.queue.db.query(
+        'UPDATE host_executions SET current_tool_id=$3,current_tool_name=$4,tool_started_at=now(),tool_ended_at=NULL,tool_status=$5,last_progress_at=now() WHERE run_id=$1 AND fencing_token=$2',
+        [state.lease.run.id, state.lease.token, toolId, params.tool, 'running'],
+      );
+      await appendFile(
+        path.join(state.workspace.root, 'output/events.jsonl'),
+        JSON.stringify({
+          type: 'tool/start',
+          threadId: state.threadId,
+          turnId: state.turnId,
+          toolId,
+          tool: params.tool,
+          time: new Date().toISOString(),
+        }) + '\n',
+      );
       let text: string;
       if (params.tool === 'video_tts') {
         if (
@@ -181,7 +221,7 @@ export class HostCodex {
           items: params.arguments?.items,
         });
         // 清单是可信层从动态工具参数保存的快照，不执行模型提供的 Python 或 shell。
-        const localScript = path.join(state.workspace.root, 'tool-audio', 'tts-request.json');
+        const localScript = path.join(state.workspace.root, 'tool-audio', 'tts-call.json');
         await writeJson(localScript, params.arguments?.items);
         const out = await this.processes.run(
           state.lease.run.id,
@@ -204,6 +244,19 @@ export class HostCodex {
         );
         await this.queue.withLease(state.lease, async () => {});
         const value = JSON.parse(out.trim());
+        if (Array.isArray(value.clips)) {
+          const registry = path.join(state.workspace.root, 'tool-audio', 'tts-request.json');
+          let previous: any[] = [];
+          try {
+            previous = await readJson(registry);
+          } catch (e: any) {
+            if (e.code !== 'ENOENT') throw e;
+          }
+          const clips = new Map(previous.map((clip: any) => [clip.id, clip]));
+          for (const clip of value.clips) clips.set(clip.id, clip);
+          await writeJson(registry, [...clips.values()]);
+        }
+        toolStatus = value.error ? 'failed' : 'succeeded';
         return {
           success: !value.error,
           contentItems: [{ type: 'inputText', text: JSON.stringify(value) }],
@@ -221,6 +274,7 @@ export class HostCodex {
           state.signal,
           'agent',
         );
+        toolStatus = 'succeeded';
         return { success: true, contentItems: [{ type: 'inputText', text }] };
       }
       if (params.tool === 'video_view_image' && typeof params.arguments?.path === 'string') {
@@ -241,6 +295,7 @@ export class HostCodex {
           state.signal,
           'agent',
         );
+        toolStatus = 'succeeded';
         return { success: true, contentItems: [{ type: 'inputImage', imageUrl: text.trim() }] };
       }
       throw new Error('Unsupported task tool');
@@ -251,6 +306,22 @@ export class HostCodex {
       };
     } finally {
       state.toolBusy = false;
+      await this.queue.db.query(
+        'UPDATE host_executions SET tool_ended_at=now(),tool_status=$3,last_progress_at=now() WHERE run_id=$1 AND fencing_token=$2',
+        [state.lease.run.id, state.lease.token, toolStatus],
+      );
+      await appendFile(
+        path.join(state.workspace.root, 'output/events.jsonl'),
+        JSON.stringify({
+          type: 'tool/end',
+          threadId: state.threadId,
+          turnId: state.turnId,
+          toolId,
+          tool: params.tool,
+          status: toolStatus,
+          time: new Date().toISOString(),
+        }) + '\n',
+      );
       if (
         state.workspace.task.contractVersion === 'video-two-stage/1' &&
         state.lease.run.stage === 'render'
@@ -271,10 +342,12 @@ export class HostCodex {
   };
   async run(lease: Lease, w: Workspace, signal: AbortSignal) {
     signal.throwIfAborted();
-    const threadRow = (
-      await this.queue.db.query('SELECT thread_id FROM tasks WHERE id=$1', [lease.run.task_id])
-    ).rows[0];
-    const existing = w.task.contractVersion === 'video-two-stage/1' ? null : threadRow.thread_id;
+    const rules = loadPipeline(w.task, this.config.toolkitRoot);
+    const inputPrompt = prompt(w.task, w.root, this.config.toolkitRoot, rules);
+    await writeJson(
+      path.join(w.root, 'output/pipeline-files.json'),
+      rules.map(({ source, sha256 }) => ({ source, sha256 })),
+    );
     const args = {
       cwd: w.root,
       runtimeWorkspaceRoots: [w.root],
@@ -285,14 +358,13 @@ export class HostCodex {
       developerInstructions:
         'All shell commands and file operations must use video_exec. All visual inspection must use video_view_image. These tools execute in an isolated per-task Ubuntu namespace. Never use other execution tools or launch background work.',
     };
-    const response = await this.rpc.request(
-      existing ? 'thread/resume' : 'thread/start',
-      existing ? { ...args, threadId: existing, excludeTurns: true } : { ...args, dynamicTools },
-    );
+    const response = await this.rpc.request('thread/start', {
+      ...args,
+      dynamicTools: lease.run.stage === 'render' ? dynamicTools : [],
+    });
     if (response.activePermissionProfile?.id !== 'videocut')
       throw new AppError('SANDBOX_POLICY_UNSUPPORTED', 'Codex 未应用任务权限配置，拒绝执行');
     const threadId = response.thread.id;
-    if (existing && threadId !== existing) throw new Error('Thread identity mismatch');
     if (this.active.has(threadId)) throw new Error('Thread is already executing');
     let finish!: () => void;
     const terminal = new Promise<void>((done) => {
@@ -307,6 +379,8 @@ export class HostCodex {
     const commandAbort = new AbortController();
     const state: Active = {
       lease,
+      lastEvent: Date.now(),
+      eventWrites: Promise.resolve(),
       workspace: w,
       threadId,
       starting: true,
@@ -325,6 +399,19 @@ export class HostCodex {
     this.active.set(threadId, state);
     const abort = () => reject(new AppError('CANCELLED', 'Codex 执行已中断'));
     signal.addEventListener('abort', abort, { once: true });
+    const quiet = setInterval(() => {
+      if (Date.now() - state.lastEvent > 120000)
+        void appendFile(
+          path.join(w.root, 'output/events.jsonl'),
+          JSON.stringify({
+            type: 'event_gap_warning',
+            toolActive: !!state.toolBusy,
+            threadId,
+            turnId: state.turnId,
+            time: new Date().toISOString(),
+          }) + '\n',
+        ).catch(() => {});
+    }, 60000);
     try {
       await this.queue.withLease(lease, async (q) => {
         await q.query('UPDATE tasks SET thread_id=$2,session_path=NULL WHERE id=$1', [
@@ -333,25 +420,20 @@ export class HostCodex {
         ]);
         await q.query(
           `INSERT INTO host_executions(run_id,attempt,fencing_token,thread_id,workspace)
-          VALUES($1,$2,$3,$4,$5) ON CONFLICT(run_id) DO UPDATE SET attempt=$2,fencing_token=$3,thread_id=$4,turn_id=NULL,workspace=$5`,
+          VALUES($1,$2,$3,$4,$5) ON CONFLICT(run_id) DO UPDATE SET attempt=$2,fencing_token=$3,thread_id=$4,turn_id=NULL,workspace=$5,
+          last_event_at=NULL,last_progress_at=NULL,current_tool_id=NULL,current_tool_name=NULL,
+          tool_started_at=NULL,tool_ended_at=NULL,tool_status=NULL,cleanup_state=NULL`,
           [lease.run.id, lease.run.attempt, lease.token, threadId, w.root],
         );
       });
       signal.throwIfAborted();
       const outputSchema =
-        w.task.contractVersion === 'video-two-stage/1'
-          ? stageResponseSchema
-          : await readJson(
-              path.join(
-                this.config.toolkitRoot,
-                '.agents/skills/video-pipeline/references/response-v2.schema.json',
-              ),
-            );
+        lease.run.stage === 'analysis' ? analysisResponseSchema : stageResponseSchema;
       state.requested = true;
       const start = await this.rpc.request('turn/start', {
         threadId,
         ...(this.config.codexReasoningEffort ? { effort: this.config.codexReasoningEffort } : {}),
-        input: [{ type: 'text', text: prompt(w.task, w.root, this.config.toolkitRoot) }],
+        input: [{ type: 'text', text: inputPrompt }],
         outputSchema,
       });
       if (state.turnId && state.turnId !== start.turn.id) throw new Error('Turn identity mismatch');
@@ -365,9 +447,43 @@ export class HostCodex {
       });
       if (signal.aborted) abort();
       await done;
+      await state.eventWrites;
       await this.queue.withLease(lease, async () => {});
-      await writeJson(path.join(w.root, 'output/agent-response.json'), JSON.parse(state.final));
+      if (!state.final.trim())
+        throw new AppError(
+          lease.run.stage === 'analysis' ? 'ANALYSIS_RESULT_MISSING' : 'RENDER_RESULT_MISSING',
+          '模型结束但未返回结果',
+        );
+      let result: any;
+      try {
+        result = JSON.parse(state.final);
+      } catch {
+        throw new AppError(
+          lease.run.stage === 'analysis' ? 'ANALYSIS_RESULT_INVALID' : 'RENDER_RESULT_INVALID',
+          '模型返回无效 JSON',
+        );
+      }
+      if (lease.run.stage === 'analysis') {
+        const plan = normalizeAnalysis(
+          result,
+          await readFile(path.join(w.root, 'input/script.txt'), 'utf8'),
+          lease.run.task_id,
+          snapshotDigest(w.task.snapshot),
+        );
+        await writeJson(path.join(w.root, 'analysis/plan.json'), plan);
+        result = {
+          contractVersion: w.task.contractVersion,
+          taskId: lease.run.task_id,
+          runId: lease.run.id,
+          stage: 'analysis',
+          status: 'candidate',
+          artifact: 'analysis/plan.json',
+          error: null,
+        };
+      }
+      await writeJson(path.join(w.root, 'output/agent-response.json'), result);
     } finally {
+      clearInterval(quiet);
       signal.removeEventListener('abort', abort);
       // Mark unavailable for tool calls before interrupting / killing the task cgroup.
       state.starting = false;
@@ -407,7 +523,19 @@ export class HostCodex {
       } else if (state.requested && this.rpc.healthy)
         error = new Error('Unknown active turn; restart Worker before releasing slot');
     }
-    await this.processes.stop(runId);
+    try {
+      await this.processes.stop(runId);
+    } catch (e) {
+      await this.queue.db.query(
+        "UPDATE host_executions SET cleanup_state='cleanup_failed' WHERE run_id=$1",
+        [runId],
+      );
+      throw e;
+    }
+    await this.queue.db.query('UPDATE host_executions SET cleanup_state=$2 WHERE run_id=$1', [
+      runId,
+      error ? 'cleanup_failed' : 'stopped',
+    ]);
     if (error) {
       this.rpc.invalidate?.(new Error('CODEX_STOP_UNCONFIRMED'));
       throw error;

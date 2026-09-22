@@ -35,13 +35,16 @@ export class Postgres implements Database {
   }
 }
 export async function migrate(db: Database) {
-  const sql = await readFile(
-    fileURLToPath(new URL('../../migrations/001_initial.sql', import.meta.url)),
-    'utf8',
-  );
-  await db.tx(async (q) => {
-    await q.query(sql);
-  });
+  // 明确顺序；每份迁移幂等，可在升级与首次安装时共用。
+  for (const name of ['001_initial.sql', '002_pipeline_liveness.sql']) {
+    const sql = await readFile(
+      fileURLToPath(new URL('../../migrations/' + name, import.meta.url)),
+      'utf8',
+    );
+    await db.tx(async (q) => {
+      await q.query(sql);
+    });
+  }
 }
 export async function lock(q: Sql) {
   await q.query('SELECT id FROM scheduler_lock WHERE id=1 FOR UPDATE');

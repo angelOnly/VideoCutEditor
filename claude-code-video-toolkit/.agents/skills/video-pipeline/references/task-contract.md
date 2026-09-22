@@ -1,4 +1,4 @@
-> v2 分析/分镜任务优先使用 [v2 文件协议](v2-contract.md)。以下旧单视频契约仅用于 schemaVersion=1；v2 服务位于同级 video-worker，媒体交付为本地文件路径。
+> 本文件仅记录已有本地整片导出工具的数据格式，不是 Worker 执行入口。制作方法统一见 [production-flow](production-flow.md)，服务适配见 [two-stage-contract](two-stage-contract.md)。
 
 # 任务与阶段产物契约 v1
 

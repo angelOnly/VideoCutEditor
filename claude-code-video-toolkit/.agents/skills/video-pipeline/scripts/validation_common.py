@@ -82,14 +82,6 @@ def validate_mp4(path, spec, frames):
     return {'sha256':sha256(path),'sizeBytes':path.stat().st_size}
 
 
-def validate_schema(root, task):
-    import jsonschema
-    schema=Path(__file__).resolve().parent.parent/'references/task-v2.schema.json'
-    jsonschema.validate(task,json.loads(schema.read_text()))
-    for a in read(root,task['input']['assetManifest'])['assets']:
-        require(sha256(local(root,a['path']))==a['sha256'],'Input snapshot changed')
-
-
 def cli(validate):
     parser=argparse.ArgumentParser();parser.add_argument('--job-dir',type=Path,required=True);args=parser.parse_args()
     try:

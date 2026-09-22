@@ -11,11 +11,11 @@
         },
         "taskId": {
           "type": "string",
-          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,99}$"
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$"
         },
         "runId": {
           "type": "string",
-          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,99}$"
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$"
         },
         "stage": {
           "enum": [
@@ -249,7 +249,7 @@
       "properties": {
         "taskId": {
           "type": "string",
-          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,99}$"
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$"
         },
         "scriptFile": {
           "type": "string",
@@ -270,7 +270,7 @@
             "properties": {
               "id": {
                 "type": "string",
-                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,99}$"
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$"
               },
               "path": {
                 "type": "string",
@@ -366,7 +366,7 @@
         },
         "taskId": {
           "type": "string",
-          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,99}$"
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$"
         },
         "inputDigest": {
           "type": "string",
@@ -379,7 +379,7 @@
             "properties": {
               "id": {
                 "type": "string",
-                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,99}$"
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$"
               },
               "text": {
                 "type": "string"
@@ -488,13 +488,13 @@
                 "type": "array",
                 "items": {
                   "type": "string",
-                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,99}$"
+                  "minLength": 1,
+                  "maxLength": 128
                 },
                 "uniqueItems": true
               },
               "production": {
                 "type": "object",
-                "minProperties": 1,
                 "properties": {
                   "visualBlocks": {
                     "type": "array",
@@ -596,11 +596,11 @@
         },
         "taskId": {
           "type": "string",
-          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,99}$"
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$"
         },
         "runId": {
           "type": "string",
-          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,99}$"
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$"
         },
         "stage": {
           "const": "render"
@@ -637,7 +637,7 @@
               },
               "id": {
                 "type": "string",
-                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,99}$"
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$"
               },
               "text": {
                 "type": "string"
@@ -649,7 +649,8 @@
                   "properties": {
                     "id": {
                       "type": "string",
-                      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,99}$"
+                      "minLength": 1,
+                      "maxLength": 128
                     },
                     "kind": {
                       "enum": [
@@ -684,7 +685,7 @@
                   "properties": {
                     "id": {
                       "type": "string",
-                      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,99}$"
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$"
                     },
                     "startFrame": {
                       "type": "integer",
@@ -863,11 +864,11 @@
         },
         "taskId": {
           "type": "string",
-          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,99}$"
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$"
         },
         "runId": {
           "type": "string",
-          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,99}$"
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$"
         },
         "stage": {
           "enum": [
@@ -900,7 +901,7 @@
             "properties": {
               "id": {
                 "type": "string",
-                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,99}$"
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$"
               },
               "videoSha256": {
                 "type": "string",

@@ -1,7 +1,6 @@
 [
   {
     "id": "ifeng",
-    "apiKey": "replace-with-a-random-api-token",
     "inputRoot": "/home/ops/jiangzb/videos",
     "exportRoot": "/home/ops/jiangzb/videos",
     "allowedInputPrefixes": ["input"],

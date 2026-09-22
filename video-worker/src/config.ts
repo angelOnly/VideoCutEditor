@@ -7,7 +7,6 @@ import { z } from 'zod';
 const serviceRoot = fileURLToPath(new URL('../', import.meta.url));
 const tenantSchema = z.object({
   id: z.string().min(1),
-  apiKey: z.string().min(16),
   inputRoot: z.string(),
   exportRoot: z.string(),
   allowedInputPrefixes: z.array(z.string()).min(1),
@@ -16,9 +15,8 @@ const tenantSchema = z.object({
 });
 export type Tenant = z.infer<typeof tenantSchema>;
 export interface Config {
-  executor: 'host' | 'docker';
-  executionProtocol?: 'video-two-stage/1' | 'legacy';
-  templateApiUrl?: string;
+  executor: 'host';
+  executionProtocol?: 'video-two-stage/1';
   customTemplateApiBaseUrl?: string;
   customTemplatePackageOrigins: string[];
   codexPath: string;
@@ -37,15 +35,10 @@ export interface Config {
   timeoutSeconds: number;
   maxAttempts: number;
   repairRounds: number;
-  runnerImage: string;
-  dockerNetwork: string;
-  dockerUid: string;
-  dockerMemory: string;
-  dockerCpus: string;
+  hostFingerprint?: string;
   codexModel?: string;
   codexReasoningEffort?:
     'minimal' | 'low' | 'medium' | 'high' | 'xhigh' | 'max' | 'ultra' | 'persistent';
-  codexApiKey?: string;
   codexBaseUrl?: string;
   ttsVoice: string;
   ttsResourceId: string;
@@ -76,7 +69,6 @@ export function loadConfig(envFile = path.resolve(serviceRoot, '../.env')): Conf
         : [
             {
               id: process.env.IFENG_TENANT_ID ?? 'ifeng',
-              apiKey: process.env.IFENG_API_KEY,
               inputRoot: process.env.IFENG_INPUT_ROOT || mediaRoot,
               exportRoot: process.env.IFENG_EXPORT_ROOT || mediaRoot,
               allowedInputPrefixes: (process.env.IFENG_ALLOWED_INPUT_PREFIXES ?? 'input')
@@ -88,11 +80,8 @@ export function loadConfig(envFile = path.resolve(serviceRoot, '../.env')): Conf
             },
           ],
     );
-  if (
-    new Set(tenants.map((t) => t.id)).size !== tenants.length ||
-    new Set(tenants.map((t) => t.apiKey)).size !== tenants.length
-  )
-    throw Error('Duplicate tenant id/key');
+  if (tenants.length !== 1) throw Error('无鉴权模式仅支持一个租户');
+  if (new Set(tenants.map((t) => t.id)).size !== tenants.length) throw Error('Duplicate tenant id');
   const templates = JSON.parse(
     readFileSync(path.join(serviceRoot, 'config/templates.json'), 'utf8'),
   );
@@ -111,11 +100,12 @@ export function loadConfig(envFile = path.resolve(serviceRoot, '../.env')): Conf
   const hostRuntime = existsSync(hostRuntimeFile)
     ? JSON.parse(readFileSync(hostRuntimeFile, 'utf8'))
     : {};
+  if (process.env.TEMPLATE_API_URL)
+    throw Error('TEMPLATE_API_URL 已停用，请配置定制 ZIP 服务或本地 ZIP');
   return {
     executionProtocol: z
-      .enum(['video-two-stage/1', 'legacy'])
-      .parse(process.env.WORKER_PROTOCOL ?? 'legacy'),
-    templateApiUrl: process.env.TEMPLATE_API_URL || undefined,
+      .literal('video-two-stage/1')
+      .parse(process.env.WORKER_PROTOCOL ?? 'video-two-stage/1'),
     customTemplateApiBaseUrl: process.env.CUSTOM_TEMPLATE_API_BASE_URL || undefined,
     customTemplatePackageOrigins: (process.env.CUSTOM_TEMPLATE_PACKAGE_ORIGINS ?? '')
       .split(',')
@@ -124,7 +114,7 @@ export function loadConfig(envFile = path.resolve(serviceRoot, '../.env')): Conf
       .map((origin) => new URL(z.string().url().parse(origin)).origin),
     hostBrowser:
       process.env.REMOTION_BROWSER_EXECUTABLE || hostRuntime.browser || '/usr/bin/chromium',
-    executor: z.enum(['host', 'docker']).parse(process.env.WORKER_EXECUTOR ?? 'host'),
+    executor: z.literal('host').parse(process.env.WORKER_EXECUTOR ?? 'host'),
     codexPath: process.env.CODEX_PATH || path.join(serviceRoot, 'node_modules/.bin/codex'),
     codexHome: process.env.CODEX_HOME || path.join(os.homedir(), '.codex'),
     hostMemory: z
@@ -153,17 +143,11 @@ export function loadConfig(envFile = path.resolve(serviceRoot, '../.env')): Conf
     timeoutSeconds: 14400,
     maxAttempts: 3,
     repairRounds: 10,
-    runnerImage: process.env.RUNNER_IMAGE ?? 'videocut-runner:0.1.0',
-    dockerNetwork: process.env.RUNNER_NETWORK ?? 'bridge',
-    dockerUid: process.env.RUNNER_UID ?? '1000:1000',
-    dockerMemory: process.env.RUNNER_MEMORY ?? '4g',
-    dockerCpus: process.env.RUNNER_CPUS ?? '2',
     codexModel: process.env.CODEX_MODEL || undefined,
     codexReasoningEffort: z
       .enum(['minimal', 'low', 'medium', 'high', 'xhigh', 'max', 'ultra', 'persistent'])
       .optional()
       .parse(process.env.CODEX_REASONING_EFFORT || undefined),
-    codexApiKey: process.env.CODEX_API_KEY || undefined,
     codexBaseUrl: process.env.CODEX_BASE_URL || undefined,
     ttsVoice:
       process.env.TTS_VOICE || process.env.DOUBAO_TTS_SPEAKER || 'zh_female_xiaohe_uranus_bigtts',

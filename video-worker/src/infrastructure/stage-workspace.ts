@@ -112,14 +112,7 @@ export async function prepareStage(
           files: template.files,
         });
       } else {
-        await writeFile(path.join(root, 'input/template.md'), template.content);
-        await writeJson(path.join(root, 'input/template.json'), {
-          id: template.id,
-          version: template.version,
-          source: template.source,
-          document: 'input/template.md',
-          attachments: template.attachments.map((a: any) => a.assetId),
-        });
+        throw new AppError('INPUT_SNAPSHOT_INVALID', '缺少冻结 ZIP 模板');
       }
       await writeJson(path.join(root, 'input/assets.json'), {
         assets: assets.map((a) => ({
@@ -208,7 +201,7 @@ export async function prepareStage(
     },
   };
   if (l.run.stage === 'render') {
-    const plan = structuredClone(l.run.input.plan);
+    const plan = structuredClone(await confirmedPlan(db, l));
     // 编辑新增素材后，以本次可信输入登记重新绑定；不改变任何制作决定。
     plan.inputDigest = snapshotDigest(snapshot);
     const name = `confirmation/v${l.run.plan_version}/plan.json`;
@@ -220,18 +213,8 @@ export async function prepareStage(
     };
     await writeJson(path.join(root, 'confirmation/current.json'), request.confirmation);
   }
-  const previous = (
-    await db.query(
-      "SELECT id,attempt FROM runs WHERE task_id=$1 AND id<>$2 AND state IN ('succeeded','failed') ORDER BY created_at DESC LIMIT 1",
-      [task.id, l.run.id],
-    )
-  ).rows[0];
   const priorRoot =
-    l.run.attempt > 1
-      ? path.join(path.dirname(root), `attempt_${l.run.attempt - 1}`)
-      : previous
-        ? path.join(config.dataRoot, task.id, 'runs', previous.id, `attempt_${previous.attempt}`)
-        : null;
+    l.run.attempt > 1 ? path.join(path.dirname(root), `attempt_${l.run.attempt - 1}`) : null;
   if (priorRoot && l.run.stage === 'render') {
     // 仅恢复本任务资料；进程记录留在只读历史目录，不作为新 namespace 的活跃 PID。
     for (const directory of ['input', 'output', 'analysis', 'render', 'project', 'tool-audio']) {
@@ -249,30 +232,6 @@ export async function prepareStage(
       request.previousArtifacts = null;
     }
   }
-  if (l.run.stage === 'render') {
-    const original = (
-      await db.query('SELECT attempt FROM runs WHERE id=$1', [task.config.analysisRunId])
-    ).rows[0];
-    const sourceRoot = path.join(
-      config.dataRoot,
-      task.id,
-      'runs',
-      task.config.analysisRunId,
-      `attempt_${original.attempt}`,
-    );
-    for (const name of [
-      ...l.run.input.plan.previews,
-      ...l.run.input.plan.scenes
-        .filter((s: any) => s.timing.kind === 'measured')
-        .map((s: any) => s.timing.audioFile),
-    ]) {
-      if (!name.startsWith('analysis/') && !name.startsWith('input/'))
-        throw new AppError('INVALID_CONTRACT', '跨阶段预览/实测证据需保存在 analysis 或 input');
-      const source = await safeFile(sourceRoot, name);
-      await mkdir(path.dirname(path.join(root, name)), { recursive: true });
-      await copyFile(source, path.join(root, name));
-    }
-  }
   await mkdir(path.join(root, 'tool-audio'), { recursive: true });
   const relative = stagePath(request);
   await mkdir(path.dirname(path.join(root, relative)), { recursive: true });
@@ -288,10 +247,23 @@ export async function prepareStage(
   return {
     root,
     task: request,
-    taskConfig: task.config,
+    taskConfig: { ...task.config, hostFingerprint: config.hostFingerprint },
     assets,
     hashes: Object.fromEntries(assets.map((a) => [a.assetId, a.sha256])),
     reuse: [],
     sceneHashes: {},
   };
+}
+
+// 执行与发布始终读取本 run 绑定的确认版本，不依赖客户端 plan。
+export async function confirmedPlan(db: Database, l: Lease) {
+  const stored = (
+    await db.query(
+      "SELECT plan FROM plan_versions WHERE task_id=$1 AND version=$2 AND kind='confirmed' AND run_id=$3",
+      [l.run.task_id, l.run.plan_version, l.run.id],
+    )
+  ).rows[0]?.plan?.plan;
+  if (!stored || stored.taskId !== l.run.task_id || stored.contractVersion !== protocol)
+    throw new AppError('CONFIRMED_PLAN_MISSING', '服务端确认快照缺失或身份不符');
+  return stored;
 }

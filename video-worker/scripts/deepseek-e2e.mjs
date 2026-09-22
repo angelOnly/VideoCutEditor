@@ -9,7 +9,7 @@ import { loadEnvFile } from 'node:process';
 const project = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const toolkit = path.join(project, 'claude-code-video-toolkit');
 const templateId = 'deepseek_finance_dialogue_e2e';
-const templateFile = 'deliverables/财经双人对话视频生成指令.md';
+const templateFile = 'deliverables/财经双人对话视频生成指令.zip';
 const scriptFile = 'test-cases/deepseek-v4/script.md';
 export const specs = [
   ...['01_hook', '02_intro', '03_active-speaker', '04_chapter-card', '05_outro'].map((name, i) => ({
@@ -54,18 +54,17 @@ function settings() {
     media,
     state: path.join(media, 'e2e-client/deepseek'),
     base: process.env.E2E_API_BASE_URL || `http://127.0.0.1:${process.env.API_PORT || 8080}`,
-    key: process.env.IFENG_API_KEY,
   };
 }
 function requirements() {
   return `真实 Worker 两阶段 DeepSeek V4 测试。1920×1080，30fps；按财经双主持人模板制作，谁说话谁高亮。
-保留原稿内容和顺序，不改写、压缩稿件，不编造观点或数据。标题、空白及原采访标注等非口播内容使用 nonspoken 明确映射。
+保留原稿内容和顺序，不改写、压缩稿件，不编造观点或数据。标题和原采访标注同样保留；仅空白由服务端映射为 nonspoken。
 未提供采访原声，引语使用普通合成旁白并标注，不能冒充真实采访。
 固定女声 zh_female_xiaohe_uranus_bigtts、男声 zh_male_m191_uranus_bigtts，不生成试听候选。
 模板仅参考布局和剪辑节奏。模板中的改写稿件、寻找参考视频、音色试听、旧交互审核要求不适用；保留 analysis 后外部编辑确认这一阶段边界。
-analysis 只产出完整可编辑方案，未配音时长写 estimated，不生成正式 TTS/MP4；预览图存 analysis/ 下。
+analysis 只产出自然句文字，由程序估时，不生成 TTS、预览或 MP4。
 render 严格使用已确认稿件和镜头，自己组织配音、测量时长、画面编程、字幕与修复；一条确认分镜返回一条包含画面、声音、动画、字幕的完整 MP4。无需整片，不把片头片尾当作额外未确认镜头。
-正文分镜、布局、图解、动效、时间线必须重新设计。只有下面白名单文件可作业务资料；模板里的历史 MOV/MP4 链接均禁止打开。不得打开其他视频、旧项目 Episode.tsx、FinancialReportDialogueV3.tsx、plan/timeline、审计报告、日志或优化建议。禁止从历史成片提取音轨或画面；只复用本任务的已验证 TTS 缓存。
+正文分镜、布局、图解、动效、时间线必须重新设计。只有下面白名单文件可作业务资料；模板内唯一参考成片和片头片尾可按模板说明使用。不得打开其他视频、旧项目 Episode.tsx、FinancialReportDialogueV3.tsx、plan/timeline、审计报告、日志或优化建议。禁止从历史成片提取音轨或画面；只复用本任务的已验证 TTS 缓存。
 允许读 video-pipeline 及必要通用技能/工具/依赖配置。FinancialIntros.tsx 只用于片头片尾，允许适配资源路径与实际时长，不参考其他历史源码。
 参考图只用于理解视觉布局，不作为正文贴图。头像、Logo、片头标题资产、音效按需引用，并在每镜 assetRefs 中列出实际使用的源文件 ID。
 明确素材不足时失败，不自行扩大参考范围。豆包凭据只由可信 video_tts 工具使用，不读取或打印 .env。
@@ -79,8 +78,8 @@ async function prepare(c) {
   );
   requireValue(process.env.WORKER_EXECUTOR === 'host', '需要 WORKER_EXECUTOR=host');
   requireValue(
-    !process.env.TEMPLATE_API_URL,
-    '此测试使用本地模板 fixture；当前配置了 TEMPLATE_API_URL，请先明确切换模板来源后再准备。',
+    !process.env.CUSTOM_TEMPLATE_API_BASE_URL && !process.env.TEMPLATE_API_URL,
+    '此测试使用显式本地 ZIP；当前配置了远程模板接口，请先明确切换模板来源后再准备。',
   );
   requireValue(
     !process.env.TENANTS_FILE,
@@ -119,7 +118,8 @@ async function prepare(c) {
   const configPath = path.join(project, 'video-worker/config/templates.json');
   const templates = await readJson(configPath);
   templates[templateId] = {
-    path: templateFile,
+    archivePath: templateFile,
+    document: '财经双人对话视频生成指令/财经双人对话视频生成指令.md',
     version: 'e2e-' + fingerprint.slice(0, 16),
     attachments,
   };
@@ -137,10 +137,9 @@ async function prepare(c) {
   );
 }
 async function api(c, method, route, body) {
-  requireValue(c.key, '缺少 IFENG_API_KEY');
   const response = await fetch(new URL(route, c.base), {
     method,
-    headers: { authorization: 'Bearer ' + c.key, 'content-type': 'application/json' },
+    headers: { 'content-type': 'application/json' },
     ...(body ? { body: JSON.stringify(body) } : {}),
     signal: AbortSignal.timeout(30000),
   });
@@ -217,14 +216,14 @@ async function status(c, args) {
     }
     const folder = path.join(c.state, s.taskId);
     await save(path.join(folder, 'status.json'), q);
-    if (q.plan?.plan) await save(path.join(folder, 'plan.json'), q.plan.plan);
+    if (q.plan?.dataList) await save(path.join(folder, 'dataList.json'), q.plan.dataList);
     if (q.latestResult?.length) {
       await save(path.join(folder, 'result.json'), q.latestResult);
       console.log('分镜结果：' + path.join(folder, 'result.json'));
     }
     if (q.taskState === 'awaiting_editor')
       console.log(
-        '完整方案：' + path.join(folder, 'plan.json') + '\n确认后执行 render --confirm。',
+        '文本分镜：' + path.join(folder, 'dataList.json') + '\n确认后执行 render --confirm。',
       );
     if (['failed', 'cancelled'].includes(q.taskState)) {
       process.exitCode = 1;
@@ -243,7 +242,7 @@ async function render(c, args) {
   const s = await state(c);
   const q = await query(c, s);
   if (!s.render) {
-    requireValue(q.taskState === 'awaiting_editor' && q.plan?.plan, '任务尚未返回完整分析方案');
+    requireValue(q.taskState === 'awaiting_editor' && q.plan?.dataList, '任务尚未返回文本分镜');
     s.render = {
       schemaVersion: 2,
       requestId: 'render-' + randomUUID(),
@@ -251,8 +250,7 @@ async function render(c, args) {
       basePlanVersion: q.planVersion,
       field_5: s.analysis.digitalHumanAccounId,
       templateId: s.analysis.plugin.templateId,
-      plan: q.plan.plan,
-      dataList: q.plan.dataList,
+      dataList: q.plan.dataList.map(({ id, content }) => ({ id, content })),
     };
     await save(path.join(c.state, 'current.json'), s);
     await save(path.join(c.state, s.taskId, 'render-request.json'), s.render);
@@ -275,11 +273,14 @@ async function verify(c) {
     q.latestRun.stage === 'render' && q.latestRun.state === 'succeeded',
     'Worker 未记录 render 成功',
   );
-  const expected = s.render.plan.scenes,
+  const expected = s.render.dataList,
     actual = q.latestResult;
   requireValue(actual.length === expected.length, '分镜数量不符');
   for (const [i, a] of actual.entries()) {
-    requireValue(a.id === expected[i].id && a.content === expected[i].text, '分镜顺序或文本不符');
+    requireValue(
+      a.id === expected[i].id && a.content === expected[i].content,
+      '分镜顺序或文本不符',
+    );
     requireValue(path.isAbsolute(a.url) && a.url.endsWith('.mp4'), '缺少发布 MP4 路径');
     requireValue((await stat(a.url)).size > 0, '发布文件为空');
     console.log(`${a.id}: ${a.dur}s ${a.url}`);

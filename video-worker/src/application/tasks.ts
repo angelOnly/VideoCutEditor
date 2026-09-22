@@ -1,7 +1,6 @@
 import type { Config, Tenant } from '../config.js';
 import { analysisRequest, renderRequest } from '../contracts/ifeng.js';
-import { assertStage } from '../contracts/two-stage.js';
-import { scenes } from '../contracts/ifeng.js';
+import { normalizeConfirmedScenes, pipelineRevision } from '../domain/storyboard.js';
 import { fail } from '../domain/task.js';
 import { TaskRepository } from '../infrastructure/task-repository.js';
 export class Tasks {
@@ -12,10 +11,13 @@ export class Tasks {
   async analysis(tenant: Tenant, body: unknown) {
     const input = analysisRequest.parse(body);
     const template = this.config.templates[input.plugin.templateId];
-    if (!template && !this.config.templateApiUrl && !this.config.customTemplateApiBaseUrl)
+    if (!template && !this.config.customTemplateApiBaseUrl)
       fail('TEMPLATE_UNSUPPORTED', '未配置模板来源');
+    if (input.digitalHumanAccounId || input.plugin.digitalHumanId)
+      fail('DIGITAL_HUMAN_UNSUPPORTED', '当前制作链路不支持数字人');
     return this.repo.submit(tenant.id, 'analysis', input, {
-      executionProtocol: this.config.executionProtocol ?? 'legacy',
+      executionProtocol: 'video-two-stage/1',
+      pipelineRevision,
       requirements: input.otherRequirements,
       templateId: input.plugin.templateId,
       templateVersion: template?.version,
@@ -26,21 +28,12 @@ export class Tasks {
       digitalHumanId: input.plugin.digitalHumanId,
       script: input.script,
       narration: input.narration,
-      ...(this.config.executionProtocol === 'video-two-stage/1'
-        ? {}
-        : {
-            tts: {
-              provider: 'doubao',
-              voiceId: this.config.ttsVoice,
-              resourceId: this.config.ttsResourceId,
-            },
-          }),
     });
   }
   async render(tenant: Tenant, body: unknown) {
     const input = renderRequest.parse(body);
-    if (input.plan) assertStage(this.config.toolkitRoot, 'plan', input.plan);
-    else scenes.parse(input.dataList);
+    normalizeConfirmedScenes(input.dataList);
+    if (input.field_5) fail('DIGITAL_HUMAN_UNSUPPORTED', '当前制作链路不支持数字人');
     return this.repo.submit(tenant.id, 'render', input, null);
   }
 }

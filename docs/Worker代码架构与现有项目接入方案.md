@@ -1,3 +1,5 @@
+> 本文保留历史架构与验收记录；现行执行以 [统一适配方案](video-pipeline两阶段与Worker接口适配开发方案.md) 和 [客户端接口](Worker客户端联调接口说明.md) 为准。旧测试数字不代表本次已部署。
+
 # Worker 代码架构与现有项目接入方案
 
 更新日期：2026-09-15。本次仅更新 Worker 接入方案；Codex 本地两阶段核心已实现，Worker 新链路尚未接入。
@@ -70,7 +72,6 @@ video-worker/
 │   ├── install-host.sh               Ubuntu 依赖、用户服务、检查和启动
 │   ├── start-worker.sh               共享 flock，启动 Worker 或 host-check
 │   ├── Dockerfile.control            API/回调/迁移镜像，无 Docker CLI
-│   ├── Dockerfile.runner             旧执行器回归镜像，当前 Compose 不构建
 │   └── runtime-manifest.json         制作源码和依赖版本摘要
 ├── scripts/install-browser.mjs       安装准入模板使用的浏览器
 └── tests/                            队列、版本、回调、路由、隔离与媒体回归
@@ -145,7 +146,7 @@ Bubblewrap 只挂当前任务和明确准入的工具、Skills、模板、Python
 
 模型内置命令/浏览器/插件等入口关闭，制作和看图通过 Worker 的两种工具路由。Codex 自身使用明确的任务权限 profile；该版本不支持的 readOnlyAccess 示例不会被当作已经生效的隔离配置。
 
-可信配音步骤可以写 input/audio，只有固定的 worker_tts.py 获得必要 TTS 凭据和外网。Agent 制作命令无外网，但可以在自己的网络命名空间内启动 Remotion 本地服务。校验步骤无网络、只读工作区。systemd 负责 CPU/内存/进程上限及全部后代清理，不依赖 shell 后台 PID 的自报信息。
+可信 TTS 工具可写 tool-audio，只有固定的供应商适配器获得必要凭据和外网。Agent 制作命令无外网，但可以在自己的网络命名空间内启动 Remotion 本地服务。校验步骤无网络、只读工作区。systemd 负责 CPU/内存/进程上限及全部后代清理，不依赖 shell 后台 PID 的自报信息。
 
 模型生成的 passed 不代表成功。停止写入后，可信验证器检查协议、稿件覆盖、分镜顺序、源素材、全量解码、帧数、音轨和画面证据。审核全部通过才发布。
 
@@ -187,7 +188,7 @@ install-host.sh 用当前登录用户安装依赖并生成用户 systemd 服务�
 | `video-worker/src/contracts/ifeng.ts` | 严格限定布局为 `full_frame / presenter_pip`，动画也只有少数预设 | 保留接口公共字段校验，调整承载制作方案的结构，容纳模板自己的主持人、动画和画面要求；新结构需与平台确认 |
 | `video-worker/src/application/execute-run.ts`、`infrastructure/audio.ts` | Codex 执行前由 Worker 调 `prepareAudio`，选择音色、逐镜生成配音 | 移除调度流程中的制作配音步骤；由 Codex 按 Skill 选择配音工具并决定调用时机 |
 | `video-worker/src/infrastructure/workspace.ts`、`domain/scene.ts` | 计算分镜摘要，生成 `renderSelection` 和复用清单 | Worker 不决定重做哪镜；向 Codex 提供确认方案和本任务历史产物清单，由制作能力判断复用；首轮不承诺局部重做 |
-| `video-worker/src/runner/prompts.ts`、toolkit 的 `tools/render_segments.py` | 提示词要求固定渲染脚本；脚本使用 `templates/ifeng-scenes` | 阶段指令只规定输入、阶段边界和交付格式；Codex 按模板使用或生成 Remotion 工程，不强制所有模板走此渲染器 |
+| `video-worker/src/runner/prompts.ts`、已删除的旧固定布局渲染器 | 提示词要求固定渲染脚本；脚本使用 `templates/ifeng-scenes` | 阶段指令只规定输入、阶段边界和交付格式；Codex 按模板使用或生成 Remotion 工程，不强制所有模板走此渲染器 |
 | `video-worker/src/infrastructure/host-processes.ts` | Skills、工具、模板文件按固定名单挂载，双主持人的若干必要资源未进入任务 | 将所需能力与任务资源整理为明确的部署清单，按任务挂载，保留隔离，不根据模板 ID 写业务分支 |
 | `video-worker/src/infrastructure/app-server.ts`、`runner/codex-host.ts` | `mcp_servers: {}`，并把 `mcpToolCall` 作为不受管理的调用拒绝 | 改为支持经过配置和任务授权的能力；首轮可继续以受控命令工具完成制作，未来 MCP 接入还需身份、路径和取消管理 |
 | `video-worker/src/infrastructure/validation.ts`、Skill 内 `validate_segments.py` | 校验依赖固定渲染器、预制音频 manifest 和固定结果结构 | 拆出公共文件/协议校验与视频业务校验，后者留在制作能力层；不以固定工程布局判定所有模板 |
@@ -497,9 +498,9 @@ Skill 改动应维护 `.claude/skills` 源并同步 `.agents/skills`；内部 sc
 
 当前可复用的是 toolkit 中的 `video-two-stage/1` 契约、阶段 Skill、配音缓存与通用渲染/校验能力。当前 Worker 仍运行旧 v2：`execute-run.ts` 调 `prepareAudio`，`workspace.ts` 生成旧 `task.json/renderSelection`，`validation.ts` 读取旧 `agent-response.json` 和固定方案结构。这些接入点仍需开发。
 
-已完成的本地测试包含 32 项新链路测试和 22 项旧入口/底层回归，含新建短 Remotion 工程真实渲染；这不代表完整财经效果复测、Ubuntu 沙箱、真实模板 API、四并发和平台回调已通过。原 DeepSeek 样片证明制作可行，但不是新代码部署验收。详情见 [Codex 两阶段开发文档第 11 节](Codex两阶段执行开发方案.md#11-本轮实现与使用入口2026-09-15)。
+已完成的本地测试包含 32 项新链路测试和 22 项旧入口/底层回归，含新建短 Remotion 工程真实渲染；这不代表完整财经效果复测、Ubuntu 沙箱、真实模板 API、四并发和平台回调已通过。原 DeepSeek 样片证明制作可行，但不是新代码部署验收。详情见 [现行统一适配方案](video-pipeline两阶段与Worker接口适配开发方案.md)。
 
-本地协议的实际输入包含 `contractVersion/taskId/runId/stage/input/snapshot/confirmation/previousArtifacts/outputSpec/limits/delivery`；`confirmation` 包含版本、方案路径和摘要。正式字段以 toolkit 的 [two-stage.schema.json](../claude-code-video-toolkit/.claude/skills/video-pipeline/references/two-stage.schema.json) 为源，不在 Worker 再维护一套含义近似的内部 Schema。原四接口 HTTP 契约由业务适配器转换，**不会因为内部协议已有版本号就自动改变外部 API**。
+本地协议的实际输入包含 `contractVersion/taskId/runId/stage/input/snapshot/confirmation/previousArtifacts/outputSpec/limits/delivery`；`confirmation` 包含版本、方案路径和摘要。正式字段以 toolkit 的 [two-stage.schema.json](../claude-code-video-toolkit/.agents/skills/video-pipeline/references/two-stage.schema.json) 为源，不在 Worker 再维护一套含义近似的内部 Schema。原四接口 HTTP 契约由业务适配器转换，**不会因为内部协议已有版本号就自动改变外部 API**。
 
 ### 9.14 接入现有实现时必须补齐的适配
 
@@ -509,7 +510,7 @@ Skill 改动应维护 `.claude/skills` 源并同步 `.agents/skills`；内部 sc
 | 阶段输入的文件结构 | 新 `load_request` 查找 `job.json`，核对请求摘要；render 还读取 `confirmation/current.json`；现 Worker 只有旧 `task.json` | `workspace.ts` 创建完整协议根及只读请求登记、输入、确认快照，提示词指向真实 `request.json`。不能只改 JSON 字段而遗漏依赖文件；`current.json` 是本 attempt 的确认投影，不能取代数据库当前版本检查 |
 | 模板快照 | 本地从明确文档及附件复制，尚无远端模板读取 | `TemplateProvider` 调真实接口或显式 fixture，将正文、附件和版本固化。转换为本地协议等价输入，不要求远端采用本地 submission JSON；重试和 render 使用原快照 |
 | 可见文件与可写目录 | `host-processes.ts` 只挂旧工具，允许写 `project/output/cache`；新工具还写阶段结果、checkpoint、进程记录和锁 | 更新部署能力清单及挂载范围，只允许当前阶段运行目录、工程、输出和必要缓存/锁写入。`job.json`、请求、输入、确认及历史证据保持只读；必要锁文件由可信层预建并单独挂载，不能为方便把根目录全部可写 |
-| Schema 的部署路径 | 新 `two_stage.py` 当前从 `.claude/skills/video-pipeline/references/` 读 Schema，而旧沙箱只挂 `.agents` | 统一工具的部署资源定位，或只读挂载确需的 Schema 文件；不能复制工具后遗漏它的依赖。维护源、生成 Skill、Python 校验与 Worker 类型/校验器锁定同一协议版本 |
+| Schema 的部署路径 | 新 `two_stage.py` 当前从 `.agents/skills/video-pipeline/references/` 读 Schema，而旧沙箱只挂 `.agents` | 统一工具的部署资源定位，或只读挂载确需的 Schema 文件；不能复制工具后遗漏它的依赖。维护源、生成 Skill、Python 校验与 Worker 类型/校验器锁定同一协议版本 |
 | 受控配音入口 | 本地 `stage_tts.py` 可由可信工具加载根 `.env`；Worker 隔离命令无该文件与网络 | Codex 通过受控路由发起工具调用，可信进程绑定 task/run/执行令牌并校验阶段、确认文本和路径，再注入必要豆包配置。配音仍由 Codex 决定角色与时机；根 `.env`、ChatGPT 登录文件不进入可写任务环境 |
 | analysis 的阶段证据 | 本地校验扫描整个 job 的 TTS 记录和 MP4；如果重分析时恢复旧 render 缓存，会把历史产物误认为本轮越权生成 | 以当前 run 的调用记录和输出为证据，或隔离本轮 analysis 视图；允许读取的本任务历史资料不等于本轮产生的副作用，不能简单沿用全目录扫描 |
 | 可信终检 | 本地 `two_stage.py validate` 会写 `.operation.lock`、阶段 `result.json`；现 Worker validate 沙箱只读 | 提供不写候选目录的校验入口，返回结构化报告，由可信 Worker 保存。复用实际校验函数，但不能直接在只读沙箱运行有写入副作用的 CLI；不信任模型可修改的 `passed=true` 或本地请求登记代替服务器版本/输入摘要 |
@@ -599,7 +600,7 @@ sequenceDiagram
 
 已按 9.13～9.16 开发新协议接入路径，启用开关为根 `.env` 的 `WORKER_PROTOCOL=video-two-stage/1`，执行器为 `host`。未经 Ubuntu 验收不自动切换既有任务，旧任务保留原协议。这里更新实施状态，不把桌面机械测试当作生产验收。
 
-- `Tasks/TaskRepository`：保存协议标识，使用完整 `plan` 往返方式保存编辑确认；校验版本、任务及展示字段冲突。模板的实际远端报文仍未提供，`TemplateProvider` 支持显式 fixture 与标准化 GET 接口适配。
+- `Tasks/TaskRepository`：以完整 dataList 确认列表为权威，plan 可省略或为空；内部确认快照保存在 DB。TemplateProvider 只支持定制化 ZIP 和显式本地 ZIP。
 - `Workspaces/prepareStage`：数据库 UUID、冻结模板、输入摘要、确认投影、阶段请求登记与本任务历史资料准备；新路径不生成 `renderSelection`，不调用 `prepareAudio`。
 - `HostCodex/HostProcesses`：保留进程与租约管控，阶段目录可写、request 和确认只读。动态 `video_tts` 调可信桥接，收费账本独立持久保存，普通命令不获得网络和凭据。当前工具能力为 shell/看图/豆包 TTS，不依赖尚未定义的 MCP。
 - `worker_stage.py/validation`：复用两阶段校验函数进行无候选目录写入的终检，按实际 MP4、音频、字幕和画面证据验收。

@@ -25,7 +25,7 @@ Ubuntu 需要 Docker Engine 和 Compose v2；安装方式见 [Docker 官方文�
 
 ## 2. 一份配置
 
-根目录 `.env` 已随代码提供，保留原豆包配置及现有数据库密码、接口令牌和回调签名密钥；不用执行 `cp .env.example .env`。
+根目录 `.env` 已随代码提供，保留原豆包配置及现有数据库密码和回调签名密钥；不用执行 `cp .env.example .env`。
 
 | 配置 | 当前用途 |
 | --- | --- |
@@ -38,11 +38,11 @@ Ubuntu 需要 Docker Engine 和 Compose v2；安装方式见 [Docker 官方文�
 | CODEX_REASONING_EFFORT | 已配置 `low`；Worker 在每次执行时传给 Codex |
 | HOST_TASK_CPUS / HOST_TASK_MEMORY / HOST_TASK_PIDS | 2 / 4G / 256 |
 | MEDIA_ROOT / DATA_ROOT | 上述媒体根和任务数据根 |
-| IFENG_API_KEY / IFENG_CALLBACK_SECRET | 请求鉴权、回调签名 |
-| IFENG_CALLBACK_BASE_URL | 默认 http://videocut-smoke-callback:9000，测试用途 |
+| IFENG_CALLBACK_SECRET | 回调签名 |
+| IFENG_CALLBACK_BASE_URL | http://10.20.130.250:8000，真实客户端回调目标 |
 | DOUBAO_TTS_* | 原有豆包配置，只有可信配音步骤使用 |
 
-本机模式不要求 CODEX_API_KEY。旧 RUNNER_* 和 CODEX_API_KEY 仅为旧 Docker 执行器保留，不影响当前部署。根目录不要设置指向 Docker 服务名的 DATABASE_URL；Compose 为容器覆盖为 postgres:5432，本机配置自动使用 127.0.0.1:POSTGRES_HOST_PORT。
+本机模式不要求 CODEX_API_KEY。旧 Docker 执行器已移除，不再配置 RUNNER_*。根目录不要设置指向 Docker 服务名的 DATABASE_URL；Compose 为容器覆盖为 postgres:5432，本机配置自动使用 127.0.0.1:POSTGRES_HOST_PORT。
 
 正式对接时修改 IFENG_CALLBACK_BASE_URL 为 callbacks 容器可达的编辑平台后端地址，不是接口文档地址。回调端需要实际实现两个 Callback 路径。媒体 url 仍为文件路径，浏览器预览由编辑平台后端提供。
 
@@ -74,7 +74,7 @@ curl --fail-with-body http://127.0.0.1:8080/healthz
 
 Compose 只有 postgres、migrate、api、callbacks、callback-mock。migrate 的 Exited(0) 正常；没有 worker 和 runner-image 服务，不挂 Docker socket。Ubuntu Worker 主动从数据库领取任务，无需新增容器到 Worker 的 HTTP 端口。
 
-健康检查只验证 API/数据库，不代表模型制作已通过。API 默认监听 127.0.0.1:8080，编辑平台跨机器访问时通过现有网关反代并保留 Authorization。callback-mock 仅用于查看回调，不验证签名，也不代替正式编辑平台。
+健康检查只验证 API/数据库，不代表模型制作已通过。API 默认监听 127.0.0.1:8080，编辑平台跨机器访问时通过现有网关反代；本轮提交不要求 Authorization。callback-mock 仅用于查看回调，不验证签名，也不代替正式编辑平台。
 
 安装成功后退出 SSH 不影响 Worker；systemd 用户服务已启用 linger。常用管理命令：
 
@@ -99,8 +99,6 @@ systemctl --user start videocut-worker
 
 ```bash
 mkdir -p .local-data/deploy-smoke
-read -r -s -p '输入根目录 .env 中的 IFENG_API_KEY: ' API_TOKEN
-export API_TOKEN
 cat > .local-data/deploy-smoke/analysis.json <<'JSON'
 {
   "schemaVersion": 2,
@@ -108,10 +106,10 @@ cat > .local-data/deploy-smoke/analysis.json <<'JSON'
   "taskId": "deploy_task_001",
   "script": "这是第一句测试口播。这是第二句测试口播。",
   "otherRequirements": "严格按两句话制作两个分镜，使用提供的图片，添加字幕，不使用数字人。",
-  "digitalHumanAccounId": "test_account",
-  "plugin": {"digitalHumanId": "", "templateId": "finance_vertical_v1"},
+  "digitalHumanAccounId": "",
+  "plugin": {"digitalHumanId": "", "templateId": "finance_dialogue_v1"},
   "narration": null,
-  "outputSpec": {"width": 1080, "height": 1920, "fps": 30},
+  "outputSpec": {"width": 1920, "height": 1080, "fps": 30},
   "otherMaterial": {
     "picInfoList": [{"assetId": "chart_001", "url": "/home/ops/jiangzb/videos/input/chart.jpg"}],
     "videoInfoList": []
@@ -119,17 +117,15 @@ cat > .local-data/deploy-smoke/analysis.json <<'JSON'
 }
 JSON
 curl --fail-with-body -i \
-  -H "Authorization: Bearer $API_TOKEN" \
   -H 'Content-Type: application/json' \
   --data-binary @.local-data/deploy-smoke/analysis.json \
-  http://127.0.0.1:8080/ai_video_director/getAiVideoEditingAnalysisData
+  http://127.0.0.1:8080/narrate/ai_video_director/getAiVideoEditingAnalysisData
 ```
 
 HTTP 202 + status 0 表示已经接收，不代表分析完成。查看进展：
 
 ```bash
 curl --fail-with-body \
-  -H "Authorization: Bearer $API_TOKEN" \
   http://127.0.0.1:8080/ai_video_director/tasks/deploy_task_001 \
   -o .local-data/deploy-smoke/task.json
 cat .local-data/deploy-smoke/task.json
@@ -142,7 +138,7 @@ dc logs --tail=10 callback-mock
 
 ## 5. 模拟编辑确认，触发渲染
 
-先查看上一节保存的 `task.json` 中 `data.plan.dataList`，确认两句话、素材和分镜合理。以下命令根据已返回的方案生成**完整确认请求**，不手写丢字段的简化分镜：
+先查看上一节保存的 `task.json` 中 `data.plan.dataList`，确认两句话、素材和分镜合理。以下命令根据已返回的方案生成**完整确认请求**；每条只需 id/content，plan 可以省略或传 {}：
 
 ```bash
 python3 - <<'PY'
@@ -157,17 +153,16 @@ request = {
     'requestId': 'deploy_render_001',
     'taskId': s['taskId'],
     'basePlanVersion': s['planVersion'],
-    'field_5': 'test_account',
-    'templateId': 'finance_vertical_v1',
-    'dataList': s['plan']['dataList'],
+    'field_5': '',
+    'templateId': 'finance_dialogue_v1',
+    'dataList': [{'id': x['id'], 'content': x['content']} for x in s['plan']['dataList']],
 }
 (p / 'render.json').write_text(json.dumps(request, ensure_ascii=False, indent=2))
 PY
 curl --fail-with-body -i \
-  -H "Authorization: Bearer $API_TOKEN" \
   -H 'Content-Type: application/json' \
   --data-binary @.local-data/deploy-smoke/render.json \
-  http://127.0.0.1:8080/ai_video_director/getAiVideoEditingData
+  http://127.0.0.1:8080/narrate/ai_video_director/getAiVideoEditingData
 ```
 
 需要替换素材/花字时，先修改 render.json，再提交；始终提交完整 dataList。继续用上一节查询命令刷新 task.json，直到 `taskState=ready`、`latestRun.state=succeeded`，以及最终 `callbackState=delivered`。失败时查看 `latestRun.error`，不要把 HTTP 202 当成制作成功。
@@ -200,7 +195,7 @@ PY
 | 幂等 | 重发完全相同 analysis/render 请求 | 返回同一 runId，不重复创建执行 |
 | 4 并发 | 测试环境连续提交 6 个不同 taskId/requestId 的分析任务 | 同一时刻槽位占用不超过 4；剩余排队，有槽释放后先进先出开始 |
 | 等待编辑 | 暂不确认已完成分析的任务 | awaiting_editor 不占槽位，后续任务可以执行 |
-| 单镜重做 | ready 后刷新查询结果，用最新 planVersion、新 requestId，完整提交 dataList，只改第 2 镜关键词/素材 | 仅第 2 镜产生新 MP4，第 1 镜 URL 保持一致，回调仍包含 2 镜 |
+| 单镜重做 | ready 后刷新查询结果，用最新 planVersion、新 requestId，完整提交 dataList，只改第 2 镜关键词/素材 | 按新确认顺序交付完整 2 镜，不承诺自动增量渲染；旧结果保留 |
 | 回调中断 | 用临时接收器时，在测试任务完成前停止接收器；随后再启动 | 文件与结果保留，通知恢复后补送，不因回调失败重新渲染 |
 | Worker 重启 | 测试任务运行中执行 `systemctl --user restart videocut-worker` | 旧任务进程停止后才恢复执行，槽位始终不超过 4；结果只发布一次 |
 | 旧版本提交 | 使用过时 basePlanVersion 确认 | 请求被拒绝，不覆盖新方案/新结果 |
@@ -225,7 +220,9 @@ pnpm test
 python3 -m venv .venv
 .venv/bin/pip install jsonschema==4.26.0 requests==2.32.5 python-dotenv==1.2.1
 cd ../claude-code-video-toolkit
-../video-worker/.venv/bin/python3 -m unittest discover -s tests -p 'test_*pipeline.py'
+../video-worker/.venv/bin/python3 -m unittest discover -s tests -p 'test_video_pipeline.py'
+../video-worker/.venv/bin/python3 -m unittest discover -s tests -p 'test_two_stage.py'
+../video-worker/.venv/bin/python3 -m unittest discover -s tests -p 'test_worker_stage.py'
 ../video-worker/.venv/bin/python3 -m unittest discover -s tests -p 'test_shared_environment.py'
 cd templates/ifeng-scenes
 pnpm install --frozen-lockfile --ignore-scripts
@@ -244,7 +241,7 @@ Chromium 路径以本机实际安装结果为准。本机隔离检查使用 DATA
 
 | 现象 | 先检查 |
 | --- | --- |
-| API 401 | Authorization 使用根目录 .env 的 IFENG_API_KEY，而非模型密钥 |
+| 无法连接 API | 检查 Worker 是否运行、端口是否监听，以及网关或防火墙来源限制 |
 | HTTP 400 | 返回的字段错误；必须使用当前 v2 JSON，包含 script/requestId 等 |
 | HTTP 409 | 同任务正在执行、requestId 内容冲突、方案版本过时 |
 | queued 长时间不开始 | worker 日志、4 个槽位、systemd 用户服务/Bubblewrap、supervisor 锁是否被另一进程持有 |
@@ -254,8 +251,18 @@ Chromium 路径以本机实际安装结果为准。本机隔离检查使用 DATA
 | 模型调用失败 | 同一用户的 codex login 状态、账号额度、显式模型权限和 Ubuntu 网络 |
 | 配音失败 | 豆包凭据、资源 ID、音色；EXTERNAL_RESULT_UNKNOWN 需要核对外部记录，不盲目重复付费 |
 | ready 但没有回调 | callbackBaseUrl 容器可达；接收端必须 HTTP 2xx 且 JSON status=0；看 callback.last_error |
-| 回调 dead_letter | 修复接收端后，POST `/ai_video_director/callbacks/<eventId>/retry`，带 Bearer 令牌 |
+| 回调 dead_letter | 修复接收端后，POST `/ai_video_director/callbacks/<eventId>/retry`（当前联调不要求 Bearer） |
 
 正式接入时在根目录 .env 替换 IFENG_CALLBACK_BASE_URL，执行 `dc up -d --force-recreate api callbacks` 重新加载配置；选择空闲时段，避免打断测试任务。接收端还须验证 HMAC、eventId 幂等和版本顺序，规则见 Worker README。
 
-后续发布制作代码要重新生成 runtime-manifest（Worker 目录执行 `pnpm runtime-manifest`），重建 control 镜像，并重新运行 `bash video-worker/deploy/install-host.sh` 更新本机依赖/Worker；停止接收新请求、等待执行任务结束后更新。首次建库命令不要当成自动升级/回滚方案；未来数据库变更需对应迁移与备份。本版保留数据库卷、媒体目录和运行目录；不要使用 `docker compose down -v` 作为日常重启命令。
+后续升级先停止接收新任务并等待执行结束，备份数据库、媒体和运行目录。更新源码并重新生成 runtime-manifest（Worker 目录执行 `pnpm runtime-manifest`），构建 Worker 与 control 镜像；迁移执行器按 001 → 002 顺序运行，新增 `host_executions` 活性与清理字段。确认迁移成功后才启动新 Worker。修改本机依赖时运行 `bash video-worker/deploy/install-host.sh`；配置更新需重建相关服务。host-check 必须在 Worker 停止期间执行。
+
+新版本仅支持 host 与 `video-two-stage/1`，旧 revision 的任务明确拒绝自动续跑。不能通过删库、删除任务目录或 `docker compose down -v` 完成升级。服务器 `.env`、登录状态和业务数据保留；本地测试不等于服务器已升级。
+
+### 活性与制作资料
+
+Analysis 总期限 600 秒，Render 为 4 小时；无工具的 Analysis 在结构化输出缺失或不保真时直接失败。执行记录保存 `last_event_at`、`last_progress_at`、当前工具、工具起止和 `cleanup_state`，日志包含工具失败结束事件。续租和 token 流不当作制作进展；长时间无输出告警，不以 60 秒静默强杀正常渲染。取消先清理进程后释放槽位。
+
+服务端保留工程源码、实测时间轴、逐句音频、素材和摘要记录。续编明确指定成功 run/resultVersion，通过受控 `restoreProduction()` 验证版本与完整资料后复制新工作副本；缺失或摘要变化明确失败，不覆盖旧结果，也不自动选择上一次工程。资料保留会增加磁盘占用，当前不自动回收。
+
+真实回调目标为 `http://10.20.130.250:8000`，两个 callback 路径不带 `/narrate`。此次代码开发不包含实际部署、付费 TTS 或真实客户端回调验收，应在后续指令下单独执行。

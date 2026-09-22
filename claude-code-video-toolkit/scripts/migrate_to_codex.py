@@ -168,7 +168,7 @@ def load_skill_specs(
     results: list[SkillSpec] = []
     for skill_md in sorted((repo_root / ".claude" / "skills").glob("*/SKILL.md")):
         source_name, description = parse_skill_frontmatter(skill_md)
-        if source_name in mapping["skip_skills"]:
+        if source_name == "video-pipeline" or source_name in mapping["skip_skills"]:
             continue
 
         skill_name = mapping["skill_name_overrides"].get(source_name, source_name)

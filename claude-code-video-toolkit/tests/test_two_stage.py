@@ -11,9 +11,10 @@ import unittest
 from unittest.mock import patch
 
 ROOT=Path(__file__).resolve().parents[1]
+ENCODER='libx264' if 'libx264' in subprocess.check_output(['ffmpeg','-hide_banner','-encoders'],stderr=subprocess.DEVNULL,text=True) else 'h264_videotoolbox'
 sys.path.insert(0,str(ROOT/'tools'))
 from two_stage import (StageError, checkpoint, confirm, digest, init_job, json_digest, load_request,
-                       local, read, repair, status, validate, write, execution)
+                       local, read, repair, status, validate, write, execution, storyboard)
 from cached_tts import synthesize_cached
 from stage_media import supervise, ffmpeg, validate_mp4, extract_frames, validate_delivery, compare_audio, compare_samples, assemble, render_scene, mux_scene, publish_file
 
@@ -43,6 +44,19 @@ class Fixture(unittest.TestCase):
 
 
 class ContractTests(Fixture):
+    def test_local_storyboard_preserves_text_and_stops(self):
+        result_path=self.base/'text-result.json'
+        write(result_path, {'status':'candidate','scenes':[{'text':'第一句。'},{'text':'第二句。'}],'error':None})
+        result=storyboard(self.request,result_path)
+        plan=read(self.plan_path)
+        self.assertEqual(result['stage'],'analysis')
+        self.assertEqual([s['id'] for s in plan['scenes']],['scene_001','scene_002'])
+        self.assertTrue(all(s['production']=={} and s['assetRefs']==[] for s in plan['scenes']))
+        self.assertFalse((self.job/'render').exists())
+        for texts in (['第二句。','第一句。'],['第一句。'],['第一句。第二句。'],['改写。','第二句。']):
+            write(result_path, {'status':'candidate','scenes':[{'text':t} for t in texts],'error':None})
+            with self.assertRaises(StageError): storyboard(self.request,result_path)
+
     def test_analysis_ends_without_render_request(self):
         result=validate(self.request,self.plan_path)
         self.assertEqual(result['stage'],'analysis'); self.assertEqual(result['sceneCount'],2)
@@ -90,10 +104,16 @@ class ContractTests(Fixture):
                 plan=copy.deepcopy(self.plan);mutate(plan);write(self.plan_path,plan)
                 with self.assertRaises(StageError):validate(self.request,self.plan_path)
 
-    def test_nonspoken_positions_exactly_cover_source(self):
+    def test_empty_production_is_valid(self):
+        for scene in self.plan['scenes']: scene['production'] = {}
+        write(self.plan_path,self.plan)
+        self.assertEqual(validate(self.request,self.plan_path)['sceneCount'],2)
+
+    def test_nonspoken_must_be_whitespace(self):
         self.plan['scenes']=self.plan['scenes'][:1]
-        self.plan['nonspoken']=[{'start':4,'end':8,'text':'第二句。','reason':'测试显式非口播分区'}]
-        write(self.plan_path,self.plan);self.assertEqual(validate(self.request,self.plan_path)['sceneCount'],1)
+        self.plan['nonspoken']=[{'start':4,'end':8,'text':'第二句。','reason':'不能删除口播'}]
+        write(self.plan_path,self.plan)
+        with self.assertRaises(StageError): validate(self.request,self.plan_path)
 
     def test_symlink_escape_and_request_tamper_fail(self):
         (self.job/'escape').symlink_to(self.base/'script.md')
@@ -299,7 +319,7 @@ class MediaTests(Fixture):
             wav=folder/(scene['id']+'.wav');video=folder/(scene['id']+'.mp4')
             ffmpeg('-f','lavfi','-i',f'sine=frequency={440+i*220}:sample_rate=48000','-t','1',wav)
             ffmpeg('-f','lavfi','-i',f'color=c={"blue" if i==0 else "red"}:s=320x240:r=10','-i',wav,'-t','1',
-                   '-c:v','libx264','-pix_fmt','yuv420p','-c:a','aac',video)
+                   '-c:v',ENCODER,*(['-allow_sw','1'] if ENCODER == 'h264_videotoolbox' else []),'-pix_fmt','yuv420p','-c:a','aac',video)
             evidence=extract_frames(self.job,self.req,scene['id'],video,10)
             self.manifest['scenes'].append({'id':scene['id'],'text':scene['text'],'path':str(video.relative_to(self.job)),
                 'sha256':digest(video),'frames':10,'durationSeconds':1,'usedResources':[],
@@ -318,6 +338,34 @@ class MediaTests(Fixture):
         self.assertEqual(whole['frames'],20)
         report=validate(self.render,manifest_path)
         self.assertEqual(report['status'],'candidate')
+
+    def test_creation_blocks_can_change(self):
+        self.manifest['scenes'][0]['resolvedVisualBlocks'][0]['id'] = 'new_creative_block'
+        self.assertEqual(validate_delivery(self.job,self.req,self.manifest)['sceneCount'],2)
+
+    def test_authorized_assets_are_optional_but_explicit_assets_are_required(self):
+        audio=self.manifest['scenes'][0]['audio']
+        resource={'id':'optional','kind':'source','path':audio['path'],'sha256':audio['sha256']}
+        write(self.job/self.req['input']['assetsManifest'], {'assets':[{'id':'optional','path':audio['path'],'sha256':audio['sha256']}]})
+        self.manifest['scenes'][0]['usedResources']=[resource]
+        self.assertEqual(validate_delivery(self.job,self.req,self.manifest)['sceneCount'],2)
+        resource['id']='unauthorized'
+        with self.assertRaises(StageError):validate_delivery(self.job,self.req,self.manifest)
+        resource['id']='optional'
+        plan=read(self.job/self.req['confirmation']['planFile']);plan['scenes'][1]['assetRefs']=['optional']
+        write(self.job/self.req['confirmation']['planFile'],plan)
+        with self.assertRaisesRegex(StageError,'遗漏'):validate_delivery(self.job,self.req,self.manifest)
+
+    def test_wrong_identity_text_review_and_path_are_rejected(self):
+        mutations = [lambda m:m.update(runId='wrong'),
+          lambda m:m['scenes'][0].update(id='wrong'), lambda m:m['scenes'][0].update(text='擅改'),
+          lambda m:m['scenes'][0].update(path='../../escape.mp4')]
+        for mutate in mutations:
+            m=copy.deepcopy(self.manifest);mutate(m)
+            with self.assertRaises(StageError):validate_delivery(self.job,self.req,m)
+        changed=copy.deepcopy(self.review);changed['passed']=False
+        write(self.job/self.manifest['quality'],changed)
+        with self.assertRaises(StageError):validate_delivery(self.job,self.req,self.manifest)
 
     def test_wrong_order_missing_caption_or_block_rejected(self):
         for mutate in (lambda m:m['scenes'].reverse(),lambda m:m['scenes'][0]['captions'].clear(),

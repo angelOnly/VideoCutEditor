@@ -31,7 +31,11 @@ export class Queue {
       const updated = (
         await q.query<Run>(
           "UPDATE runs SET state='running',attempt=attempt+1,fencing_token=$2,started_at=coalesce(started_at,now()),deadline=coalesce(deadline,now()+($3 * interval '1 second')),progress_stage='preparing' WHERE id=$1 RETURNING *",
-          [run.id, token, this.timeoutSeconds],
+          [
+            run.id,
+            token,
+            run.stage === 'analysis' ? Math.min(600, this.timeoutSeconds) : this.timeoutSeconds,
+          ],
         )
       ).rows[0];
       await q.query('UPDATE tasks SET state=$2 WHERE id=$1', [

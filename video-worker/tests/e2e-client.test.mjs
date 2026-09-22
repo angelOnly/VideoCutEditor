@@ -17,7 +17,7 @@ test('真实接口客户端：准备白名单、重复提交同一 requestId、�
     const chunks = [];
     for await (const c of req) chunks.push(c);
     const body = chunks.length ? JSON.parse(Buffer.concat(chunks).toString()) : null;
-    assert.equal(req.headers.authorization, 'Bearer test-client-key');
+    assert.equal(req.headers.authorization, undefined);
     let data;
     if (
       req.method === 'POST' &&
@@ -32,7 +32,7 @@ test('真实接口客户端：准备白名单、重复提交同一 requestId、�
         latestRun: { runId: 'analysis-run', stage: 'analysis', state: 'succeeded' },
         callbackState: 'delivered',
         plan: {
-          plan: { taskId: 'internal-task', scenes: [{ id: 's1', text: '第一句。' }] },
+          plan: {},
           dataList: [{ id: 's1', content: '第一句。' }],
         },
       };
@@ -67,7 +67,7 @@ test('真实接口客户端：准备白名单、重复提交同一 requestId、�
     const tk = path.join(root, 'claude-code-video-toolkit');
     for (const rel of [
       'test-cases/deepseek-v4/script.md',
-      'deliverables/财经双人对话视频生成指令.md',
+      'deliverables/财经双人对话视频生成指令.zip',
       ...specs.map((a) => a.file),
     ]) {
       const file = path.join(tk, rel);
@@ -83,7 +83,6 @@ test('真实接口客户端：准备白名单、重复提交同一 requestId、�
       WORKER_PROTOCOL: 'video-two-stage/1',
       WORKER_EXECUTOR: 'host',
       MEDIA_ROOT: path.join(root, 'media'),
-      IFENG_API_KEY: 'test-client-key',
       E2E_API_BASE_URL: `http://127.0.0.1:${server.address().port}`,
     };
     const run = (...args) =>
@@ -104,7 +103,8 @@ test('真实接口客户端：准备白名单、重复提交同一 requestId、�
     assert.equal((await run('render')).code, 1);
     assert.equal(renderBody, undefined);
     assert.equal((await run('render', '--confirm')).code, 0);
-    assert.equal(renderBody.plan.taskId, 'internal-task');
+    assert.equal(renderBody.plan, undefined);
+    assert.deepEqual(renderBody.dataList, [{ id: 's1', content: '第一句。' }]);
     assert.equal(renderBody.basePlanVersion, 1);
     await writeFile(path.join(root, 'media/scene.mp4'), 'fixture: 只验证文件存在，不冒充编码验收');
     assert.equal((await run('verify')).code, 0);

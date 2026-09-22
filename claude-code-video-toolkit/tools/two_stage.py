@@ -19,7 +19,7 @@ import time
 import uuid
 
 VERSION = 'video-two-stage/1'
-SCHEMA = Path(__file__).resolve().parents[1] / '.claude/skills/video-pipeline/references/two-stage.schema.json'
+SCHEMA = Path(__file__).resolve().parents[1] / '.agents/skills/video-pipeline/references/two-stage.schema.json'
 
 
 class StageError(ValueError):
@@ -74,7 +74,7 @@ def local(root, name, exists=True):
 
 
 def identifier(value):
-    require(isinstance(value, str) and re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.-]{0,99}', value), '无效 ID')
+    require(isinstance(value, str) and re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.-]{0,127}', value), '无效 ID')
     return value
 
 
@@ -196,11 +196,14 @@ def validate_plan(root, request, plan, confirmed=False):
         blocks = scene['production'].get('visualBlocks', [])
         block_ids = [b.get('id') for b in blocks]
         require(len(set(block_ids)) == len(block_ids) and all(block_ids), '内部视觉段落 ID 无效')
+    if confirmed:
+        return {'sceneCount': len(ids), 'sourceCodepoints': len(source), 'inputDigest': plan['inputDigest']}
     # 非口播部分也显式定位，不能靠删空白掩盖漏稿、重复或乱序。
     spoken = intervals[:]
     require(spoken == sorted(spoken), '口播顺序与原稿不一致')
     for part in plan['nonspoken']:
         start, end = part['start'], part['end']
+        require(part['text'].isspace(), '非口播仅可记录原稿空白')
         require(0 <= start < end <= len(source) and source[start:end] == part['text'], '非口播映射错误')
         intervals.append((start, end))
     position = 0
@@ -211,6 +214,46 @@ def validate_plan(root, request, plan, confirmed=False):
     for preview in plan['previews']:
         local(root, preview)
     return {'sceneCount': len(ids), 'sourceCodepoints': len(source), 'inputDigest': plan['inputDigest']}
+
+
+def storyboard(request_path, result_path):
+    """本地完整任务的文本结果适配；ID、源映射和展示估时由程序生成。"""
+    root, request = load_request(request_path, 'analysis')
+    result = read(result_path)
+    require(isinstance(result, dict) and set(result) == {'status','scenes','error'}, '文本结果结构无效', 'ANALYSIS_RESULT_INVALID')
+    if result['status'] == 'failed':
+        error = result['error']
+        require(result['scenes'] == [] and isinstance(error, dict), '失败结构无效', 'ANALYSIS_RESULT_INVALID')
+        raise StageError(error['code'], error['message'], error['retryable'])
+    require(result['status'] == 'candidate' and result['error'] is None and isinstance(result['scenes'], list)
+            and 1 <= len(result['scenes']) <= 200, '文本分镜为空或无效', 'ANALYSIS_RESULT_INVALID')
+    source = local(root, request['input']['scriptFile']).read_text(encoding='utf-8')
+    position, scenes, nonspoken = 0, [], []
+    def whitespace():
+        nonlocal position
+        start = position
+        while position < len(source) and source[position].isspace(): position += 1
+        if start < position: nonspoken.append({'start':start,'end':position,'text':source[start:position],'reason':'原稿空白'})
+    for index, item in enumerate(result['scenes']):
+        require(isinstance(item, dict) and set(item) == {'text'} and isinstance(item['text'], str), '文本结构无效', 'ANALYSIS_RESULT_INVALID')
+        text = item['text'].strip()
+        require(text and len(text.encode('utf-16-le'))//2 <= 4000, '文本长度无效', 'ANALYSIS_RESULT_INVALID')
+        require(not re.search(r'[。！？!?][”’」』"\']*\s*[^\s。！？!?”’」』"\']', text), '一项文本包含多句口播', 'ANALYSIS_RESULT_INVALID')
+        whitespace(); start = position
+        require(source[start:start+len(text)] == text, '文本与原稿顺序或正文不符', 'ANALYSIS_RESULT_INVALID')
+        position += len(text)
+        seconds = sum(not c.isspace() for c in text)/5
+        scenes.append({'id':f'scene_{index+1:03d}','text':text,
+          'sourceMapping':[{'start':start,'end':position,'unit':'unicode_codepoints'}],
+          'timing':{'kind':'estimated','speechSeconds':seconds,'totalSeconds':seconds,'totalRangeSeconds':[seconds,seconds],
+            'basis':'每秒 5 个非空白 Unicode 字符，仅供展示'},'assetRefs':[],'production':{}})
+    whitespace()
+    require(position == len(source), '文本分镜遗漏原稿', 'ANALYSIS_RESULT_INVALID')
+    plan = {'contractVersion':VERSION,'taskId':request['taskId'],'inputDigest':json_digest(request['snapshot']),
+      'scenes':scenes,'nonspoken':nonspoken,'previews':[],'requirementsNotes':'完整要求见任务输入；本阶段仅输出文本分镜'}
+    validate_plan(root, request, plan)
+    file = root/'analysis/plan.json'; write(file, plan)
+    return validate(request_path, file)
 
 
 def save_request(root, job, request, name):
@@ -414,9 +457,11 @@ def main():
         if name == 'confirm': command.add_argument('--base-version', type=int, required=True); command.add_argument('--source', required=True)
         if name == 'checkpoint': command.add_argument('--step', required=True); command.add_argument('--files', nargs='+', required=True)
         if name == 'repair': command.add_argument('--reason', required=True)
+    text_result = sub.add_parser('storyboard'); text_result.add_argument('--request', type=Path, required=True); text_result.add_argument('--result', type=Path, required=True)
     a = p.parse_args()
     try:
         if a.command == 'init': result = init_job(a.job_dir, read(a.spec))
+        elif a.command == 'storyboard': result = storyboard(a.request, a.result)
         elif a.command == 'confirm': result = confirm(a.request, a.artifact, a.base_version, a.source)
         elif a.command == 'validate': result = validate(a.request, a.artifact)
         elif a.command == 'checkpoint': result = checkpoint(a.request, a.step, a.files)

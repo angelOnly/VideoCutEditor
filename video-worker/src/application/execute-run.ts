@@ -7,7 +7,6 @@ import { Workspaces, type Workspace } from '../infrastructure/workspace.js';
 import { Storage } from '../infrastructure/storage.js';
 import type { Sandbox } from '../infrastructure/sandbox.js';
 import { validate } from '../infrastructure/validation.js';
-import { prepareAudio } from '../infrastructure/audio.js';
 import { readJson, writeJson } from '../infrastructure/files.js';
 import { publishResult } from './results.js';
 export async function executeRun(
@@ -53,10 +52,6 @@ export async function executeRun(
     const tenant = config.tenants.find((t) => t.id === l.run.tenant);
     if (!tenant) throw new AppError('TENANT_UNAVAILABLE', '调用方配置不存在');
     w = await workspaces.prepare(l, tenant);
-    if (w.task.contractVersion !== 'video-two-stage/1') {
-      await queue.heartbeat(l, 'audio');
-      await prepareAudio(config, queue, l, w, abort.signal, sandbox);
-    }
     for (;;) {
       if (abort.signal.aborted) throw pulseError ?? new AppError('WORKER_STOPPED', 'Worker 停止');
       await queue.heartbeat(l, 'codex');
@@ -87,6 +82,7 @@ export async function executeRun(
             String(response.error?.code ?? 'AGENT_FAILED'),
             String(response.error?.message ?? 'Agent 返回失败'),
           );
+        if (l.run.stage === 'analysis') throw e;
         if (e instanceof AppError && e.code !== 'VALIDATION_FAILED') throw e;
         console.error(
           JSON.stringify({

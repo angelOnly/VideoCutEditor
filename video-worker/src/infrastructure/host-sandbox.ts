@@ -35,7 +35,7 @@ export class HostSandbox implements Sandbox {
     ).trim();
     if (version !== 'codex-cli 0.154.0')
       throw new Error('Host Worker requires the pinned Codex CLI 0.154.0; run install-host.sh');
-    // Include source/runtime version in reuse hashes; a native execution is not a Docker image.
+    // 保存实际宿主工具版本，续编时与原成功工程一起核对。
     const tools = await Promise.all([
       command('ffmpeg', ['-version']),
       command(this.config.hostBrowser, ['--version']),
@@ -52,7 +52,7 @@ export class HostSandbox implements Sandbox {
         }),
       )
       .digest('hex');
-    this.config.runnerImage = `host:${this.config.runtimeVersion}:${fingerprint}`;
+    this.config.hostFingerprint = fingerprint;
     try {
       await this.rpc.start(this.config);
     } catch (e) {
@@ -107,21 +107,7 @@ export class HostSandbox implements Sandbox {
         ).trim(),
       );
     }
-    const script =
-      w.task.operation === 'analysis' ? 'validate_analysis.py' : 'validate_segments.py';
-    const out = await this.processes.run(
-      l.run.id,
-      w,
-      [
-        this.config.python,
-        path.join(this.config.toolkitRoot, '.agents/skills/video-pipeline/scripts', script),
-        '--job-dir',
-        w.root,
-      ],
-      signal,
-      'validate',
-    );
-    return JSON.parse(out.trim());
+    throw new Error('PIPELINE_REVISION_EXPIRED');
   }
   async close() {
     await this.rpc.close();

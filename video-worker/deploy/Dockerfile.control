@@ -18,6 +18,6 @@ COPY video-worker/package.json ./
 COPY video-worker/config/templates.json video-worker/config/runtime-version.json ./config/
 COPY video-worker/migrations ./migrations
 # Only the canonical internal contract is needed by the controller, not the toolkit source tree.
-COPY claude-code-video-toolkit/.agents/skills/video-pipeline/references/two-stage.schema.json claude-code-video-toolkit/.agents/skills/video-pipeline/references/task-v2.schema.json claude-code-video-toolkit/.agents/skills/video-pipeline/references/response-v2.schema.json /opt/toolkit/.agents/skills/video-pipeline/references/
+COPY claude-code-video-toolkit/.agents/skills/video-pipeline/references/two-stage.schema.json /opt/toolkit/.agents/skills/video-pipeline/references/
 ENV TOOLKIT_ROOT=/opt/toolkit
 CMD ["node","dist/entrypoints/api.js"]

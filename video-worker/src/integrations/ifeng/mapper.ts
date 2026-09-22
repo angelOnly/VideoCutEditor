@@ -1,3 +1,4 @@
+import { publicScene } from '../../domain/storyboard.js';
 import type { Stage, Run } from '../../domain/task.js';
 export function accepted(run: Run) {
   return {
@@ -29,17 +30,15 @@ export function callback(eventId: string, run: Run, task: any, result: any, erro
     ...(run.stage === 'render' ? { resultVersion: task.result_version } : {}),
     dataInfo: {
       templateId: task.config.templateId,
-      ...(result.previews ? { previews: result.previews } : {}),
       ...(run.stage === 'analysis'
         ? {
-            durationMode: result.dataList.every((s: any) => s.durationSource === 'measured')
-              ? 'audio'
-              : 'estimated',
+            durationMode: 'estimated',
+            previews: [],
           }
         : { sceneCount: result.dataList.length, ...task.config.outputSpec }),
     },
-    dataList: result.dataList,
-    ...(result.plan ? { plan: result.plan } : {}),
+    dataList: result.dataList.map(publicScene),
+    ...(run.stage === 'analysis' ? { plan: {} } : {}),
   };
 }
 export const callbackPath = (stage: Stage) =>

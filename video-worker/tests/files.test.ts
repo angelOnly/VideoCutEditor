@@ -1,3 +1,4 @@
+import { writable } from './helpers.js';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, writeFile, symlink, rm } from 'node:fs/promises';
@@ -28,6 +29,7 @@ test('authorized roots reject traversal, cross-tenant links and container-only p
     });
     await assert.rejects(store.input(t, '/workspace/job/out.mp4'), { code: 'PATH_FORBIDDEN' });
   } finally {
+    await writable(temp);
     await rm(temp, { recursive: true, force: true });
   }
 });
@@ -60,6 +62,7 @@ test('recovered run reads frozen input, a new run detects changed source bytes',
     assert.notEqual(w2.hashes.pic, await hashFile(source));
   } finally {
     await db.close();
+    await writable(temp);
     await rm(temp, { recursive: true, force: true });
   }
 });

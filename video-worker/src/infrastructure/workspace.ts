@@ -1,18 +1,16 @@
+import { pipelineRevision } from '../domain/storyboard.js';
 import path from 'node:path';
-import { toolkitPath } from './runtime-paths.js';
 import { constants } from 'node:fs';
-import { mkdir, copyFile, readFile, access, chmod } from 'node:fs/promises';
+import { mkdir, copyFile, chmod } from 'node:fs/promises';
 import type { Config, Tenant } from '../config.js';
 import type { Database } from './postgres.js';
 import type { Lease } from '../domain/task.js';
 import { AppError } from '../domain/task.js';
 import { Storage } from './storage.js';
-import { hashFile, writeJson, readJson, copyTree, safeFile, ownTree } from './files.js';
-import { assertInternalTask } from '../contracts/internal.js';
+import { hashFile, safeFile } from './files.js';
 import { Queue } from './queue.js';
 import { prepareStage } from './stage-workspace.js';
 import { TemplateProvider } from './template-provider.js';
-import { sceneHash } from '../domain/scene.js';
 export interface Workspace {
   root: string;
   task: any;
@@ -30,6 +28,10 @@ export class Workspaces {
   ) {}
   async prepare(l: Lease, tenant: Tenant): Promise<Workspace> {
     const task = (await this.db.query('SELECT * FROM tasks WHERE id=$1', [l.run.task_id])).rows[0];
+    if (task.config.pipelineRevision !== pipelineRevision)
+      throw new AppError('PIPELINE_REVISION_EXPIRED', '旧任务需重新提交分析');
+    if (task.config.runtimeVersion !== this.config.runtimeVersion)
+      throw new AppError('PIPELINE_REVISION_EXPIRED', '制作工具版本已变化，请重新提交分析');
     const root = path.join(
       this.config.dataRoot,
       task.id,
@@ -38,16 +40,10 @@ export class Workspaces {
       `attempt_${l.run.attempt}`,
     );
     await mkdir(root, { recursive: true });
-    await chmod(root, this.config.executor === 'host' ? 0o700 : 0o755);
-    for (const d of [
-      'input',
-      'output',
-      'project',
-      'cache',
-      ...(this.config.executor === 'docker' ? ['codex-home'] : []),
-    ]) {
+    await chmod(root, 0o700);
+    for (const d of ['input', 'output', 'project', 'cache']) {
       await mkdir(path.join(root, d), { recursive: true });
-      await chmod(path.join(root, d), this.config.executor === 'host' ? 0o700 : 0o777);
+      await chmod(path.join(root, d), 0o700);
     }
     const isStage = task.config.executionProtocol === 'video-two-stage/1';
     let frozenTemplate: any;
@@ -77,7 +73,8 @@ export class Workspaces {
             ...(s.extraData?.videoInfoList ?? []).map((x: any) => ({ ...x, kind: 'video' })),
           ]);
     if (frozenTemplate) refs.push(...frozenTemplate.attachments);
-    if (task.config.narration) refs.push({ ...task.config.narration, kind: 'audio' });
+    if (l.run.stage === 'analysis' && task.config.narration)
+      refs.push({ ...task.config.narration, kind: 'audio' });
     const prepared = (await this.db.query('SELECT prepared FROM runs WHERE id=$1', [l.run.id]))
       .rows[0].prepared;
     const assets: any[] = [];
@@ -175,157 +172,9 @@ export class Workspaces {
           { ...prepared, assets },
         ]);
       });
-    if (isStage) return prepareStage(this.config, this.db, l, root, task, assets);
-    const hashes = Object.fromEntries(assets.map((a) => [a.assetId, a.sha256]));
-    const reuse: any[] = [];
-    const sceneHashes: Record<string, string> = {};
-    if (l.run.stage === 'render') {
-      const candidates = (
-        await this.db.query(
-          'SELECT * FROM scene_artifacts WHERE task_id=$1 ORDER BY result_version DESC',
-          [task.id],
-        )
-      ).rows;
-      for (const scene of l.run.input.dataList) {
-        const hash = sceneHash(scene, hashes, {
-          ...task.config,
-          executionImage: this.config.runnerImage,
-          narration: task.config.narration ? hashes[task.config.narration.assetId] : null,
-          script: undefined,
-        });
-        sceneHashes[scene.id] = hash;
-        const prior = candidates.find((a) => a.scene_id === scene.id && a.input_hash === hash);
-        if (prior) {
-          const source = path.join(this.config.mediaRoot, prior.artifact.key);
-          try {
-            if ((await hashFile(source)) === prior.artifact.sha256)
-              reuse.push({ ...prior.artifact, inputHash: hash });
-          } catch {
-            /* Missing old files are rebuilt. */
-          }
-        }
-      }
-    }
-    // Recover only this task's persisted state. Never mount another task's CODEX_HOME.
-    const previousAttempt = path.join(
-      this.config.dataRoot,
-      task.id,
-      'runs',
-      l.run.id,
-      `attempt_${l.run.attempt - 1}`,
-    );
-    const state = l.run.attempt > 1 ? path.join(previousAttempt, 'codex-home') : task.session_path;
-    try {
-      if (this.config.executor === 'host' || !state)
-        throw Object.assign(new Error('No session'), { code: 'ENOENT' });
-      await access(state);
-      await copyTree(state, path.join(root, 'codex-home'));
-    } catch (e: any) {
-      if (e.code !== 'ENOENT') throw e;
-    }
-    if (l.run.attempt > 1) {
-      for (const d of ['cache', 'project'])
-        try {
-          await copyTree(path.join(previousAttempt, d), path.join(root, d));
-        } catch (e: any) {
-          if (e.code !== 'ENOENT') throw e;
-        }
-      try {
-        await copyFile(
-          path.join(previousAttempt, 'output/session.json'),
-          path.join(root, 'output/session.json'),
-        );
-      } catch (e: any) {
-        if (e.code !== 'ENOENT') throw e;
-      }
-    }
-    const internal = {
-      schemaVersion: 2,
-      jobId: l.run.id,
-      taskId: l.run.input.taskId,
-      mode: 'auto',
-      operation: l.run.stage,
-      planVersion: l.run.plan_version,
-      input: {
-        script: 'input/script.txt',
-        assetManifest: 'input/assets.json',
-        confirmedPlan: l.run.stage === 'render' ? 'input/confirmed-plan.json' : null,
-        narrationAssetId: task.config.narration?.assetId ?? null,
-      },
-      template: {
-        id: task.config.templateId,
-        version: task.config.templateVersion,
-        path: toolkitPath(this.config, task.config.templatePath),
-      },
-      renderSelection: {
-        sceneIds:
-          l.run.stage === 'render'
-            ? l.run.input.dataList
-                .filter((s: any) => !reuse.some((a) => a.scene.id === s.id))
-                .map((s: any) => s.id)
-            : [],
-        reuseManifest: 'input/reuse-manifest.json',
-      },
-      output: { ...task.config.outputSpec, requireAudio: true },
-      limits: {
-        deadline: new Date(l.run.deadline!).toISOString(),
-        repairRounds: this.config.repairRounds - l.run.repair_rounds,
-      },
-      tts: task.config.tts,
-      threadId: task.thread_id ?? null,
-      requirements: l.run.input.otherRequirements ?? '',
-      digitalHumanId: task.config.digitalHumanId ?? '',
-    };
-    const fs = await import('node:fs/promises');
-    await fs.writeFile(path.join(root, 'input/script.txt'), task.config.script, { mode: 0o444 });
-    await writeJson(path.join(root, 'input/assets.json'), {
-      assets: assets.map(({ snapshotPath, ...a }) => a),
-    });
-    await writeJson(path.join(root, 'input/reuse-manifest.json'), {
-      scenes: reuse.map((a) => ({ id: a.scene.id, inputHash: a.inputHash })),
-    });
-    if (l.run.stage === 'render')
-      await writeJson(path.join(root, 'input/confirmed-plan.json'), {
-        dataList: l.run.input.dataList,
-      });
-    assertInternalTask(this.config.toolkitRoot, internal);
-    await writeJson(path.join(root, 'task.json'), internal);
-    await chmod(path.join(root, 'task.json'), 0o444);
-    for (const file of [
-      'input/assets.json',
-      'input/reuse-manifest.json',
-      ...(l.run.stage === 'render' ? ['input/confirmed-plan.json'] : []),
-    ])
-      await chmod(path.join(root, file), 0o444);
-    if (this.config.executor === 'docker')
-      for (const d of ['codex-home', 'project', 'cache', 'output'])
-        await ownTree(path.join(root, d), this.config.dockerUid);
-    return { root, task: internal, taskConfig: task.config, assets, hashes, reuse, sceneHashes };
+    return prepareStage(this.config, this.db, l, root, task, assets);
   }
-  async saveSession(l: Lease, w: Workspace) {
-    // Host session identity is persisted from app-server responses under the lease.
-    if (this.config.executor === 'host') return;
-    // Called only after the container and all children have stopped.
-    const sessionPath = path.join(
-      this.config.dataRoot,
-      l.run.task_id,
-      'sessions',
-      `${l.run.id}-${l.run.attempt}-${l.run.repair_rounds}`,
-    );
-    if (this.config.executor === 'docker')
-      await copyTree(path.join(w.root, 'codex-home'), sessionPath);
-    try {
-      const session = await readJson(path.join(w.root, 'output/session.json'));
-      if (typeof session.threadId === 'string')
-        await new Queue(this.db).withLease(l, async (q) => {
-          await q.query('UPDATE tasks SET thread_id=$2,session_path=$3 WHERE id=$1', [
-            l.run.task_id,
-            session.threadId,
-            this.config.executor === 'host' ? null : sessionPath,
-          ]);
-        });
-    } catch {
-      /* A failed first turn may not have a session. */
-    }
+  async saveSession(_l: Lease, _w: Workspace) {
+    // app-server 身份已在租约内持久保存，不复制登录会话。
   }
 }

@@ -1,3 +1,4 @@
+import { normalizeAnalysis } from '../src/domain/storyboard.js';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { database, config, tenant, analysis, scene } from './helpers.js';
@@ -7,7 +8,6 @@ import { Queue } from '../src/infrastructure/queue.js';
 import { publishResult } from '../src/application/results.js';
 import { Storage } from '../src/infrastructure/storage.js';
 import { createApi } from '../src/api/routes.js';
-import { sceneHash } from '../src/domain/scene.js';
 
 test('six tasks share four persistent slots; releases admit FIFO successors', async () => {
   const db = await database();
@@ -56,7 +56,12 @@ test('request idempotency, tenant ownership, active-run exclusion and stale vers
       l,
       { assets: [], taskConfig: {}, root: '', task: {}, hashes: {}, reuse: [], sceneHashes: {} },
       tenant,
-      { dataList: [scene()] },
+      normalizeAnalysis(
+        { status: 'candidate', scenes: [{ text: '第一句。' }, { text: '第二句。' }], error: null },
+        input.script,
+        l.run.task_id,
+        'a'.repeat(64),
+      ),
     );
     const view = await repo.query(tenant.id, input.taskId);
     assert.equal(view.taskState, 'awaiting_editor');
@@ -71,7 +76,7 @@ test('request idempotency, tenant ownership, active-run exclusion and stale vers
       taskId: input.taskId,
       requestId: 'render1',
       basePlanVersion: 1,
-      field_5: 'account1',
+      field_5: '',
       templateId: 'finance_vertical_v1',
       dataList: [scene()],
     };
@@ -140,29 +145,23 @@ test('cancelling prevents success, repair budget survives recovery', async () =>
     await db.close();
   }
 });
-test('HTTP authentication and malformed contracts are rejected before queue writes', async () => {
+test('HTTP routes accept unauthenticated requests and reject malformed contracts', async () => {
   const db = await database(),
     api = createApi(db, config());
   try {
     const route = '/narrate/ai_video_director/getAiVideoEditingAnalysisData';
     assert.equal(
-      (await api.inject({ method: 'POST', url: route, payload: analysis() })).statusCode,
-      401,
-    );
-    const headers = { authorization: 'Bearer ' + tenant.apiKey };
-    assert.equal(
       (
         await api.inject({
           method: 'POST',
           url: route,
-          headers,
           payload: { ...analysis(), script: '' },
         })
       ).statusCode,
       400,
     );
     assert.equal(
-      (await api.inject({ method: 'POST', url: route, headers, payload: analysis() })).statusCode,
+      (await api.inject({ method: 'POST', url: route, payload: analysis() })).statusCode,
       202,
     );
     assert.equal(
@@ -170,7 +169,6 @@ test('HTTP authentication and malformed contracts are rejected before queue writ
         await api.inject({
           method: 'POST',
           url: '/ai_video_director/getAiVideoEditingAnalysisData',
-          headers,
           payload: analysis('old-route'),
         })
       ).statusCode,
@@ -181,7 +179,6 @@ test('HTTP authentication and malformed contracts are rejected before queue writ
         await api.inject({
           method: 'POST',
           url: '/narrate/ai_video_director/getAiVideoEditingData',
-          headers,
           payload: {},
         })
       ).statusCode,
@@ -192,15 +189,13 @@ test('HTTP authentication and malformed contracts are rejected before queue writ
         await api.inject({
           method: 'POST',
           url: '/ai_video_director/getAiVideoEditingData',
-          headers,
           payload: {},
         })
       ).statusCode,
       404,
     );
     assert.equal(
-      (await api.inject({ url: '/ai_video_director/tasks/task1', headers })).json().data.latestRun
-        .state,
+      (await api.inject({ url: '/ai_video_director/tasks/task1' })).json().data.latestRun.state,
       'queued',
     );
     assert.equal((await db.query('SELECT * FROM runs')).rows.length, 1);
@@ -208,11 +203,4 @@ test('HTTP authentication and malformed contracts are rejected before queue writ
     await api.close();
     await db.close();
   }
-});
-test('scene hashes invalidate text, source bytes and voice; ignore root paths', () => {
-  const a = scene(),
-    b = structuredClone(a);
-  b.content = '修改口播';
-  assert.notEqual(sceneHash(a, {}, {}), sceneHash(b, {}, {}));
-  assert.notEqual(sceneHash(a, {}, { voice: 'a' }), sceneHash(a, {}, { voice: 'b' }));
 });

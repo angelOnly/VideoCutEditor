@@ -148,14 +148,15 @@ test('两阶段请求、完整确认、模板冻结、数据库版本和估算�
       await h.db.query('SELECT payload FROM callback_events WHERE run_id=$1', [l.run.id])
     ).rows[0].payload;
     assert.equal(event.dataInfo.durationMode, 'estimated');
-    assert.deepEqual(event.plan, p);
+    assert.deepEqual(event.plan, {});
+    assert.deepEqual(status.plan?.plan, {});
     await assert.rejects(
       h.tasks.render(h.t, {
         schemaVersion: 2,
         taskId: 'task1',
         requestId: 'bad',
         basePlanVersion: 1,
-        field_5: 'account1',
+        field_5: '',
         templateId: 'finance_vertical_v1',
         dataList: [],
       }),
@@ -168,7 +169,7 @@ test('两阶段请求、完整确认、模板冻结、数据库版本和估算�
       taskId: 'task1',
       requestId: 'render',
       basePlanVersion: 1,
-      field_5: 'account1',
+      field_5: '',
       templateId: 'finance_vertical_v1',
       plan: edited,
       dataList: event.dataList.map((s: any, i: number) => ({
@@ -181,8 +182,14 @@ test('两阶段请求、完整确认、模板冻结、数据库版本和估算�
     const confirmed = await readJson(path.join(rw.root, rw.task.confirmation.planFile));
     assert.equal(confirmed.scenes[0].production.layout.custom, '上下分区');
     assert.equal(
-      await readFile(path.join(w.root, 'input/template.md'), 'utf8'),
-      await readFile(path.join(rw.root, 'input/template.md'), 'utf8'),
+      await readFile(
+        path.join(w.root, (await readJson(path.join(w.root, 'input/template.json'))).document),
+        'utf8',
+      ),
+      await readFile(
+        path.join(rw.root, (await readJson(path.join(rw.root, 'input/template.json'))).document),
+        'utf8',
+      ),
     );
     if (process.env.STAGE_TEST_PYTHON) {
       const out = await command(process.env.STAGE_TEST_PYTHON, [
@@ -327,7 +334,7 @@ test('定制化模板详情下载 ZIP，冻结目录在 render 阶段原样复�
       taskId: 'task1',
       requestId: 'custom-template-render',
       basePlanVersion: 1,
-      field_5: 'account1',
+      field_5: '',
       templateId: '1',
       plan: p,
       dataList: analysisResult.dataList,
@@ -395,10 +402,7 @@ test('本机财经 ZIP 作为显式测试模板时保留入口和相对资源目
       /财报揭秘室/,
     );
     assert.match(
-      await readFile(
-        path.join(workspace.root, 'input/template', rendererManifest.path),
-        'utf8',
-      ),
+      await readFile(path.join(workspace.root, 'input/template', rendererManifest.path), 'utf8'),
       /FinanceEpisode/,
     );
   } finally {
@@ -423,7 +427,7 @@ test(
         taskId: 'task1',
         requestId: 'render',
         basePlanVersion: 1,
-        field_5: 'account1',
+        field_5: '',
         templateId: 'finance_vertical_v1',
         plan: p,
         dataList: analysisResult.dataList,
@@ -442,7 +446,9 @@ test(
       );
       const manifest = await readJson(path.join(w.root, 'output/manifest.json'));
       // 媒体夹具补齐终检要求的句级字幕结构。
-      manifest.scenes[0].captions = [{ text: '结论字幕', startSeconds: 0, endSeconds: 1 }];
+      manifest.scenes[0].captions = [
+        { text: manifest.scenes[0].text, startSeconds: 0, endSeconds: 1 },
+      ];
       await writeJson(path.join(w.root, 'output/manifest.json'), manifest);
       await writeJson(path.join(w.root, 'output/agent-response.json'), {
         contractVersion: w.task.contractVersion,
@@ -475,9 +481,8 @@ test(
       assert.equal(result.dataList.length, 2);
       for (const s of result.dataList) {
         assert.ok(s.url.endsWith('.mp4'));
-        assert.ok(s.extraData.resources[0].url.endsWith('.wav'));
+        assert.deepEqual(s.extraData.resources, []);
         await readFile(s.url);
-        await readFile(s.extraData.resources[0].url);
       }
       const events = (
         await h.db.query('SELECT payload FROM callback_events WHERE run_id=$1', [l.run.id])
@@ -513,7 +518,7 @@ test('替换素材保持冻结模板和原稿，允许新素材并重新绑定�
       taskId: 'task1',
       requestId: 'replace',
       basePlanVersion: 1,
-      field_5: 'account1',
+      field_5: '',
       templateId: 'finance_vertical_v1',
       plan: edited,
       dataList,
@@ -538,33 +543,12 @@ test('替换素材保持冻结模板和原稿，允许新素材并重新绑定�
   }
 });
 
-test('模板适配器支持动态正文；错误模板 ID 不进入执行', async () => {
-  const { createServer } = await import('node:http');
+test('旧模板正文配置被拒绝，不回退 README', async () => {
   const { TemplateProvider } = await import('../src/infrastructure/template-provider.js');
-  const server = createServer((req, res) => {
-    const id = new URL(req.url!, 'http://localhost').searchParams.get('templateId');
-    res.setHeader('Content-Type', 'application/json');
-    res.end(
-      JSON.stringify({
-        id: id === 'wrong' ? 'other' : id,
-        version: '2',
-        content: id === 'dialogue' ? '双主持人自由布局' : '地图与数据图解',
-        attachments: [],
-      }),
-    );
-  });
-  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
-  try {
-    const port = (server.address() as any).port;
-    const provider = new TemplateProvider(
-      config({ templateApiUrl: `http://127.0.0.1:${port}/template` }),
-    );
-    assert.equal((await provider.read('dialogue')).content, '双主持人自由布局');
-    assert.equal((await provider.read('map')).content, '地图与数据图解');
-    await assert.rejects(provider.read('wrong'), { code: 'TEMPLATE_MISMATCH' });
-  } finally {
-    await new Promise<void>((resolve, reject) => server.close((e) => (e ? reject(e) : resolve())));
-  }
+  const provider = new TemplateProvider(
+    config({ templates: { old: { path: 'templates/ifeng-scenes', version: '1' } } }),
+  );
+  await assert.rejects(provider.read('old'), { code: 'TEMPLATE_UNAVAILABLE' });
 });
 
 test('缺少能力不重开模型 turn，保存失败回调并释放名额', async () => {
@@ -583,7 +567,7 @@ test('缺少能力不重开模型 turn，保存失败回调并释放名额', asy
           stage: l.run.stage,
           status: 'failed',
           artifact: null,
-          error: { code: 'CAPABILITY_MISSING', message: '缺少声学对齐能力', retryable: true },
+          error: { code: 'CAPABILITY_MISSING', message: '缺少模板必需字体', retryable: true },
         });
       },
       stop: async () => {},

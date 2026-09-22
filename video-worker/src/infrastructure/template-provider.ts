@@ -18,12 +18,6 @@ const attachmentSchema = z.object({
   url: z.string(),
   kind: z.enum(['image', 'video', 'audio', 'reference', 'source', 'font']),
 });
-const legacyTemplateSchema = z.object({
-  id: z.string(),
-  version: z.string().min(1),
-  content: z.string().min(1),
-  attachments: z.array(attachmentSchema).default([]),
-});
 const customTemplateResponseSchema = z
   .object({
     code: z.number(),
@@ -51,7 +45,7 @@ export type FrozenTemplate = {
   version: string;
   content: string;
   attachments: z.infer<typeof attachmentSchema>[];
-  source: 'fixture' | 'api' | 'custom_template_api' | 'local_zip';
+  source: 'custom_template_api' | 'local_zip';
   archiveSha256?: string;
   frozenPath?: string;
   rootDirectory?: string;
@@ -364,16 +358,6 @@ export class TemplateProvider {
       if (!frozenPath) throw templateError('TEMPLATE_UNAVAILABLE', '缺少模板冻结目录');
       return this.custom(id, frozenPath);
     }
-    if (this.config.templateApiUrl) {
-      const url = new URL(this.config.templateApiUrl);
-      url.searchParams.set('templateId', id);
-      const response = await fetch(url, { signal: AbortSignal.timeout(15000), redirect: 'error' });
-      if (!response.ok)
-        throw new AppError('TEMPLATE_UNAVAILABLE', `模板接口返回 ${response.status}`);
-      const value = legacyTemplateSchema.parse(await response.json());
-      if (value.id !== id) throw new AppError('TEMPLATE_MISMATCH', '模板 ID 不一致');
-      return { ...value, source: 'api' };
-    }
     const entry = this.config.templates[id];
     if (!entry) throw new AppError('TEMPLATE_UNAVAILABLE', '未配置模板文件');
     if (entry.archivePath) {
@@ -389,19 +373,6 @@ export class TemplateProvider {
         ...extracted,
       };
     }
-    if (!entry.path || !entry.version) throw new AppError('TEMPLATE_UNAVAILABLE', '模板配置不完整');
-    let relative = entry.path;
-    if ((await stat(path.join(this.config.toolkitRoot, relative))).isDirectory())
-      relative += '/README.md';
-    const file = await safeFile(this.config.toolkitRoot, relative);
-    return {
-      ...legacyTemplateSchema.parse({
-        id,
-        version: entry.version,
-        content: await readFile(file, 'utf8'),
-        attachments: entry.attachments ?? [],
-      }),
-      source: 'fixture',
-    };
+    throw new AppError('TEMPLATE_UNAVAILABLE', '模板必须显式配置 ZIP');
   }
 }

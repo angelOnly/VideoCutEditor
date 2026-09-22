@@ -100,7 +100,7 @@ sequenceDiagram
 
 ### 3.3 方案版本与人工确认
 
-分析生成方案 v1，平台编辑草稿。编辑点击确认后，将完整方案与 `basePlanVersion: 1` 提交给我方；我方原子检查基础版本、保存确认方案 v2、创建渲染 run，返回 `planVersion: 2`。
+分析生成方案 v1，平台编辑草稿。编辑点击确认后，将完整 dataList（每条仅需 id/content）与 `basePlanVersion: 1` 提交给我方；我方原子检查基础版本、保存确认方案 v2、创建渲染 run，返回 `planVersion: 2`。
 
 人工确认依据数据库中的方案快照，不依赖聊天记录中的「确认」字样。执行中的 run 永远读取自己的快照，后续修改不能覆盖它。
 
@@ -681,6 +681,6 @@ Docker 继续运行数据库、API 与回调；Ubuntu 继续运行 Worker、Code
 
 ### 12.8 两阶段服务端实现状态（2026-09-15）
 
-新 Worker 路径采用“完整 `plan` + `dataList` 展示投影”的往返方式：分析回调保留完整方案；编辑确认提交同一个完整对象及同步后的分镜列表。版本、文本或 production 冲突会拒绝，不按旧的固定布局枚举裁剪字段。分镜成片返回 N 条 MP4 和 `extraData.resources` 实际素材清单；`url` 仍为 `/home/ops/jiangzb/videos` 下的发布文件路径。
+新 Worker 路径以完整 `dataList` 确认列表为准：Analysis 只返回自然句文字及预估时长，plan/production 为空对象。Render 的 plan 可省略或传 {}，内部确认方案从 DB 读取，支持改字、增删、排序。最终返回 N 条 MP4，制作素材数组为空；工程、音频和时间轴留在服务端。`url` 仍为共享媒体根下的发布文件路径。
 
 服务端代码和机械测试入口已提供，外部平台尚未联调。模板接口当前提供 fixture/标准化 GET 适配器，不能理解为实际模板 API 已接通。新任务需显式启用 `WORKER_PROTOCOL=video-two-stage/1`；现有任务不会被自动转换。接口示例、测试与部署步骤见 [Worker README](../video-worker/README.md#模板驱动两阶段执行2026-09-15)。

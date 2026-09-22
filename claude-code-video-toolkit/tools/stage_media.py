@@ -179,10 +179,8 @@ def validate_delivery(root, request, manifest):
                 registered = assets[resource['id']]
                 require(resource['path'] == registered['path'] and resource['sha256'] == registered['sha256'], '源素材引用不符')
                 source_ids.add(resource['id'])
-        require(source_ids == set(expected['assetRefs']), '实际源素材清单与确认不符')
+        require(set(expected['assetRefs']).issubset(source_ids), '遗漏客户端明确指定的素材')
         blocks = actual['resolvedVisualBlocks']
-        declared = expected['production'].get('visualBlocks', [])
-        if declared: require([b['id'] for b in blocks] == [b['id'] for b in declared], '内部视觉段落与确认不符')
         end = 0
         for block in blocks:
             require(block['startFrame'] == end < block['endFrameExclusive'], '内部视觉段落缺帧、重叠或乱序')

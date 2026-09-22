@@ -1,6 +1,4 @@
 {
-  "finance_vertical_v1": { "path": "templates/ifeng-scenes", "version": "ifeng-scenes-1" },
-  "ifeng-scenes-v1": { "path": "templates/ifeng-scenes", "version": "ifeng-scenes-1" },
   "finance_dialogue_v1": {
     "archivePath": "deliverables/财经双人对话视频生成指令.zip",
     "document": "财经双人对话视频生成指令/财经双人对话视频生成指令.md"

@@ -8,7 +8,7 @@ import tempfile
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE = ROOT / '.claude/skills/video-pipeline'
+SOURCE = ROOT / '.agents/skills/video-pipeline'
 spec = importlib.util.spec_from_file_location('gate', SOURCE / 'scripts/validate_delivery.py')
 gate = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(gate)
@@ -68,7 +68,7 @@ class DeliveryGateTests(unittest.TestCase):
     def test_sdr_profile_checks_export_hash_and_audio_duration(self):
         rendered = self.root / 'profile.mp4'
         subprocess.run(['ffmpeg', '-nostdin', '-v', 'error', '-i', str(self.video),
-                        '-c:v', self.encoder, '-pix_fmt', 'yuv420p', '-color_range', 'tv',
+                        '-c:v', self.encoder, *(['-allow_sw', '1'] if self.encoder == 'h264_videotoolbox' else []), '-pix_fmt', 'yuv420p', '-color_range', 'tv',
                         '-colorspace', 'bt709', '-c:a', 'copy', str(rendered)], check=True)
         rendered.replace(self.video)
         self.write('audio-manifest', {'clips': [{'path': 'output/video.mp4', 'sha256': gate.sha256(self.video), 'durationSec': 1}]})
@@ -147,11 +147,11 @@ class DeliveryGateTests(unittest.TestCase):
 
 
 class InstallationTests(unittest.TestCase):
-    def test_installed_skill_matches_source(self):
-        for source in SOURCE.rglob('*'):
-            if source.is_file() and '__pycache__' not in source.parts:
-                installed = ROOT / '.agents/skills/video-pipeline' / source.relative_to(SOURCE)
-                self.assertEqual(source.read_bytes(), installed.read_bytes(), str(source))
+    def test_single_pipeline_source(self):
+        self.assertFalse((ROOT / '.claude/skills/video-pipeline').exists())
+        for name in ('SKILL.md', 'references/text-storyboard.md', 'references/production-flow.md',
+                     'references/two-stage-contract.md', 'references/two-stage.schema.json'):
+            self.assertTrue((SOURCE/name).is_file(), name)
 
 
 if __name__ == '__main__':
