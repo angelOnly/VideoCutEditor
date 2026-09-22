@@ -270,6 +270,91 @@ def validate_delivery(root, request, manifest):
             'humanListeningPerformed': review['humanListeningPerformed'], 'limitations': review['limitations']}
 
 
+class OwnedProcessTree:
+    """登记自有后代；脱离父组或被重新收养后仍按启动身份核验。"""
+    def __init__(self, pid, signature, log):
+        self.pid, self.signature, self.log = pid, signature, Path(log)
+        self.known, self.records = {}, {}
+
+    def snapshot(self):
+        result = subprocess.run(['ps', '-axo', 'pid=,ppid=,pgid=,lstart=,uid=,stat='],
+                                capture_output=True, text=True, timeout=3)
+        require(result.returncode == 0, '无法核验自有媒体进程', 'PROCESS_CLEANUP_FAILED')
+        rows = {}
+        for line in result.stdout.splitlines():
+            parts = line.split()
+            if len(parts) != 10 or parts[-1].startswith('Z'): continue
+            pid, ppid, pgid = map(int, parts[:3])
+            rows[pid] = {'pid': pid, 'ppid': ppid, 'pgid': pgid, 'identity': tuple(parts[3:9])}
+        return rows
+
+    def scan(self):
+        rows = self.snapshot()
+        live = {pid for pid, old in self.known.items()
+                if pid in rows and rows[pid]['identity'] == old['identity'] and rows[pid]['pgid'] == old['pgid']}
+        if self.pid not in self.known and self.pid in rows and process_signature(self.pid) == self.signature:
+            live.add(self.pid)
+        while True:
+            children = {pid for pid, row in rows.items() if row['ppid'] in live}
+            if children <= live: break
+            live |= children
+        for pid in live:
+            row = rows[pid]
+            if pid not in self.known:
+                row['signature'] = process_signature(pid)
+                self.known[pid] = row
+                # 独立浏览器组另存记录，强杀协调器后不会漏过活跃制作检查。
+                if pid == row['pgid'] and pid != self.pid and row['signature']:
+                    record = {'state': 'running', 'pid': pid, 'signature': row['signature'],
+                              'parentPid': self.pid, 'startedAt': time.time()}
+                    path = self.log.with_name(self.log.stem + '.owned-' + str(pid) + '.process.json')
+                    self.records[pid] = (path, record)
+                    write(path, record)
+        for pid, (path, record) in self.records.items():
+            if not any(rows[p]['pgid'] == pid for p in live):
+                write(path, {**record, 'state': 'ended', 'endedAt': time.time()})
+        return [rows[pid] for pid in live]
+
+    def signal_owned(self, sig, *, root_only=False):
+        # 逐 PID 回收而非 killpg，避免混合组或 PGID 1 伤及非任务进程。
+        rows = self.scan()
+        for row in rows:
+            pid = row['pid']
+            if root_only and pid != self.pid: continue
+            if pid <= 1 or pid == os.getpid(): continue
+            signature = self.known[pid]['signature']
+            if not signature or process_signature(pid) != signature: continue
+            try: os.kill(pid, sig)
+            except ProcessLookupError: pass
+            except PermissionError as exc:
+                raise StageError('PROCESS_CLEANUP_FAILED', '无权回收已核验的自有媒体进程') from exc
+
+    def close(self, child, grace):
+        self.scan()
+        if child.poll() is None:
+            self.signal_owned(signal.SIGTERM, root_only=True)
+            deadline = time.monotonic() + grace
+            while time.monotonic() < deadline:
+                child.poll()
+                if not self.scan(): return
+                if child.returncode is not None: break
+                time.sleep(.1)
+        # 优雅关闭之后仍存活的 detached 后代必须单独回收。
+        self.signal_owned(signal.SIGTERM)
+        deadline = time.monotonic() + .5
+        while time.monotonic() < deadline:
+            child.poll()
+            if not self.scan(): return
+            time.sleep(.1)
+        self.signal_owned(signal.SIGKILL)
+        deadline = time.monotonic() + 1
+        while time.monotonic() < deadline:
+            child.poll()
+            if not self.scan(): return
+            time.sleep(.1)
+        require(not self.scan(), '仍有自有媒体后代未退出，禁止继续派发', 'PROCESS_CLEANUP_FAILED')
+
+
 def supervise(argv, cwd, log, done_file, timeout, close_timeout=10):
     """独立进程组；完成标记之后仍需由调用方验证实际文件。"""
     started, closing = time.monotonic(), None
@@ -278,10 +363,14 @@ def supervise(argv, cwd, log, done_file, timeout, close_timeout=10):
         process_record = Path(log).with_suffix('.process.json')
         record = {'state': 'running', 'pid': child.pid, 'signature': process_signature(child.pid), 'startedAt': time.time()}
         write(process_record, record)
+        owned = OwnedProcessTree(child.pid, record['signature'], log)
+        last_scan = 0
         try:
             while child.poll() is None:
                 check_batch()
                 now = time.monotonic()
+                if now - last_scan >= .5:
+                    owned.scan(); last_scan = now
                 if Path(done_file).exists() and closing is None: closing = now
                 if closing is not None and now - closing > close_timeout:
                     return {'closeTimedOut': True, 'pid': child.pid}
@@ -296,9 +385,16 @@ def supervise(argv, cwd, log, done_file, timeout, close_timeout=10):
                     'logTail': tail})
             return {'closeTimedOut': False, 'pid': child.pid, 'recommendations': read(done_file).get('recommendations', [])}
         finally:
-            # 根进程退出也可能留下浏览器，只回收自己创建的进程组。
-            try: os.killpg(child.pid, signal.SIGKILL)
-            except ProcessLookupError: pass
+            # 先让 Node 执行 browser.close；之后仅清理已核验自有后代。
+            try:
+                owned.close(child, min(6, close_timeout))
+            except BaseException:
+                # 进程表核验失败也先停掉自己创建的根进程，保留 running 记录供恢复核查。
+                if child.poll() is None:
+                    child.terminate()
+                    try: child.wait(timeout=6)
+                    except subprocess.TimeoutExpired: child.kill(); child.wait()
+                raise
             child.wait()
             write(process_record, {**record, 'state': 'ended', 'endedAt': time.time()})
 

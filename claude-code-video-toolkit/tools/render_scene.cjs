@@ -3,18 +3,47 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const c = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+// Chrome 自己建立进程组；信号必须先关闭浏览器，不能只杀 Node 组。
+let browserPromise = null;
+let closePromise = null;
+let cancelled = false;
+let shutdownTimer = null;
+const closeBrowser = () => {
+  if (!browserPromise) return Promise.resolve();
+  if (!closePromise) closePromise = (async () => {
+    let browser;
+    try { browser = await browserPromise; } catch { return; }
+    await browser.close({silent: true});
+  })();
+  return closePromise;
+};
+const stop = () => {
+  if (cancelled) return;
+  cancelled = true;
+  process.exitCode = 130;
+  // openBrowser 未返回或 close 卡住时也有上限；正常 exit 仍触发 Remotion 清理钩子。
+  shutdownTimer = setTimeout(() => process.exit(130), 5000);
+  shutdownTimer.unref();
+  closeBrowser().then(() => process.exit(130), () => process.exit(130));
+};
+process.on('SIGTERM', stop);
+process.on('SIGINT', stop);
+const checkCancelled = () => { if (cancelled) throw new Error('TASK_CANCELLED'); };
 const {bundle} = require(path.join(c.modules, '@remotion/bundler'));
 const {selectComposition, renderMedia, openBrowser} = require(path.join(c.modules, '@remotion/renderer'));
 (async () => {
   const started = Date.now();
   const serveUrl = c.serveUrl || await bundle({entryPoint: c.entry, outDir: c.bundle, enableCaching: false,
     publicDir: path.join(c.project, 'public'), webpackOverride: config => ({...config, cache: false})});
+  checkCancelled();
   if (c.bundleOnly) {
     fs.writeFileSync(c.done, JSON.stringify({bundle: serveUrl, bundleSeconds: (Date.now() - started) / 1000}));
     return;
   }
-  const browser = await openBrowser('chrome', {browserExecutable: c.browser, logLevel: 'error'});
+  browserPromise = openBrowser('chrome', {browserExecutable: c.browser, logLevel: 'error'});
   try {
+    const browser = await browserPromise;
+    checkCancelled();
     const recommendations = new Map();
     const onBrowserLog = (entry) => {
       try {
@@ -39,10 +68,11 @@ const {selectComposition, renderMedia, openBrowser} = require(path.join(c.module
         ? [...args.slice(0, -1), '-f', 'mp4', args.at(-1)] : args,
       forSeamlessAacConcatenation: false, enforceAudioTrack: !c.fixedAudio, logLevel: 'error',
       onProgress: p => console.log(JSON.stringify({progress: p.progress}))});
+    checkCancelled();
     // 完成标记在关闭浏览器之前写入；父进程仍须独立验证 MP4。
     fs.writeFileSync(c.done + '.tmp', JSON.stringify({frames: c.frames, completedAt: Date.now(), recommendations: [...recommendations.values()]}));
     fs.renameSync(c.done + '.tmp', c.done);
   } finally {
-    await browser.close({silent: true});
+    await closeBrowser();
   }
 })().catch(error => {console.error(error.stack); process.exitCode = 1;});
