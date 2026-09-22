@@ -1,0 +1,746 @@
+{
+  "results": [
+    {
+      "sceneId": "scene_001",
+      "project": "project/renderer",
+      "projectHash": "2d9b69f2ec4134da84fb79bae47cec38b759811fa75ff7b2fb99ca234be3c965",
+      "sha256": "bc606f789bb7ad8a3bff9f8593b826a00619e6a42dfc0eb3f8715d5f3b405e37",
+      "frames": 227,
+      "durationSeconds": 7.566666666666666,
+      "audioCheck": {
+        "correlation": 0.9999605240895093,
+        "silent": false
+      },
+      "mixBoundaryAdjustmentSamples": 0,
+      "zeroTailPaddingSamples": 0,
+      "path": "output/render_001/scenes/scene_001.mp4",
+      "mix": {
+        "path": "render/render_001/work/scene_001-052g6sy8/mix.wav",
+        "sha256": "4618dde46763d35e49e7167cae1154fe4790a74ea6fefa51f0e4908aef085df4"
+      },
+      "evidence": [
+        {
+          "frame": 0,
+          "path": "render/render_001/frames/scene_001-0.png",
+          "sha256": "7e84815ee030b56d68947d08a41e9c660308119d505223d904264eb1cc8eef94"
+        },
+        {
+          "frame": 113,
+          "path": "render/render_001/frames/scene_001-113.png",
+          "sha256": "9cabfa74336580a6679f378e011be1d6155918820f258b9050221c307ec22d83"
+        },
+        {
+          "frame": 226,
+          "path": "render/render_001/frames/scene_001-226.png",
+          "sha256": "cd3162043f59a813277805a3b286e0c7cbafb30a5c00dc424cfc238b1a09d7b5"
+        }
+      ],
+      "reused": false,
+      "renderReused": false,
+      "recommendations": [],
+      "status": "ok",
+      "benchmarkWallSeconds": 49.39761834999081
+    },
+    {
+      "sceneId": "scene_002",
+      "project": "project/renderer",
+      "projectHash": "2d9b69f2ec4134da84fb79bae47cec38b759811fa75ff7b2fb99ca234be3c965",
+      "sha256": "ef2de17c6f6a9e83fbe6391873044434b9c287d74fbcee90ebceb49e2a284adc",
+      "frames": 155,
+      "durationSeconds": 5.166666666666667,
+      "audioCheck": {
+        "correlation": 0.9998574844601928,
+        "silent": false
+      },
+      "mixBoundaryAdjustmentSamples": 16,
+      "zeroTailPaddingSamples": 16,
+      "path": "output/render_001/scenes/scene_002.mp4",
+      "mix": {
+        "path": "render/render_001/work/scene_002-hgz__fom/mix.wav",
+        "sha256": "83e6e9319c3337268e2300fc2d7a2d0cfd95ccc1a296a05bd1e07929d62de923"
+      },
+      "evidence": [
+        {
+          "frame": 0,
+          "path": "render/render_001/frames/scene_002-0.png",
+          "sha256": "9d01d7f96da5f46abfd2338fbec802a9b3cdd08c3dd73b551ecd2137a814b541"
+        },
+        {
+          "frame": 77,
+          "path": "render/render_001/frames/scene_002-77.png",
+          "sha256": "873e60ec402e6c32def12134416c0933dcc1056ef1fe8517e280b92ba4e28402"
+        },
+        {
+          "frame": 154,
+          "path": "render/render_001/frames/scene_002-154.png",
+          "sha256": "7ebdd4439d55a028c814f6ca5dc017773747260321baaa714a9bbe77d74e326e"
+        }
+      ],
+      "reused": false,
+      "renderReused": false,
+      "recommendations": [],
+      "status": "ok",
+      "benchmarkWallSeconds": 39.56595948399627
+    },
+    {
+      "sceneId": "scene_003",
+      "project": "project/renderer",
+      "projectHash": "2d9b69f2ec4134da84fb79bae47cec38b759811fa75ff7b2fb99ca234be3c965",
+      "sha256": "6dc206958a93fa3d9c750cd1c626e7846348d7049b4af2a9fae5eee90b343d90",
+      "frames": 303,
+      "durationSeconds": 10.1,
+      "audioCheck": {
+        "correlation": 0.9998828999349414,
+        "silent": false
+      },
+      "mixBoundaryAdjustmentSamples": 16,
+      "zeroTailPaddingSamples": 16,
+      "path": "output/render_001/scenes/scene_003.mp4",
+      "mix": {
+        "path": "render/render_001/work/scene_003-eqczjecb/mix.wav",
+        "sha256": "a425974365bd77aa9f185bd1941c52ca9896671d3d6f4c9a40252da6372a2f7b"
+      },
+      "evidence": [
+        {
+          "frame": 0,
+          "path": "render/render_001/frames/scene_003-0.png",
+          "sha256": "5c7fa617114158ae14e0715da87cdca46ec519de67646fa754996a9e4fbbe540"
+        },
+        {
+          "frame": 151,
+          "path": "render/render_001/frames/scene_003-151.png",
+          "sha256": "580869edcaa78ec0e27c6c669e0e463921361208d72a6e75e92d69e4d5198ce6"
+        },
+        {
+          "frame": 302,
+          "path": "render/render_001/frames/scene_003-302.png",
+          "sha256": "ee01ee2a1ee600e35f737319977ca28fc5a97dfb5a70931b6ffa893f692bb13d"
+        }
+      ],
+      "reused": false,
+      "renderReused": false,
+      "recommendations": [],
+      "status": "ok",
+      "benchmarkWallSeconds": 65.31017078500008
+    },
+    {
+      "sceneId": "scene_004",
+      "project": "project/renderer",
+      "projectHash": "2d9b69f2ec4134da84fb79bae47cec38b759811fa75ff7b2fb99ca234be3c965",
+      "sha256": "2a4f55c40e67c6d6bd94afe98f708ac02ad99715acce58de7f2d2854c5d83886",
+      "frames": 200,
+      "durationSeconds": 6.666666666666667,
+      "audioCheck": {
+        "correlation": 0.9997050447085756,
+        "silent": false
+      },
+      "mixBoundaryAdjustmentSamples": 16,
+      "zeroTailPaddingSamples": 16,
+      "path": "output/render_001/scenes/scene_004.mp4",
+      "mix": {
+        "path": "render/render_001/work/scene_004-2a16fl2t/mix.wav",
+        "sha256": "1e6495330c7e0006dbb531be14be274e0ae3158f62e9faa86fb1f06c1e6b19df"
+      },
+      "evidence": [
+        {
+          "frame": 0,
+          "path": "render/render_001/frames/scene_004-0.png",
+          "sha256": "f6c170d98fce4cfaef8c7da3c73ed2f5b493526dd5bb928d5be7e918b88faf49"
+        },
+        {
+          "frame": 100,
+          "path": "render/render_001/frames/scene_004-100.png",
+          "sha256": "46badff281c123ecd506701e40e0c4d91c4c77dee328e7ff106daadd37bb8edb"
+        },
+        {
+          "frame": 199,
+          "path": "render/render_001/frames/scene_004-199.png",
+          "sha256": "4abd84bfdd9bfce0c374cba9050ccc0674ea5fc9fb662b7e57892e0151f89cbc"
+        }
+      ],
+      "reused": false,
+      "renderReused": false,
+      "recommendations": [],
+      "status": "ok",
+      "benchmarkWallSeconds": 52.02074015699327
+    },
+    {
+      "sceneId": "scene_005",
+      "project": "project/renderer",
+      "projectHash": "2d9b69f2ec4134da84fb79bae47cec38b759811fa75ff7b2fb99ca234be3c965",
+      "sha256": "0a04e57c5a9b04153453da1550d0625c6f910c0bbd462352b10c5a70809443d6",
+      "frames": 92,
+      "durationSeconds": 3.066666666666667,
+      "audioCheck": {
+        "correlation": 0.9998809975097798,
+        "silent": false
+      },
+      "mixBoundaryAdjustmentSamples": 0,
+      "zeroTailPaddingSamples": 0,
+      "path": "output/render_001/scenes/scene_005.mp4",
+      "mix": {
+        "path": "render/render_001/work/scene_005-gg12swtf/mix.wav",
+        "sha256": "780ae82016234e8b1307909ad57dc18e8b3102c76bf001b68db01a851cbb5cb9"
+      },
+      "evidence": [
+        {
+          "frame": 0,
+          "path": "render/render_001/frames/scene_005-0.png",
+          "sha256": "d5df9a1143b3f07c841ea3b55163caa719c9c68e111e99e96b6720f57639b8b0"
+        },
+        {
+          "frame": 46,
+          "path": "render/render_001/frames/scene_005-46.png",
+          "sha256": "61a64c3f54e1640860f60d114467d9d8faf74ce29daf873c8a226bce78ac1d8a"
+        },
+        {
+          "frame": 91,
+          "path": "render/render_001/frames/scene_005-91.png",
+          "sha256": "6dd20a77cad60082adf73d4703226605fd78f0190e15139649694af2c2d39aa8"
+        }
+      ],
+      "reused": false,
+      "renderReused": false,
+      "recommendations": [],
+      "status": "ok",
+      "benchmarkWallSeconds": 30.71530025199172
+    },
+    {
+      "sceneId": "scene_006",
+      "project": "project/renderer",
+      "projectHash": "2d9b69f2ec4134da84fb79bae47cec38b759811fa75ff7b2fb99ca234be3c965",
+      "sha256": "9c6ea8dd3da0fb8167d59705046328ae6f63456d41f03a5ddec40115eed37fac",
+      "frames": 305,
+      "durationSeconds": 10.166666666666666,
+      "audioCheck": {
+        "correlation": 0.9998487467756292,
+        "silent": false
+      },
+      "mixBoundaryAdjustmentSamples": 16,
+      "zeroTailPaddingSamples": 16,
+      "path": "output/render_001/scenes/scene_006.mp4",
+      "mix": {
+        "path": "render/render_001/work/scene_006-i0naunag/mix.wav",
+        "sha256": "4981ca1a338e7579c8414b60beede0411cb68618dbbb754941d773e2e1a47e63"
+      },
+      "evidence": [
+        {
+          "frame": 0,
+          "path": "render/render_001/frames/scene_006-0.png",
+          "sha256": "e0cd2f750e5ff2a73807646f6f543298c3bf11f9da1faeb66fa0b61112167fe3"
+        },
+        {
+          "frame": 152,
+          "path": "render/render_001/frames/scene_006-152.png",
+          "sha256": "c37707c823493071df57bfce6aa36095ec9bd501b18cbdf3ddd02d06208f03e0"
+        },
+        {
+          "frame": 304,
+          "path": "render/render_001/frames/scene_006-304.png",
+          "sha256": "b350f7933cfed2548b2f01e5ae90721c7a185008a4a19b4d278043fbe5f360a7"
+        }
+      ],
+      "reused": false,
+      "renderReused": false,
+      "recommendations": [],
+      "status": "ok",
+      "benchmarkWallSeconds": 64.09020675500506
+    },
+    {
+      "sceneId": "scene_007",
+      "project": "project/renderer",
+      "projectHash": "2d9b69f2ec4134da84fb79bae47cec38b759811fa75ff7b2fb99ca234be3c965",
+      "sha256": "d60a59a7d169ba681ab33d0700d6da9974fe73f165fa3705eafddf15dc97985a",
+      "frames": 174,
+      "durationSeconds": 5.8,
+      "audioCheck": {
+        "correlation": 0.9998480717112769,
+        "silent": false
+      },
+      "mixBoundaryAdjustmentSamples": 16,
+      "zeroTailPaddingSamples": 16,
+      "path": "output/render_001/scenes/scene_007.mp4",
+      "mix": {
+        "path": "render/render_001/work/scene_007-kyr_nx5s/mix.wav",
+        "sha256": "39916adfbd6947527ed3322a2e486f01e55aec7b7e9052614920ecaed6c6781a"
+      },
+      "evidence": [
+        {
+          "frame": 0,
+          "path": "render/render_001/frames/scene_007-0.png",
+          "sha256": "d3fedc0a5a6874939ec69fad944bf79dcdd3770828b93edc8e5fdfb9e122649b"
+        },
+        {
+          "frame": 87,
+          "path": "render/render_001/frames/scene_007-87.png",
+          "sha256": "1cdcf70b9f3f0c9b7593a2157d982942eb022a45a4cba1b061b4095e0e60505e"
+        },
+        {
+          "frame": 173,
+          "path": "render/render_001/frames/scene_007-173.png",
+          "sha256": "fed2ff8291896e5319c4cd79ca3140153bb4818a5597524570aabfcbb83bf899"
+        }
+      ],
+      "reused": false,
+      "renderReused": false,
+      "recommendations": [],
+      "status": "ok",
+      "benchmarkWallSeconds": 41.31463925499702
+    },
+    {
+      "sceneId": "scene_008",
+      "project": "project/renderer",
+      "projectHash": "2d9b69f2ec4134da84fb79bae47cec38b759811fa75ff7b2fb99ca234be3c965",
+      "sha256": "dbe814c66bce35e935624455e50a1188714f8e00e872792450369c92f7c44a90",
+      "frames": 471,
+      "durationSeconds": 15.7,
+      "audioCheck": {
+        "correlation": 0.9998674802664823,
+        "silent": false
+      },
+      "mixBoundaryAdjustmentSamples": 16,
+      "zeroTailPaddingSamples": 16,
+      "path": "output/render_001/scenes/scene_008.mp4",
+      "mix": {
+        "path": "render/render_001/work/scene_008-yvhb71g7/mix.wav",
+        "sha256": "ba2d4998c64d859057333cb8d31abaa7f07a2ea51af0f0b67fb909952a9b4acd"
+      },
+      "evidence": [
+        {
+          "frame": 0,
+          "path": "render/render_001/frames/scene_008-0.png",
+          "sha256": "f161b300a7bb844470515203e45849d7d50e139a1cd713487b3f53f07e740570"
+        },
+        {
+          "frame": 235,
+          "path": "render/render_001/frames/scene_008-235.png",
+          "sha256": "140c5e3a96f3a979aff5079a73d605b9ae439109b23760d897bb6a0a1bc68cde"
+        },
+        {
+          "frame": 470,
+          "path": "render/render_001/frames/scene_008-470.png",
+          "sha256": "540d01875316ab847384faa3830b995c85416c02ae804ec8a123de9ac0135d1e"
+        }
+      ],
+      "reused": false,
+      "renderReused": false,
+      "recommendations": [],
+      "status": "ok",
+      "benchmarkWallSeconds": 95.36032044197782
+    },
+    {
+      "sceneId": "scene_009",
+      "project": "project/renderer",
+      "projectHash": "2d9b69f2ec4134da84fb79bae47cec38b759811fa75ff7b2fb99ca234be3c965",
+      "sha256": "202979f8c8d554866e3c1ffa743d0ccb14a4ee034e1cd90231084e7940dd9ed2",
+      "frames": 80,
+      "durationSeconds": 2.6666666666666665,
+      "audioCheck": {
+        "correlation": 0.9993861848719466,
+        "silent": false
+      },
+      "mixBoundaryAdjustmentSamples": 0,
+      "zeroTailPaddingSamples": 0,
+      "path": "output/render_001/scenes/scene_009.mp4",
+      "mix": {
+        "path": "render/render_001/work/scene_009-1o4qtso7/mix.wav",
+        "sha256": "bfa9f976a03edff9d5c56c6e57f2e9f428bf48ace01281239e393a32e230eab4"
+      },
+      "evidence": [
+        {
+          "frame": 0,
+          "path": "render/render_001/frames/scene_009-0.png",
+          "sha256": "c1564fa31c259f3bd97aee2685acee414b1212091cf31a30d3ee45afa8029f99"
+        },
+        {
+          "frame": 40,
+          "path": "render/render_001/frames/scene_009-40.png",
+          "sha256": "2041908feb11d4df1677c9213fabc99c4a97c3755fe3df4b12e82cd48496580d"
+        },
+        {
+          "frame": 79,
+          "path": "render/render_001/frames/scene_009-79.png",
+          "sha256": "e0f6653eaffec1160a1ad09289632b27ff0013ee6f3c9ada3a168e49ff2baccd"
+        }
+      ],
+      "reused": false,
+      "renderReused": false,
+      "recommendations": [],
+      "status": "ok",
+      "benchmarkWallSeconds": 22.302125592017546
+    },
+    {
+      "sceneId": "scene_010",
+      "project": "project/renderer",
+      "projectHash": "2d9b69f2ec4134da84fb79bae47cec38b759811fa75ff7b2fb99ca234be3c965",
+      "sha256": "087f75f1f6c56da6da6b4ddf59b991bd0b454f06b99033f98e1772185201d729",
+      "frames": 428,
+      "durationSeconds": 14.266666666666667,
+      "audioCheck": {
+        "correlation": 0.9998882077546564,
+        "silent": false
+      },
+      "mixBoundaryAdjustmentSamples": 16,
+      "zeroTailPaddingSamples": 16,
+      "path": "output/render_001/scenes/scene_010.mp4",
+      "mix": {
+        "path": "render/render_001/work/scene_010-3zw1c3ir/mix.wav",
+        "sha256": "57c3309ef7935f098b7fa76c867b9371ae89231142009d7693135a62e471517b"
+      },
+      "evidence": [
+        {
+          "frame": 0,
+          "path": "render/render_001/frames/scene_010-0.png",
+          "sha256": "cefd4d0295ee844599f4d88880e0366607274245273b02f7ce570d6c55cd974f"
+        },
+        {
+          "frame": 214,
+          "path": "render/render_001/frames/scene_010-214.png",
+          "sha256": "1f95279b6b85beddfecb1ff19f80f827ecf7906ea8ed81a24b3357e5efc0879f"
+        },
+        {
+          "frame": 427,
+          "path": "render/render_001/frames/scene_010-427.png",
+          "sha256": "4e0b9c35cb49560e4139a98fc8e7f0a491a8d6f08c0d58438c7a8fcae6931f91"
+        }
+      ],
+      "reused": false,
+      "renderReused": false,
+      "recommendations": [],
+      "status": "ok",
+      "benchmarkWallSeconds": 110.44906502001686
+    },
+    {
+      "sceneId": "scene_011",
+      "project": "project/renderer",
+      "projectHash": "2d9b69f2ec4134da84fb79bae47cec38b759811fa75ff7b2fb99ca234be3c965",
+      "sha256": "2e76afe618e4bc6c15faf1d1985e8dc159b0cf6b35b17209ce818cd5aafb3802",
+      "frames": 185,
+      "durationSeconds": 6.166666666666667,
+      "audioCheck": {
+        "correlation": 0.9997673661880917,
+        "silent": false
+      },
+      "mixBoundaryAdjustmentSamples": 0,
+      "zeroTailPaddingSamples": 0,
+      "path": "output/render_001/scenes/scene_011.mp4",
+      "mix": {
+        "path": "render/render_001/work/scene_011-iu_i4hdm/mix.wav",
+        "sha256": "cc2f8d6736302a207217c89ec064cb993401664c8c28c1501d13667fa8440863"
+      },
+      "evidence": [
+        {
+          "frame": 0,
+          "path": "render/render_001/frames/scene_011-0.png",
+          "sha256": "492e478fa8aa5e8192e98559e990c147c3783bca3adfd389eea70ebdfc6eb3de"
+        },
+        {
+          "frame": 92,
+          "path": "render/render_001/frames/scene_011-92.png",
+          "sha256": "ae9234d78c0e2adbb8e0046f4eabe6b6c60daae001070d538622dda9e94066ad"
+        },
+        {
+          "frame": 184,
+          "path": "render/render_001/frames/scene_011-184.png",
+          "sha256": "d64694efe6c3b8f9afb363f0e3e27117f31fdffc7dd8d193eaa4a27efb4988ba"
+        }
+      ],
+      "reused": false,
+      "renderReused": false,
+      "recommendations": [],
+      "status": "ok",
+      "benchmarkWallSeconds": 46.27759915200295
+    },
+    {
+      "sceneId": "scene_012",
+      "project": "project/renderer",
+      "projectHash": "2d9b69f2ec4134da84fb79bae47cec38b759811fa75ff7b2fb99ca234be3c965",
+      "sha256": "4f979974b8a78984072f6e522416c6207837cbd46ec5a3816c07733690e70550",
+      "frames": 295,
+      "durationSeconds": 9.833333333333334,
+      "audioCheck": {
+        "correlation": 0.9995613610095315,
+        "silent": false
+      },
+      "mixBoundaryAdjustmentSamples": 0,
+      "zeroTailPaddingSamples": 0,
+      "path": "output/render_001/scenes/scene_012.mp4",
+      "mix": {
+        "path": "render/render_001/work/scene_012-yuxdrtm9/mix.wav",
+        "sha256": "cbc9c4d830cd18a3c9a56aaa7f731c5b4dbec12ee95a616c82d114dea4618a64"
+      },
+      "evidence": [
+        {
+          "frame": 0,
+          "path": "render/render_001/frames/scene_012-0.png",
+          "sha256": "b930ca6cb34ced84205a7294db4adecc8daa5d98f54f1c509173917150c5b65a"
+        },
+        {
+          "frame": 147,
+          "path": "render/render_001/frames/scene_012-147.png",
+          "sha256": "99545ed052d6d472963a4935199725218e5cc26b95ca38bc31266dc5bfd6cb51"
+        },
+        {
+          "frame": 294,
+          "path": "render/render_001/frames/scene_012-294.png",
+          "sha256": "d74d58c21314efd26f59e1e2003c65aa06061192be26a2674ffb90d0b98368a6"
+        }
+      ],
+      "reused": false,
+      "renderReused": false,
+      "recommendations": [],
+      "status": "ok",
+      "benchmarkWallSeconds": 71.96462508902187
+    },
+    {
+      "sceneId": "scene_013",
+      "project": "project/renderer",
+      "projectHash": "2d9b69f2ec4134da84fb79bae47cec38b759811fa75ff7b2fb99ca234be3c965",
+      "sha256": "9c30cd820d2134d69604cff4c46ada7c1dfd20596e790e5e8cc26037f519b68f",
+      "frames": 148,
+      "durationSeconds": 4.933333333333334,
+      "audioCheck": {
+        "correlation": 0.9997905834473065,
+        "silent": false
+      },
+      "mixBoundaryAdjustmentSamples": 16,
+      "zeroTailPaddingSamples": 16,
+      "path": "output/render_001/scenes/scene_013.mp4",
+      "mix": {
+        "path": "render/render_001/work/scene_013-geena6sy/mix.wav",
+        "sha256": "da743c79fa0e34c267350880304d8f3cf0be8895c6f357ca3c10b4850050cb4c"
+      },
+      "evidence": [
+        {
+          "frame": 0,
+          "path": "render/render_001/frames/scene_013-0.png",
+          "sha256": "5d87c3f1f9a336391df0953d279f6ab5cac15ece9a0a026ed9e8f59d37367a79"
+        },
+        {
+          "frame": 74,
+          "path": "render/render_001/frames/scene_013-74.png",
+          "sha256": "6d210d35b1fa3ec38edb8543c7beb003532312e6d00087595a040a87985aeeac"
+        },
+        {
+          "frame": 147,
+          "path": "render/render_001/frames/scene_013-147.png",
+          "sha256": "e7a0d8d6d390904ac92fc493678995b4e35ca89f339f5c3514b69e7f68b0fe64"
+        }
+      ],
+      "reused": false,
+      "renderReused": false,
+      "recommendations": [],
+      "status": "ok",
+      "benchmarkWallSeconds": 39.75183790101437
+    },
+    {
+      "sceneId": "scene_014",
+      "project": "project/renderer",
+      "projectHash": "2d9b69f2ec4134da84fb79bae47cec38b759811fa75ff7b2fb99ca234be3c965",
+      "sha256": "dbf1758a5be3ae74507a8b80b183932faf4cef2466b8b40c9f63b23d8a0e8dac",
+      "frames": 74,
+      "durationSeconds": 2.466666666666667,
+      "audioCheck": {
+        "correlation": 0.9998803292458103,
+        "silent": false
+      },
+      "mixBoundaryAdjustmentSamples": 0,
+      "zeroTailPaddingSamples": 0,
+      "path": "output/render_001/scenes/scene_014.mp4",
+      "mix": {
+        "path": "render/render_001/work/scene_014-6ua7phjf/mix.wav",
+        "sha256": "114918fa84b8b4386148ec05ed5be51f8a7dc19b3bd77f7179f0cda40fdc2490"
+      },
+      "evidence": [
+        {
+          "frame": 0,
+          "path": "render/render_001/frames/scene_014-0.png",
+          "sha256": "1ae9bb513677ab340981dabd72de9dab57f21bcd7f205988aa4f97736c75d35a"
+        },
+        {
+          "frame": 37,
+          "path": "render/render_001/frames/scene_014-37.png",
+          "sha256": "055f67f7287c0c3d4698c8966712483c65a6b66142c40f826dfe8ad5340913e3"
+        },
+        {
+          "frame": 73,
+          "path": "render/render_001/frames/scene_014-73.png",
+          "sha256": "605395e3e19c594d0c970ec29220b509451ee596f7b2c61552925ece6bcacac6"
+        }
+      ],
+      "reused": false,
+      "renderReused": false,
+      "recommendations": [],
+      "status": "ok",
+      "benchmarkWallSeconds": 24.599637811013963
+    },
+    {
+      "sceneId": "scene_015",
+      "project": "project/renderer",
+      "projectHash": "2d9b69f2ec4134da84fb79bae47cec38b759811fa75ff7b2fb99ca234be3c965",
+      "sha256": "44a613aea6bdc97d2ae29f4fb387568562f1698e9fc19e96845c06842bdc88f6",
+      "frames": 125,
+      "durationSeconds": 4.166666666666667,
+      "audioCheck": {
+        "correlation": 0.9998265776133822,
+        "silent": false
+      },
+      "mixBoundaryAdjustmentSamples": 0,
+      "zeroTailPaddingSamples": 0,
+      "path": "output/render_001/scenes/scene_015.mp4",
+      "mix": {
+        "path": "render/render_001/work/scene_015-zenrv7no/mix.wav",
+        "sha256": "ab48d79a0c03d538f7c1bca9b816735607ff83f4706d550d2780085db1ebe464"
+      },
+      "evidence": [
+        {
+          "frame": 0,
+          "path": "render/render_001/frames/scene_015-0.png",
+          "sha256": "0c35d9a1a3512ea70f7cdfe04a05055f7345116eecafcebc18e92aadf01f5dfb"
+        },
+        {
+          "frame": 62,
+          "path": "render/render_001/frames/scene_015-62.png",
+          "sha256": "954e104aa9e21632c5ef8f74f27b3d86b38db0b6faaaf9cb24879fbc2af237d0"
+        },
+        {
+          "frame": 124,
+          "path": "render/render_001/frames/scene_015-124.png",
+          "sha256": "caab9eea2485004cc514ba79c2fb10b2e78eb5170eaf6af0a71bf9fed132110b"
+        }
+      ],
+      "reused": false,
+      "renderReused": false,
+      "recommendations": [],
+      "status": "ok",
+      "benchmarkWallSeconds": 35.753821776015684
+    },
+    {
+      "sceneId": "scene_016",
+      "project": "project/renderer",
+      "projectHash": "2d9b69f2ec4134da84fb79bae47cec38b759811fa75ff7b2fb99ca234be3c965",
+      "sha256": "7546f6dc007a145eed95497254fa4168156e627763b27ac8e1cb5ef5b202a77b",
+      "frames": 233,
+      "durationSeconds": 7.766666666666667,
+      "audioCheck": {
+        "correlation": 0.9999001825976,
+        "silent": false
+      },
+      "mixBoundaryAdjustmentSamples": 0,
+      "zeroTailPaddingSamples": 0,
+      "path": "output/render_001/scenes/scene_016.mp4",
+      "mix": {
+        "path": "render/render_001/work/scene_016-43dbgfnm/mix.wav",
+        "sha256": "5a19fab9af5a720c4bd6aa73f986bcd4396bafd95cca0e368df3460cc4727a79"
+      },
+      "evidence": [
+        {
+          "frame": 0,
+          "path": "render/render_001/frames/scene_016-0.png",
+          "sha256": "a04ebcafccd5fa0e5a67ae792ed7bd35581309c33f961d6413c0af7b0d51b7fd"
+        },
+        {
+          "frame": 116,
+          "path": "render/render_001/frames/scene_016-116.png",
+          "sha256": "8169abe22a6240626eacee2bdf9f56bd85e445ebf5d40bc0c6f760ba9911672b"
+        },
+        {
+          "frame": 232,
+          "path": "render/render_001/frames/scene_016-232.png",
+          "sha256": "8e9b2f34100abf866a3a3d5bacd511d0a24361f8a72243316c9a16190ad2a63c"
+        }
+      ],
+      "reused": false,
+      "renderReused": false,
+      "recommendations": [],
+      "status": "ok",
+      "benchmarkWallSeconds": 55.334375039994484
+    },
+    {
+      "sceneId": "scene_017",
+      "project": "project/renderer",
+      "projectHash": "2d9b69f2ec4134da84fb79bae47cec38b759811fa75ff7b2fb99ca234be3c965",
+      "sha256": "4f99ebf30eba71084827fd4f8eb0e4e90034a219df3f8b72001c24bb581f486e",
+      "frames": 250,
+      "durationSeconds": 8.333333333333334,
+      "audioCheck": {
+        "correlation": 0.9996535920907208,
+        "silent": false
+      },
+      "mixBoundaryAdjustmentSamples": 16,
+      "zeroTailPaddingSamples": 16,
+      "path": "output/render_001/scenes/scene_017.mp4",
+      "mix": {
+        "path": "render/render_001/work/scene_017-a6teu1zg/mix.wav",
+        "sha256": "9418191dd2ee9e2b5f8e6dd9a2c0b6001d5a6468cf6fbf04d1a8970beddf4924"
+      },
+      "evidence": [
+        {
+          "frame": 0,
+          "path": "render/render_001/frames/scene_017-0.png",
+          "sha256": "ff907b187c0b898f5f99b9ccb79fb86c4b2c87859d099ea2288395ed4317f357"
+        },
+        {
+          "frame": 125,
+          "path": "render/render_001/frames/scene_017-125.png",
+          "sha256": "7167d5c4d7143a89f7096155385d13d7c78981803e486b93c32a01f3f65325ee"
+        },
+        {
+          "frame": 249,
+          "path": "render/render_001/frames/scene_017-249.png",
+          "sha256": "2272330a69fab4d435b1bb255fa0c510b5b58ee980d67a2f5fc813f44d04647f"
+        }
+      ],
+      "reused": false,
+      "renderReused": false,
+      "recommendations": [],
+      "status": "ok",
+      "benchmarkWallSeconds": 49.89773903499008
+    },
+    {
+      "sceneId": "scene_018",
+      "project": "project/renderer",
+      "projectHash": "2d9b69f2ec4134da84fb79bae47cec38b759811fa75ff7b2fb99ca234be3c965",
+      "sha256": "64f78e36e6d3257314829f5f568d4087e3fe1c346054238c65f2fa9512e280c9",
+      "frames": 367,
+      "durationSeconds": 12.233333333333333,
+      "audioCheck": {
+        "correlation": 0.999943905792012,
+        "silent": false
+      },
+      "mixBoundaryAdjustmentSamples": 16,
+      "zeroTailPaddingSamples": 16,
+      "path": "output/render_001/scenes/scene_018.mp4",
+      "mix": {
+        "path": "render/render_001/work/scene_018-svqzrnbz/mix.wav",
+        "sha256": "c279ed04bc8fa0516c9ed5b8f784b336ff1e67cbb5e5a623bd56683e63d4ede0"
+      },
+      "evidence": [
+        {
+          "frame": 0,
+          "path": "render/render_001/frames/scene_018-0.png",
+          "sha256": "e8bb62214d18e12733aae5ba9183a04816b0bb3c621afb848a03fa3ceedef20b"
+        },
+        {
+          "frame": 183,
+          "path": "render/render_001/frames/scene_018-183.png",
+          "sha256": "283ccd4b932716e348c33f6d311d383fad8f2a014a33586d6bd9a600a52afb19"
+        },
+        {
+          "frame": 366,
+          "path": "render/render_001/frames/scene_018-366.png",
+          "sha256": "5eb29e20696c8781e465786afae29d8e72c1f5b3f5a9f0672f95f6f4254624e3"
+        }
+      ],
+      "reused": false,
+      "renderReused": false,
+      "recommendations": [],
+      "status": "ok",
+      "benchmarkWallSeconds": 63.12714227399556
+    }
+  ],
+  "metrics": {
+    "bundleSeconds": null,
+    "slots": 1
+  }
+}

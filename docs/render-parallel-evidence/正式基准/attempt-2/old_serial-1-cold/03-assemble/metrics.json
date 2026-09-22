@@ -1,0 +1,112 @@
+{
+  "argv": [
+    "/Users/jiang/Documents/VideoCutEditor/video-worker/.venv/bin/python3",
+    "-B",
+    "/Users/jiang/.codex/worktrees/b9ba/VideoCutEditor/video-worker/scripts/render-benchmark-adapter.py",
+    "--settings",
+    "/Users/jiang/.codex/worktrees/b9ba/VideoCutEditor/claude-code-video-toolkit/projects/render-parallel-20260923/evidence/benchmark-settings.json",
+    "--run-dir",
+    "/Users/jiang/.codex/worktrees/b9ba/VideoCutEditor/claude-code-video-toolkit/projects/render-parallel-benchmark-20260923-retry2/old_serial-1-cold",
+    "--variant",
+    "old_serial",
+    "--slots",
+    "1",
+    "--step",
+    "assemble"
+  ],
+  "exitCode": 0,
+  "reason": null,
+  "wallSeconds": 8.605402109998977,
+  "blockingProcesses": [],
+  "peakAggregateRssKiB": 39576,
+  "peakCpuPercent": 111.9,
+  "externalIdleBaselinePeakRssKiB": 1106096,
+  "sampledCpuSecondsEstimate": 6.386690961292276,
+  "samples": [
+    {
+      "seconds": 0.1818019550119061,
+      "rssKiB": 1880,
+      "cpuPercent": 0.0,
+      "externalIdleBaselineRssKiB": 1106056
+    },
+    {
+      "seconds": 0.8766516790201422,
+      "rssKiB": 20568,
+      "cpuPercent": 19.2,
+      "externalIdleBaselineRssKiB": 1106056
+    },
+    {
+      "seconds": 1.571621151000727,
+      "rssKiB": 27100,
+      "cpuPercent": 9.9,
+      "externalIdleBaselineRssKiB": 1106056
+    },
+    {
+      "seconds": 2.253114302002359,
+      "rssKiB": 28148,
+      "cpuPercent": 94.9,
+      "externalIdleBaselineRssKiB": 1106056
+    },
+    {
+      "seconds": 2.9137800100143068,
+      "rssKiB": 37536,
+      "cpuPercent": 98.5,
+      "externalIdleBaselineRssKiB": 1106060
+    },
+    {
+      "seconds": 3.572301742999116,
+      "rssKiB": 38216,
+      "cpuPercent": 107.7,
+      "externalIdleBaselineRssKiB": 1106064
+    },
+    {
+      "seconds": 4.212362846999895,
+      "rssKiB": 38656,
+      "cpuPercent": 111.4,
+      "externalIdleBaselineRssKiB": 1106080
+    },
+    {
+      "seconds": 4.843552160018589,
+      "rssKiB": 38852,
+      "cpuPercent": 110.1,
+      "externalIdleBaselineRssKiB": 1106084
+    },
+    {
+      "seconds": 5.475670581014128,
+      "rssKiB": 38972,
+      "cpuPercent": 109.6,
+      "externalIdleBaselineRssKiB": 1106084
+    },
+    {
+      "seconds": 6.107579391013132,
+      "rssKiB": 38988,
+      "cpuPercent": 108.2,
+      "externalIdleBaselineRssKiB": 1106088
+    },
+    {
+      "seconds": 6.728860069008078,
+      "rssKiB": 39100,
+      "cpuPercent": 111.3,
+      "externalIdleBaselineRssKiB": 1106096
+    },
+    {
+      "seconds": 7.356006796006113,
+      "rssKiB": 39576,
+      "cpuPercent": 111.9,
+      "externalIdleBaselineRssKiB": 1106096
+    },
+    {
+      "seconds": 7.974964496999746,
+      "rssKiB": 19568,
+      "cpuPercent": 0.0,
+      "externalIdleBaselineRssKiB": 1106096
+    }
+  ],
+  "cleanup": {
+    "complete": true,
+    "errors": [],
+    "signals": [],
+    "remainingProcesses": []
+  },
+  "executionError": null
+}

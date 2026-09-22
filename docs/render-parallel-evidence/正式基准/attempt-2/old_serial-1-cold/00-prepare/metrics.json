@@ -1,0 +1,40 @@
+{
+  "argv": [
+    "/Users/jiang/Documents/VideoCutEditor/video-worker/.venv/bin/python3",
+    "-B",
+    "/Users/jiang/.codex/worktrees/b9ba/VideoCutEditor/video-worker/scripts/render-benchmark-adapter.py",
+    "--settings",
+    "/Users/jiang/.codex/worktrees/b9ba/VideoCutEditor/claude-code-video-toolkit/projects/render-parallel-20260923/evidence/benchmark-settings.json",
+    "--run-dir",
+    "/Users/jiang/.codex/worktrees/b9ba/VideoCutEditor/claude-code-video-toolkit/projects/render-parallel-benchmark-20260923-retry2/old_serial-1-cold",
+    "--variant",
+    "old_serial",
+    "--slots",
+    "1",
+    "--step",
+    "prepare"
+  ],
+  "exitCode": 0,
+  "reason": null,
+  "wallSeconds": 0.7736915379937273,
+  "blockingProcesses": [],
+  "peakAggregateRssKiB": 2476,
+  "peakCpuPercent": 0,
+  "externalIdleBaselinePeakRssKiB": 1134716,
+  "sampledCpuSecondsEstimate": 0.0,
+  "samples": [
+    {
+      "seconds": 0.13492441098787822,
+      "rssKiB": 2476,
+      "cpuPercent": 0.0,
+      "externalIdleBaselineRssKiB": 1134716
+    }
+  ],
+  "cleanup": {
+    "complete": true,
+    "errors": [],
+    "signals": [],
+    "remainingProcesses": []
+  },
+  "executionError": null
+}

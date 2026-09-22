@@ -1,0 +1,281 @@
+{
+  "passed": true,
+  "sceneCount": 18,
+  "frames": 4112,
+  "checks": [
+    {
+      "id": "scene_001",
+      "sha256": "bc606f789bb7ad8a3bff9f8593b826a00619e6a42dfc0eb3f8715d5f3b405e37",
+      "frames": 227,
+      "durationSeconds": 7.566666666666666,
+      "audio": {
+        "correlation": 0.9999605240895093,
+        "silent": false
+      }
+    },
+    {
+      "id": "scene_002",
+      "sha256": "ef2de17c6f6a9e83fbe6391873044434b9c287d74fbcee90ebceb49e2a284adc",
+      "frames": 155,
+      "durationSeconds": 5.166666666666667,
+      "audio": {
+        "correlation": 0.9998574844601928,
+        "silent": false
+      }
+    },
+    {
+      "id": "scene_003",
+      "sha256": "6dc206958a93fa3d9c750cd1c626e7846348d7049b4af2a9fae5eee90b343d90",
+      "frames": 303,
+      "durationSeconds": 10.1,
+      "audio": {
+        "correlation": 0.9998828999349414,
+        "silent": false
+      }
+    },
+    {
+      "id": "scene_004",
+      "sha256": "2a4f55c40e67c6d6bd94afe98f708ac02ad99715acce58de7f2d2854c5d83886",
+      "frames": 200,
+      "durationSeconds": 6.666666666666667,
+      "audio": {
+        "correlation": 0.9997050447085756,
+        "silent": false
+      }
+    },
+    {
+      "id": "scene_005",
+      "sha256": "0a04e57c5a9b04153453da1550d0625c6f910c0bbd462352b10c5a70809443d6",
+      "frames": 92,
+      "durationSeconds": 3.066666666666667,
+      "audio": {
+        "correlation": 0.9998809975097798,
+        "silent": false
+      }
+    },
+    {
+      "id": "scene_006",
+      "sha256": "9c6ea8dd3da0fb8167d59705046328ae6f63456d41f03a5ddec40115eed37fac",
+      "frames": 305,
+      "durationSeconds": 10.166666666666666,
+      "audio": {
+        "correlation": 0.9998487467756292,
+        "silent": false
+      }
+    },
+    {
+      "id": "scene_007",
+      "sha256": "d60a59a7d169ba681ab33d0700d6da9974fe73f165fa3705eafddf15dc97985a",
+      "frames": 174,
+      "durationSeconds": 5.8,
+      "audio": {
+        "correlation": 0.9998480717112769,
+        "silent": false
+      }
+    },
+    {
+      "id": "scene_008",
+      "sha256": "dbe814c66bce35e935624455e50a1188714f8e00e872792450369c92f7c44a90",
+      "frames": 471,
+      "durationSeconds": 15.7,
+      "audio": {
+        "correlation": 0.9998674802664823,
+        "silent": false
+      }
+    },
+    {
+      "id": "scene_009",
+      "sha256": "202979f8c8d554866e3c1ffa743d0ccb14a4ee034e1cd90231084e7940dd9ed2",
+      "frames": 80,
+      "durationSeconds": 2.6666666666666665,
+      "audio": {
+        "correlation": 0.9993861848719466,
+        "silent": false
+      }
+    },
+    {
+      "id": "scene_010",
+      "sha256": "087f75f1f6c56da6da6b4ddf59b991bd0b454f06b99033f98e1772185201d729",
+      "frames": 428,
+      "durationSeconds": 14.266666666666667,
+      "audio": {
+        "correlation": 0.9998882077546564,
+        "silent": false
+      }
+    },
+    {
+      "id": "scene_011",
+      "sha256": "2e76afe618e4bc6c15faf1d1985e8dc159b0cf6b35b17209ce818cd5aafb3802",
+      "frames": 185,
+      "durationSeconds": 6.166666666666667,
+      "audio": {
+        "correlation": 0.9997673661880917,
+        "silent": false
+      }
+    },
+    {
+      "id": "scene_012",
+      "sha256": "4f979974b8a78984072f6e522416c6207837cbd46ec5a3816c07733690e70550",
+      "frames": 295,
+      "durationSeconds": 9.833333333333334,
+      "audio": {
+        "correlation": 0.9995613610095315,
+        "silent": false
+      }
+    },
+    {
+      "id": "scene_013",
+      "sha256": "9c30cd820d2134d69604cff4c46ada7c1dfd20596e790e5e8cc26037f519b68f",
+      "frames": 148,
+      "durationSeconds": 4.933333333333334,
+      "audio": {
+        "correlation": 0.9997905834473065,
+        "silent": false
+      }
+    },
+    {
+      "id": "scene_014",
+      "sha256": "dbf1758a5be3ae74507a8b80b183932faf4cef2466b8b40c9f63b23d8a0e8dac",
+      "frames": 74,
+      "durationSeconds": 2.466666666666667,
+      "audio": {
+        "correlation": 0.9998803292458103,
+        "silent": false
+      }
+    },
+    {
+      "id": "scene_015",
+      "sha256": "44a613aea6bdc97d2ae29f4fb387568562f1698e9fc19e96845c06842bdc88f6",
+      "frames": 125,
+      "durationSeconds": 4.166666666666667,
+      "audio": {
+        "correlation": 0.9998265776133822,
+        "silent": false
+      }
+    },
+    {
+      "id": "scene_016",
+      "sha256": "7546f6dc007a145eed95497254fa4168156e627763b27ac8e1cb5ef5b202a77b",
+      "frames": 233,
+      "durationSeconds": 7.766666666666667,
+      "audio": {
+        "correlation": 0.9999001825976,
+        "silent": false
+      }
+    },
+    {
+      "id": "scene_017",
+      "sha256": "4f99ebf30eba71084827fd4f8eb0e4e90034a219df3f8b72001c24bb581f486e",
+      "frames": 250,
+      "durationSeconds": 8.333333333333334,
+      "audio": {
+        "correlation": 0.9996535920907208,
+        "silent": false
+      }
+    },
+    {
+      "id": "scene_018",
+      "sha256": "64f78e36e6d3257314829f5f568d4087e3fe1c346054238c65f2fa9512e280c9",
+      "frames": 367,
+      "durationSeconds": 12.233333333333333,
+      "audio": {
+        "correlation": 0.999943905792012,
+        "silent": false
+      }
+    }
+  ],
+  "whole": {
+    "sha256": "64d19703e41cb68ab38d8a0b5e551654df24507747bc8800e916ff8854bd9e9c",
+    "frames": 4112,
+    "durationSeconds": 137.06666666666666,
+    "audio": {
+      "correlation": 0.9998812870035901,
+      "silent": false
+    }
+  },
+  "pixelComparison": "established_first_old_serial",
+  "pixels": {
+    "scene_001": {
+      "frames": 227,
+      "decodedFrameHashesSha256": "9a4f5b1ef67d619485cf3e6c9f99cf68d8e846d21d02743e548f130c40e2649a"
+    },
+    "scene_002": {
+      "frames": 155,
+      "decodedFrameHashesSha256": "fc2c89425696b5ba33e7628a5e91f2ca6942e64275a63371bbefef4c14ce78bf"
+    },
+    "scene_003": {
+      "frames": 303,
+      "decodedFrameHashesSha256": "fc433176c24e7351c5b46ae6c38e532c43ed2915cc30d1c52c8db5738f748a2a"
+    },
+    "scene_004": {
+      "frames": 200,
+      "decodedFrameHashesSha256": "2070236b82b3f265498e890bc11a9784c29b01fe7a9c0701bb01044752822050"
+    },
+    "scene_005": {
+      "frames": 92,
+      "decodedFrameHashesSha256": "d6bbfbc677c0a6486e4e108ee264acfa2943a8b40244c2451ac55d8dd7e4df4d"
+    },
+    "scene_006": {
+      "frames": 305,
+      "decodedFrameHashesSha256": "c5ab9bd6737ef41e4ff27006949cc439e94aef6529d76555c4c5ba9669a0cd1c"
+    },
+    "scene_007": {
+      "frames": 174,
+      "decodedFrameHashesSha256": "b708d5887f54763e434e073836fac2337a1101b11be86f414e20092cfcc2d851"
+    },
+    "scene_008": {
+      "frames": 471,
+      "decodedFrameHashesSha256": "cdfe308665543f5b68dc41154a236a11d3867b26aa8f3951147b0141574ab128"
+    },
+    "scene_009": {
+      "frames": 80,
+      "decodedFrameHashesSha256": "d660ae4d11ff192fa87af172f33a0b3be5f0b3a3344cbff4399c0ecef62611bd"
+    },
+    "scene_010": {
+      "frames": 428,
+      "decodedFrameHashesSha256": "7f506f415fee022c48ad2e4a0a398abb4517f0dff4793ec4ed472bf2513a8780"
+    },
+    "scene_011": {
+      "frames": 185,
+      "decodedFrameHashesSha256": "5644d07a48b563718afce884fb1fe35ad84375e60040d9d3f9f95ac4092f1b7c"
+    },
+    "scene_012": {
+      "frames": 295,
+      "decodedFrameHashesSha256": "51cdf4cfc4236be6789e1aa5369d0d05eb382f809ee41d008fbd90350ac429de"
+    },
+    "scene_013": {
+      "frames": 148,
+      "decodedFrameHashesSha256": "933d71c36ce6256ef8e39fd2776579e7d57d249f9d708ad0a7a66edd6684c2d7"
+    },
+    "scene_014": {
+      "frames": 74,
+      "decodedFrameHashesSha256": "23ae879d75be419e46ee799343e0b1659e8bedbadd54869331aca8924a35475b"
+    },
+    "scene_015": {
+      "frames": 125,
+      "decodedFrameHashesSha256": "5826183aec67d952a1f8b50705d481d4149227b5f883db341da2d27e842a5918"
+    },
+    "scene_016": {
+      "frames": 233,
+      "decodedFrameHashesSha256": "cb8e2cc9a7c8eed74f1f8290b7d63732e230a21c7e2a319e9f519867ac325fe5"
+    },
+    "scene_017": {
+      "frames": 250,
+      "decodedFrameHashesSha256": "4f7ae1c601c9fbc49353166a2fae776539b1f23c88b4ecb212933fcc8a9969bc"
+    },
+    "scene_018": {
+      "frames": 367,
+      "decodedFrameHashesSha256": "1cd7f095221d639396026a299527758926dca9d449da62321d24f8dce76ed22e"
+    },
+    "whole": {
+      "frames": 4112,
+      "decodedFrameHashesSha256": "3cfd580734ed083d419cef7870090d173f7eb5993a698359d5e9c858a655c89c"
+    }
+  },
+  "humanListeningPerformed": false,
+  "visualReviewPerformed": false,
+  "workerSuccess": false,
+  "limitations": [
+    "仅技术基准；主控需对最终候选另行静帧及动态审查。"
+  ]
+}

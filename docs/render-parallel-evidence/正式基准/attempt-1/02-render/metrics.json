@@ -1,0 +1,733 @@
+{
+  "argv": [
+    "/Users/jiang/Documents/VideoCutEditor/video-worker/.venv/bin/python3",
+    "-B",
+    "/Users/jiang/.codex/worktrees/b9ba/VideoCutEditor/video-worker/scripts/render-benchmark-adapter.py",
+    "--settings",
+    "/Users/jiang/.codex/worktrees/b9ba/VideoCutEditor/claude-code-video-toolkit/projects/render-parallel-20260923/evidence/benchmark-settings.json",
+    "--run-dir",
+    "/Users/jiang/.codex/worktrees/b9ba/VideoCutEditor/claude-code-video-toolkit/projects/render-parallel-benchmark-20260923/old_serial-1-cold",
+    "--variant",
+    "old_serial",
+    "--slots",
+    "1",
+    "--step",
+    "render"
+  ],
+  "exitCode": -15,
+  "reason": "external_media_contention",
+  "wallSeconds": 70.07358751201537,
+  "blockingProcesses": [
+    {
+      "pid": 43599,
+      "ppid": 1,
+      "pgid": 43599,
+      "started": "Tue Sep 22 21:46:42 2026",
+      "cpu": 1.1,
+      "rssKiB": 109648,
+      "command": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome about:blank --allow-pre-commit-input --disable-background-networking --enable-features=NetworkService,NetworkServiceInProcess --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-default-apps --disable-dev-shm-usage --no-proxy-server --proxy-server='direct://' --proxy-bypass-list=* --force-gpu-mem-available-mb=4096 --disable-hang-monitor --disable-extensions --allow-chrome-scheme-url --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --disable-sync --force-color-profile=srgb --metrics-recording-only --mute-audio --no-first-run --video-threads=1 --enable-automation --password-store=basic --use-mock-keychain --enable-blink-features=IdleDetection --export-tagged-pdf --intensive-wake-up-throttling-policy=0 --headless=old --no-sandbox --disable-setuid-sandbox --disable-background-media-suspend --allow-running-insecure-content --disable-component-update --disable-domain-reliability --disable-features=AudioServiceOutOfProcess,IsolateOrigins,site-per-process,Translate,BackForwardCache,AvoidUnnecessaryBeforeUnloadCheckSync,IntensiveWakeUpThrottling,LocalNetworkAccessChecks,BlockInsecurePrivateNetworkRequests,PrivateNetworkAccessSendPreflights,PrivateNetworkAccessRespectPreflightResults --disable-print-preview --disable-site-isolation-trials --disk-cache-size=268435456 --hide-scrollbars --no-default-browser-check --no-pings --font-render-hinting=none --no-zygote --ignore-gpu-blocklist --enable-unsafe-webgpu --remote-debugging-port=0 --user-data-dir=/Users/jiang/Documents/VideoCutEditor/claude-code-video-toolkit/projects/local-two-stage-tests/full-retest-20260922/render/render_001/work/scene_011-m5gu12k1/runtime/puppeteer_dev_chrome_profile-thUrqZ"
+    }
+  ],
+  "peakAggregateRssKiB": 1776104,
+  "peakCpuPercent": 707.6,
+  "externalIdleBaselinePeakRssKiB": 1135724,
+  "sampledCpuSecondsEstimate": 82.1493430085268,
+  "samples": [
+    {
+      "seconds": 0.13703228600206785,
+      "rssKiB": 2336,
+      "cpuPercent": 0.0,
+      "externalIdleBaselineRssKiB": 1135724
+    },
+    {
+      "seconds": 0.7865239160018973,
+      "rssKiB": 55572,
+      "cpuPercent": 78.7,
+      "externalIdleBaselineRssKiB": 1135724
+    },
+    {
+      "seconds": 1.4500836110091768,
+      "rssKiB": 79704,
+      "cpuPercent": 57.099999999999994,
+      "externalIdleBaselineRssKiB": 1135724
+    },
+    {
+      "seconds": 2.099325270013651,
+      "rssKiB": 115868,
+      "cpuPercent": 72.1,
+      "externalIdleBaselineRssKiB": 1135724
+    },
+    {
+      "seconds": 2.7679817540047225,
+      "rssKiB": 135868,
+      "cpuPercent": 75.60000000000001,
+      "externalIdleBaselineRssKiB": 1135000
+    },
+    {
+      "seconds": 3.443727817997569,
+      "rssKiB": 174516,
+      "cpuPercent": 97.1,
+      "externalIdleBaselineRssKiB": 1134696
+    },
+    {
+      "seconds": 4.125307403010083,
+      "rssKiB": 314040,
+      "cpuPercent": 209.6,
+      "externalIdleBaselineRssKiB": 1132176
+    },
+    {
+      "seconds": 4.786009351024404,
+      "rssKiB": 355136,
+      "cpuPercent": 199.5,
+      "externalIdleBaselineRssKiB": 1132188
+    },
+    {
+      "seconds": 5.4541962840012275,
+      "rssKiB": 404784,
+      "cpuPercent": 203.4,
+      "externalIdleBaselineRssKiB": 1132192
+    },
+    {
+      "seconds": 6.106338436016813,
+      "rssKiB": 524440,
+      "cpuPercent": 194.5,
+      "externalIdleBaselineRssKiB": 1132408
+    },
+    {
+      "seconds": 6.764729570015334,
+      "rssKiB": 549120,
+      "cpuPercent": 68.0,
+      "externalIdleBaselineRssKiB": 1132608
+    },
+    {
+      "seconds": 7.524199091014452,
+      "rssKiB": 755128,
+      "cpuPercent": 176.5,
+      "externalIdleBaselineRssKiB": 1132608
+    },
+    {
+      "seconds": 8.310150714009069,
+      "rssKiB": 1047904,
+      "cpuPercent": 268.3,
+      "externalIdleBaselineRssKiB": 1132608
+    },
+    {
+      "seconds": 9.038983358012047,
+      "rssKiB": 1139968,
+      "cpuPercent": 200.6,
+      "externalIdleBaselineRssKiB": 1132608
+    },
+    {
+      "seconds": 9.728150547016412,
+      "rssKiB": 1231248,
+      "cpuPercent": 135.4,
+      "externalIdleBaselineRssKiB": 1132548
+    },
+    {
+      "seconds": 10.419799476017943,
+      "rssKiB": 1250740,
+      "cpuPercent": 125.2,
+      "externalIdleBaselineRssKiB": 1132532
+    },
+    {
+      "seconds": 11.064209474017844,
+      "rssKiB": 1156292,
+      "cpuPercent": 153.3,
+      "externalIdleBaselineRssKiB": 1132536
+    },
+    {
+      "seconds": 11.725410511018708,
+      "rssKiB": 1213692,
+      "cpuPercent": 118.7,
+      "externalIdleBaselineRssKiB": 1132536
+    },
+    {
+      "seconds": 12.388828739000019,
+      "rssKiB": 1183008,
+      "cpuPercent": 125.39999999999999,
+      "externalIdleBaselineRssKiB": 1132536
+    },
+    {
+      "seconds": 13.051657272008015,
+      "rssKiB": 1198500,
+      "cpuPercent": 148.2,
+      "externalIdleBaselineRssKiB": 1132536
+    },
+    {
+      "seconds": 13.685762035020161,
+      "rssKiB": 1224564,
+      "cpuPercent": 122.8,
+      "externalIdleBaselineRssKiB": 1132536
+    },
+    {
+      "seconds": 14.370208724023541,
+      "rssKiB": 1226504,
+      "cpuPercent": 139.9,
+      "externalIdleBaselineRssKiB": 1132536
+    },
+    {
+      "seconds": 15.040765022014966,
+      "rssKiB": 1301720,
+      "cpuPercent": 146.2,
+      "externalIdleBaselineRssKiB": 1132536
+    },
+    {
+      "seconds": 15.7052011800115,
+      "rssKiB": 1302952,
+      "cpuPercent": 143.4,
+      "externalIdleBaselineRssKiB": 1132536
+    },
+    {
+      "seconds": 16.37086929799989,
+      "rssKiB": 1333184,
+      "cpuPercent": 115.0,
+      "externalIdleBaselineRssKiB": 1132536
+    },
+    {
+      "seconds": 17.038828532007756,
+      "rssKiB": 1339980,
+      "cpuPercent": 137.4,
+      "externalIdleBaselineRssKiB": 1132536
+    },
+    {
+      "seconds": 17.714712579996558,
+      "rssKiB": 1360468,
+      "cpuPercent": 135.5,
+      "externalIdleBaselineRssKiB": 1132536
+    },
+    {
+      "seconds": 18.381306331022643,
+      "rssKiB": 1384696,
+      "cpuPercent": 129.3,
+      "externalIdleBaselineRssKiB": 1132536
+    },
+    {
+      "seconds": 19.066832473996328,
+      "rssKiB": 1387088,
+      "cpuPercent": 102.2,
+      "externalIdleBaselineRssKiB": 1132540
+    },
+    {
+      "seconds": 19.723304412007565,
+      "rssKiB": 1398144,
+      "cpuPercent": 130.5,
+      "externalIdleBaselineRssKiB": 1132540
+    },
+    {
+      "seconds": 20.388827650021994,
+      "rssKiB": 1396312,
+      "cpuPercent": 170.4,
+      "externalIdleBaselineRssKiB": 1132540
+    },
+    {
+      "seconds": 21.087562499014894,
+      "rssKiB": 1411084,
+      "cpuPercent": 126.2,
+      "externalIdleBaselineRssKiB": 1132540
+    },
+    {
+      "seconds": 21.83888155501336,
+      "rssKiB": 1440356,
+      "cpuPercent": 123.0,
+      "externalIdleBaselineRssKiB": 1132540
+    },
+    {
+      "seconds": 22.59861288301181,
+      "rssKiB": 1430604,
+      "cpuPercent": 117.2,
+      "externalIdleBaselineRssKiB": 1132540
+    },
+    {
+      "seconds": 23.27296841199859,
+      "rssKiB": 1424544,
+      "cpuPercent": 131.2,
+      "externalIdleBaselineRssKiB": 1132540
+    },
+    {
+      "seconds": 23.934694968018448,
+      "rssKiB": 1422276,
+      "cpuPercent": 153.7,
+      "externalIdleBaselineRssKiB": 1132540
+    },
+    {
+      "seconds": 24.587841170025058,
+      "rssKiB": 1452644,
+      "cpuPercent": 165.4,
+      "externalIdleBaselineRssKiB": 1132540
+    },
+    {
+      "seconds": 25.233254798018606,
+      "rssKiB": 1410524,
+      "cpuPercent": 127.2,
+      "externalIdleBaselineRssKiB": 1132540
+    },
+    {
+      "seconds": 25.886995651002508,
+      "rssKiB": 1420060,
+      "cpuPercent": 112.89999999999999,
+      "externalIdleBaselineRssKiB": 1132540
+    },
+    {
+      "seconds": 26.56971063101082,
+      "rssKiB": 1422124,
+      "cpuPercent": 144.9,
+      "externalIdleBaselineRssKiB": 1132540
+    },
+    {
+      "seconds": 27.242970443010563,
+      "rssKiB": 1446176,
+      "cpuPercent": 100.2,
+      "externalIdleBaselineRssKiB": 1132540
+    },
+    {
+      "seconds": 27.89317407400813,
+      "rssKiB": 1407268,
+      "cpuPercent": 133.7,
+      "externalIdleBaselineRssKiB": 1132540
+    },
+    {
+      "seconds": 28.551351430010982,
+      "rssKiB": 1431876,
+      "cpuPercent": 93.89999999999999,
+      "externalIdleBaselineRssKiB": 1132540
+    },
+    {
+      "seconds": 29.19881665200228,
+      "rssKiB": 1406828,
+      "cpuPercent": 97.9,
+      "externalIdleBaselineRssKiB": 1132540
+    },
+    {
+      "seconds": 29.86558313202113,
+      "rssKiB": 1429152,
+      "cpuPercent": 112.9,
+      "externalIdleBaselineRssKiB": 1132540
+    },
+    {
+      "seconds": 30.526536527002463,
+      "rssKiB": 1421616,
+      "cpuPercent": 100.3,
+      "externalIdleBaselineRssKiB": 1132540
+    },
+    {
+      "seconds": 31.18313895101892,
+      "rssKiB": 1412072,
+      "cpuPercent": 123.5,
+      "externalIdleBaselineRssKiB": 1132540
+    },
+    {
+      "seconds": 31.850086546997773,
+      "rssKiB": 1420104,
+      "cpuPercent": 115.5,
+      "externalIdleBaselineRssKiB": 1132540
+    },
+    {
+      "seconds": 32.4950608080253,
+      "rssKiB": 1420156,
+      "cpuPercent": 98.5,
+      "externalIdleBaselineRssKiB": 1132540
+    },
+    {
+      "seconds": 33.13917694002157,
+      "rssKiB": 1414092,
+      "cpuPercent": 104.5,
+      "externalIdleBaselineRssKiB": 1132540
+    },
+    {
+      "seconds": 33.79089297199971,
+      "rssKiB": 1435284,
+      "cpuPercent": 99.89999999999999,
+      "externalIdleBaselineRssKiB": 1132540
+    },
+    {
+      "seconds": 34.419740717014065,
+      "rssKiB": 1465008,
+      "cpuPercent": 81.5,
+      "externalIdleBaselineRssKiB": 1132540
+    },
+    {
+      "seconds": 35.0661380100064,
+      "rssKiB": 1426096,
+      "cpuPercent": 102.1,
+      "externalIdleBaselineRssKiB": 1132552
+    },
+    {
+      "seconds": 35.7204561450053,
+      "rssKiB": 1422076,
+      "cpuPercent": 101.4,
+      "externalIdleBaselineRssKiB": 1132552
+    },
+    {
+      "seconds": 36.374000572017394,
+      "rssKiB": 1427324,
+      "cpuPercent": 98.2,
+      "externalIdleBaselineRssKiB": 1132552
+    },
+    {
+      "seconds": 37.02948127902346,
+      "rssKiB": 1431260,
+      "cpuPercent": 109.10000000000001,
+      "externalIdleBaselineRssKiB": 1132552
+    },
+    {
+      "seconds": 37.70256345201051,
+      "rssKiB": 1430972,
+      "cpuPercent": 106.7,
+      "externalIdleBaselineRssKiB": 1132576
+    },
+    {
+      "seconds": 38.35875715801376,
+      "rssKiB": 1408592,
+      "cpuPercent": 97.0,
+      "externalIdleBaselineRssKiB": 1132576
+    },
+    {
+      "seconds": 39.01132454400067,
+      "rssKiB": 1410468,
+      "cpuPercent": 123.7,
+      "externalIdleBaselineRssKiB": 1132576
+    },
+    {
+      "seconds": 39.666839219018584,
+      "rssKiB": 1446472,
+      "cpuPercent": 89.3,
+      "externalIdleBaselineRssKiB": 1132576
+    },
+    {
+      "seconds": 40.33148625100148,
+      "rssKiB": 1406784,
+      "cpuPercent": 124.39999999999999,
+      "externalIdleBaselineRssKiB": 1132576
+    },
+    {
+      "seconds": 40.99345738001284,
+      "rssKiB": 1420384,
+      "cpuPercent": 111.4,
+      "externalIdleBaselineRssKiB": 1132576
+    },
+    {
+      "seconds": 41.65115102002164,
+      "rssKiB": 1437508,
+      "cpuPercent": 104.7,
+      "externalIdleBaselineRssKiB": 1132576
+    },
+    {
+      "seconds": 42.28415580201545,
+      "rssKiB": 1434904,
+      "cpuPercent": 91.7,
+      "externalIdleBaselineRssKiB": 1132576
+    },
+    {
+      "seconds": 42.934205487021245,
+      "rssKiB": 1415152,
+      "cpuPercent": 119.8,
+      "externalIdleBaselineRssKiB": 1132576
+    },
+    {
+      "seconds": 43.629366806999315,
+      "rssKiB": 1425536,
+      "cpuPercent": 79.7,
+      "externalIdleBaselineRssKiB": 1132576
+    },
+    {
+      "seconds": 44.30915648501832,
+      "rssKiB": 1446388,
+      "cpuPercent": 410.2,
+      "externalIdleBaselineRssKiB": 1132688
+    },
+    {
+      "seconds": 45.045461664005416,
+      "rssKiB": 1718660,
+      "cpuPercent": 510.40000000000003,
+      "externalIdleBaselineRssKiB": 1132688
+    },
+    {
+      "seconds": 45.77324591300567,
+      "rssKiB": 1772408,
+      "cpuPercent": 646.1,
+      "externalIdleBaselineRssKiB": 1132688
+    },
+    {
+      "seconds": 46.476146199012874,
+      "rssKiB": 1774668,
+      "cpuPercent": 652.6,
+      "externalIdleBaselineRssKiB": 1132688
+    },
+    {
+      "seconds": 47.325608291022945,
+      "rssKiB": 1776104,
+      "cpuPercent": 707.6,
+      "externalIdleBaselineRssKiB": 1132688
+    },
+    {
+      "seconds": 48.013947541010566,
+      "rssKiB": 1740368,
+      "cpuPercent": 620.8000000000001,
+      "externalIdleBaselineRssKiB": 1132688
+    },
+    {
+      "seconds": 48.670185511000454,
+      "rssKiB": 21660,
+      "cpuPercent": 8.2,
+      "externalIdleBaselineRssKiB": 1132688
+    },
+    {
+      "seconds": 49.29408280699863,
+      "rssKiB": 55300,
+      "cpuPercent": 32.2,
+      "externalIdleBaselineRssKiB": 1132656
+    },
+    {
+      "seconds": 50.06655822999892,
+      "rssKiB": 55604,
+      "cpuPercent": 86.8,
+      "externalIdleBaselineRssKiB": 1132676
+    },
+    {
+      "seconds": 50.732008990016766,
+      "rssKiB": 25544,
+      "cpuPercent": 21.2,
+      "externalIdleBaselineRssKiB": 1132696
+    },
+    {
+      "seconds": 51.55594596400624,
+      "rssKiB": 108892,
+      "cpuPercent": 6.6,
+      "externalIdleBaselineRssKiB": 1132696
+    },
+    {
+      "seconds": 52.20023900701199,
+      "rssKiB": 37212,
+      "cpuPercent": 56.300000000000004,
+      "externalIdleBaselineRssKiB": 1134552
+    }
+  ],
+  "cleanup": {
+    "complete": true,
+    "errors": [],
+    "signals": [
+      {
+        "kind": "group",
+        "target": 4670,
+        "signal": 15,
+        "members": [
+          {
+            "pid": 4670,
+            "ppid": 4319,
+            "pgid": 4670,
+            "started": "Wed Sep 23 02:59:10 2026",
+            "cpu": 0.0,
+            "rssKiB": 9764,
+            "command": "/usr/local/Cellar/python@3.14/3.14.4/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python -B /Users/jiang/.codex/worktrees/b9ba/VideoCutEditor/video-worker/scripts/render-benchmark-adapter.py --settings /Users/jiang/.codex/worktrees/b9ba/VideoCutEditor/claude-code-video-toolkit/projects/render-parallel-20260923/evidence/benchmark-settings.json --run-dir /Users/jiang/.codex/worktrees/b9ba/VideoCutEditor/claude-code-video-toolkit/projects/render-parallel-benchmark-20260923/old_serial-1-cold --variant old_serial --slots 1 --step render"
+          },
+          {
+            "pid": 4913,
+            "ppid": 4670,
+            "pgid": 4670,
+            "started": "Wed Sep 23 03:00:02 2026",
+            "cpu": 0.2,
+            "rssKiB": 31196,
+            "command": "/usr/local/Cellar/python@3.14/3.14.4/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python -B /Users/jiang/.codex/worktrees/b9ba/VideoCutEditor/claude-code-video-toolkit/projects/render-parallel-20260923/evidence/benchmark-settings-baseline/tools/stage_media.py render --request /Users/jiang/.codex/worktrees/b9ba/VideoCutEditor/claude-code-video-toolkit/projects/render-parallel-benchmark-20260923/old_serial-1-cold/artifacts/task/render/render_001/request.json --node /Users/jiang/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node --modules /Users/jiang/Documents/VideoCutEditor/claude-code-video-toolkit/examples/hello-world/node_modules --browser /Applications/Google Chrome.app/Contents/MacOS/Google Chrome --scene scene_002 --project project/renderer --entry project/renderer/src/index.ts --composition FinanceScene-2 --props render/render_001/scene-02-props.json --frames 155"
+          }
+        ],
+        "status": "sent"
+      },
+      {
+        "kind": "group",
+        "target": 4922,
+        "signal": 15,
+        "members": [
+          {
+            "pid": 4922,
+            "ppid": 1,
+            "pgid": 4922,
+            "started": "Wed Sep 23 03:00:03 2026",
+            "cpu": 25.3,
+            "rssKiB": 479072,
+            "command": "/Users/jiang/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node /Users/jiang/.codex/worktrees/b9ba/VideoCutEditor/claude-code-video-toolkit/projects/render-parallel-20260923/evidence/benchmark-settings-baseline/tools/render_scene.cjs /Users/jiang/.codex/worktrees/b9ba/VideoCutEditor/claude-code-video-toolkit/projects/render-parallel-benchmark-20260923/old_serial-1-cold/artifacts/task/render/render_001/work/scene_002-s3ukkvv8/config.json"
+          },
+          {
+            "pid": 4931,
+            "ppid": 4922,
+            "pgid": 4922,
+            "started": "Wed Sep 23 03:00:04 2026",
+            "cpu": 0.1,
+            "rssKiB": 14368,
+            "command": "/Users/jiang/Documents/VideoCutEditor/claude-code-video-toolkit/examples/hello-world/node_modules/@esbuild/darwin-x64/bin/esbuild --service=0.25.0 --ping"
+          },
+          {
+            "pid": 4971,
+            "ppid": 4922,
+            "pgid": 4922,
+            "started": "Wed Sep 23 03:00:09 2026",
+            "cpu": 0.0,
+            "rssKiB": 3596,
+            "command": "/Users/jiang/Documents/VideoCutEditor/claude-code-video-toolkit/examples/hello-world/node_modules/@remotion/compositor-darwin-x64/remotion {\"nonce\":\"foc69ort1vf6td80d9dta\",\"payload\":{\"type\":\"StartLongRunningProcess\",\"params\":{\"concurrency\":2,\"maximum_frame_cache_size_in_bytes\":null,\"verbose\":false}}}"
+          }
+        ],
+        "status": "sent"
+      },
+      {
+        "kind": "group",
+        "target": 4947,
+        "signal": 15,
+        "members": [
+          {
+            "pid": 4947,
+            "ppid": 4922,
+            "pgid": 4947,
+            "started": "Wed Sep 23 03:00:07 2026",
+            "cpu": 0.0,
+            "rssKiB": 0,
+            "command": "(Google Chrome)"
+          },
+          {
+            "pid": 4956,
+            "ppid": 4947,
+            "pgid": 4947,
+            "started": "Wed Sep 23 03:00:08 2026",
+            "cpu": 0.0,
+            "rssKiB": 0,
+            "command": "(Google Chrome He)"
+          },
+          {
+            "pid": 4957,
+            "ppid": 4947,
+            "pgid": 4947,
+            "started": "Wed Sep 23 03:00:08 2026",
+            "cpu": 0.0,
+            "rssKiB": 0,
+            "command": "(Google Chrome He)"
+          },
+          {
+            "pid": 4959,
+            "ppid": 4947,
+            "pgid": 4947,
+            "started": "Wed Sep 23 03:00:08 2026",
+            "cpu": 0.0,
+            "rssKiB": 0,
+            "command": "(Google Chrome He)"
+          },
+          {
+            "pid": 4964,
+            "ppid": 4947,
+            "pgid": 4947,
+            "started": "Wed Sep 23 03:00:08 2026",
+            "cpu": 0.0,
+            "rssKiB": 0,
+            "command": "(Google Chrome He)"
+          },
+          {
+            "pid": 4965,
+            "ppid": 4947,
+            "pgid": 4947,
+            "started": "Wed Sep 23 03:00:08 2026",
+            "cpu": 0.0,
+            "rssKiB": 0,
+            "command": "(Google Chrome He)"
+          },
+          {
+            "pid": 4973,
+            "ppid": 4947,
+            "pgid": 4947,
+            "started": "Wed Sep 23 03:00:09 2026",
+            "cpu": 0.0,
+            "rssKiB": 0,
+            "command": "(Google Chrome He)"
+          }
+        ],
+        "status": "already_exited"
+      },
+      {
+        "kind": "group",
+        "target": 4922,
+        "signal": 9,
+        "members": [
+          {
+            "pid": 4922,
+            "ppid": 1,
+            "pgid": 4922,
+            "started": "Wed Sep 23 03:00:03 2026",
+            "cpu": 12.5,
+            "rssKiB": 459884,
+            "command": "/Users/jiang/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node /Users/jiang/.codex/worktrees/b9ba/VideoCutEditor/claude-code-video-toolkit/projects/render-parallel-20260923/evidence/benchmark-settings-baseline/tools/render_scene.cjs /Users/jiang/.codex/worktrees/b9ba/VideoCutEditor/claude-code-video-toolkit/projects/render-parallel-benchmark-20260923/old_serial-1-cold/artifacts/task/render/render_001/work/scene_002-s3ukkvv8/config.json"
+          }
+        ],
+        "status": "sent"
+      },
+      {
+        "kind": "group",
+        "target": 4988,
+        "signal": 9,
+        "members": [
+          {
+            "pid": 4988,
+            "ppid": 4922,
+            "pgid": 4988,
+            "started": "Wed Sep 23 03:00:11 2026",
+            "cpu": 52.1,
+            "rssKiB": 165220,
+            "command": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome about:blank --allow-pre-commit-input --disable-background-networking --enable-features=NetworkService,NetworkServiceInProcess --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-default-apps --disable-dev-shm-usage --no-proxy-server --proxy-server='direct://' --proxy-bypass-list=* --force-gpu-mem-available-mb=4096 --disable-hang-monitor --disable-extensions --allow-chrome-scheme-url --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --disable-sync --force-color-profile=srgb --metrics-recording-only --mute-audio --no-first-run --video-threads=1 --enable-automation --password-store=basic --use-mock-keychain --enable-blink-features=IdleDetection --export-tagged-pdf --intensive-wake-up-throttling-policy=0 --headless=old --no-sandbox --disable-setuid-sandbox --disable-background-media-suspend --allow-running-insecure-content --disable-component-update --disable-domain-reliability --disable-features=AudioServiceOutOfProcess,IsolateOrigins,site-per-process,Translate,BackForwardCache,AvoidUnnecessaryBeforeUnloadCheckSync,IntensiveWakeUpThrottling,LocalNetworkAccessChecks,BlockInsecurePrivateNetworkRequests,PrivateNetworkAccessSendPreflights,PrivateNetworkAccessRespectPreflightResults --disable-print-preview --disable-site-isolation-trials --disk-cache-size=268435456 --hide-scrollbars --no-default-browser-check --no-pings --font-render-hinting=none --no-zygote --ignore-gpu-blocklist --enable-unsafe-webgpu --force-device-scale-factor=1 --remote-debugging-port=0 --user-data-dir=/Users/jiang/.codex/worktrees/b9ba/VideoCutEditor/claude-code-video-toolkit/projects/render-parallel-benchmark-20260923/old_serial-1-cold/artifacts/task/render/render_001/work/scene_002-s3ukkvv8/runtime/puppeteer_dev_chrome_profile-cJe8S1"
+          },
+          {
+            "pid": 4993,
+            "ppid": 4988,
+            "pgid": 4988,
+            "started": "Wed Sep 23 03:00:11 2026",
+            "cpu": 33.6,
+            "rssKiB": 163064,
+            "command": "/Applications/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/153.0.8010.53/Helpers/Google Chrome Helper.app/Contents/MacOS/Google Chrome Helper --type=gpu-process --no-sandbox --disable-breakpad --headless=old --metrics-client-id=22d42e76-dec7-46c9-bb07-a51d41bf157f --noerrdialogs --user-data-dir=/Users/jiang/.codex/worktrees/b9ba/VideoCutEditor/claude-code-video-toolkit/projects/render-parallel-benchmark-20260923/old_serial-1-cold/artifacts/task/render/render_001/work/scene_002-s3ukkvv8/runtime/puppeteer_dev_chrome_profile-cJe8S1 --gpu-preferences=WAAAAAAAAAAgAQAMAAAAAAAAAAAAAGAAQAAAAAAAAAADAAAAAAAAADgAAAAAAAAAAAAAAAAAAAAGAAAAAAAAAAAAAAAAAAAAKAAAAAAAAAAoAAAAAAAAAAgAAAAAAAAADAAAAAEAAAAAAAAAAAAAAAgAAAAAAAAACAAAAAAAAAA= --shared-files --field-trial-handle=1718379636,r,16478363022436386071,16284203153740509113,262144 --enable-features=NetworkService,NetworkServiceInProcess --disable-features=AudioServiceOutOfProcess,AvoidUnnecessaryBeforeUnloadCheckSync,BackForwardCache,BlockInsecurePrivateNetworkRequests,IntensiveWakeUpThrottling,IsolateOrigins,LocalNetworkAccessChecks,PaintHolding,PrivateNetworkAccessRespectPreflightResults,PrivateNetworkAccessSendPreflights,Translate,site-per-process --variations-seed-version --pseudonymization-salt-handle=1935764596,r,8047149696385843662,807739389007198725,4 --trace-process-track-uuid=3190708988185955192"
+          },
+          {
+            "pid": 4994,
+            "ppid": 4988,
+            "pgid": 4988,
+            "started": "Wed Sep 23 03:00:11 2026",
+            "cpu": 0.0,
+            "rssKiB": 47104,
+            "command": "/Applications/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/153.0.8010.53/Helpers/Google Chrome Helper.app/Contents/MacOS/Google Chrome Helper --type=utility --utility-sub-type=network.mojom.NetworkService --lang=zh-CN --service-sandbox-type=network --no-sandbox --mute-audio --metrics-client-id=22d42e76-dec7-46c9-bb07-a51d41bf157f --noerrdialogs --user-data-dir=/Users/jiang/.codex/worktrees/b9ba/VideoCutEditor/claude-code-video-toolkit/projects/render-parallel-benchmark-20260923/old_serial-1-cold/artifacts/task/render/render_001/work/scene_002-s3ukkvv8/runtime/puppeteer_dev_chrome_profile-cJe8S1 --shared-files --field-trial-handle=1718379636,r,16478363022436386071,16284203153740509113,262144 --enable-features=NetworkService,NetworkServiceInProcess --disable-features=AudioServiceOutOfProcess,AvoidUnnecessaryBeforeUnloadCheckSync,BackForwardCache,BlockInsecurePrivateNetworkRequests,IntensiveWakeUpThrottling,IsolateOrigins,LocalNetworkAccessChecks,PaintHolding,PrivateNetworkAccessRespectPreflightResults,PrivateNetworkAccessSendPreflights,Translate,site-per-process --variations-seed-version --pseudonymization-salt-handle=1935764596,r,8047149696385843662,807739389007198725,4 --trace-process-track-uuid=3190708989122997041"
+          },
+          {
+            "pid": 4996,
+            "ppid": 4988,
+            "pgid": 4988,
+            "started": "Wed Sep 23 03:00:11 2026",
+            "cpu": 0.0,
+            "rssKiB": 32528,
+            "command": "/Applications/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/153.0.8010.53/Helpers/Google Chrome Helper.app/Contents/MacOS/Google Chrome Helper --type=utility --utility-sub-type=storage.mojom.StorageService --lang=zh-CN --service-sandbox-type=service --no-sandbox --mute-audio --metrics-client-id=22d42e76-dec7-46c9-bb07-a51d41bf157f --noerrdialogs --user-data-dir=/Users/jiang/.codex/worktrees/b9ba/VideoCutEditor/claude-code-video-toolkit/projects/render-parallel-benchmark-20260923/old_serial-1-cold/artifacts/task/render/render_001/work/scene_002-s3ukkvv8/runtime/puppeteer_dev_chrome_profile-cJe8S1 --shared-files --field-trial-handle=1718379636,r,16478363022436386071,16284203153740509113,262144 --enable-features=NetworkService,NetworkServiceInProcess --disable-features=AudioServiceOutOfProcess,AvoidUnnecessaryBeforeUnloadCheckSync,BackForwardCache,BlockInsecurePrivateNetworkRequests,IntensiveWakeUpThrottling,IsolateOrigins,LocalNetworkAccessChecks,PaintHolding,PrivateNetworkAccessRespectPreflightResults,PrivateNetworkAccessSendPreflights,Translate,site-per-process --variations-seed-version --pseudonymization-salt-handle=1935764596,r,8047149696385843662,807739389007198725,4 --trace-process-track-uuid=3190708990060038890"
+          },
+          {
+            "pid": 4998,
+            "ppid": 4988,
+            "pgid": 4988,
+            "started": "Wed Sep 23 03:00:12 2026",
+            "cpu": 0.0,
+            "rssKiB": 121636,
+            "command": "/Applications/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/153.0.8010.53/Helpers/Google Chrome Helper (Renderer).app/Contents/MacOS/Google Chrome Helper (Renderer) --type=renderer --top-chrome-webui --metrics-client-id=22d42e76-dec7-46c9-bb07-a51d41bf157f --noerrdialogs --user-data-dir=/Users/jiang/.codex/worktrees/b9ba/VideoCutEditor/claude-code-video-toolkit/projects/render-parallel-benchmark-20260923/old_serial-1-cold/artifacts/task/render/render_001/work/scene_002-s3ukkvv8/runtime/puppeteer_dev_chrome_profile-cJe8S1 --disable-print-preview --no-sandbox --disable-background-timer-throttling --disable-breakpad --disable-background-media-suspend --enable-automation --enable-unsafe-webgpu --force-device-scale-factor=1 --force-color-profile=srgb --no-zygote --remote-debugging-port=0 --video-threads=1 --allow-pre-commit-input --force-gpu-mem-available-mb=4096 --enable-blink-features=IdleDetection --lang=zh-CN --num-raster-threads=4 --enable-zero-copy --enable-gpu-memory-buffer-compositor-resources --enable-main-frame-before-activation --renderer-client-id=6 --launch-time-ticks=218623240189 --shared-files --field-trial-handle=1718379636,r,16478363022436386071,16284203153740509113,262144 --enable-features=NetworkService,NetworkServiceInProcess --disable-features=AudioServiceOutOfProcess,AvoidUnnecessaryBeforeUnloadCheckSync,BackForwardCache,BlockInsecurePrivateNetworkRequests,IntensiveWakeUpThrottling,IsolateOrigins,LocalNetworkAccessChecks,PaintHolding,PrivateNetworkAccessRespectPreflightResults,PrivateNetworkAccessSendPreflights,Translate,site-per-process --variations-seed-version --pseudonymization-salt-handle=1935764596,r,8047149696385843662,807739389007198725,4 --trace-process-track-uuid=3190708991934122588"
+          },
+          {
+            "pid": 5000,
+            "ppid": 4988,
+            "pgid": 4988,
+            "started": "Wed Sep 23 03:00:12 2026",
+            "cpu": 0.0,
+            "rssKiB": 58384,
+            "command": "/Applications/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/153.0.8010.53/Helpers/Google Chrome Helper (Renderer).app/Contents/MacOS/Google Chrome Helper (Renderer) --type=renderer --metrics-client-id=22d42e76-dec7-46c9-bb07-a51d41bf157f --noerrdialogs --user-data-dir=/Users/jiang/.codex/worktrees/b9ba/VideoCutEditor/claude-code-video-toolkit/projects/render-parallel-benchmark-20260923/old_serial-1-cold/artifacts/task/render/render_001/work/scene_002-s3ukkvv8/runtime/puppeteer_dev_chrome_profile-cJe8S1 --disable-print-preview --no-sandbox --disable-background-timer-throttling --disable-breakpad --disable-background-media-suspend --enable-automation --enable-unsafe-webgpu --force-device-scale-factor=1 --force-color-profile=srgb --no-zygote --remote-debugging-port=0 --video-threads=1 --allow-pre-commit-input --force-gpu-mem-available-mb=4096 --enable-blink-features=IdleDetection --lang=zh-CN --num-raster-threads=4 --enable-zero-copy --enable-gpu-memory-buffer-compositor-resources --enable-main-frame-before-activation --renderer-client-id=7 --launch-time-ticks=218623348767 --shared-files --field-trial-handle=1718379636,r,16478363022436386071,16284203153740509113,262144 --enable-features=NetworkService,NetworkServiceInProcess --disable-features=AudioServiceOutOfProcess,AvoidUnnecessaryBeforeUnloadCheckSync,BackForwardCache,BlockInsecurePrivateNetworkRequests,IntensiveWakeUpThrottling,IsolateOrigins,LocalNetworkAccessChecks,PaintHolding,PrivateNetworkAccessRespectPreflightResults,PrivateNetworkAccessSendPreflights,Translate,site-per-process --variations-seed-version --pseudonymization-salt-handle=1935764596,r,8047149696385843662,807739389007198725,4 --trace-process-track-uuid=3190708992871164437"
+          },
+          {
+            "pid": 5002,
+            "ppid": 4988,
+            "pgid": 4988,
+            "started": "Wed Sep 23 03:00:12 2026",
+            "cpu": 12.6,
+            "rssKiB": 238020,
+            "command": "/Applications/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/153.0.8010.53/Helpers/Google Chrome Helper (Renderer).app/Contents/MacOS/Google Chrome Helper (Renderer) --type=renderer --metrics-client-id=22d42e76-dec7-46c9-bb07-a51d41bf157f --noerrdialogs --user-data-dir=/Users/jiang/.codex/worktrees/b9ba/VideoCutEditor/claude-code-video-toolkit/projects/render-parallel-benchmark-20260923/old_serial-1-cold/artifacts/task/render/render_001/work/scene_002-s3ukkvv8/runtime/puppeteer_dev_chrome_profile-cJe8S1 --disable-print-preview --no-sandbox --disable-background-timer-throttling --disable-breakpad --disable-background-media-suspend --enable-automation --enable-unsafe-webgpu --force-device-scale-factor=1 --force-color-profile=srgb --no-zygote --remote-debugging-port=0 --video-threads=1 --allow-pre-commit-input --force-gpu-mem-available-mb=4096 --enable-blink-features=IdleDetection --lang=zh-CN --num-raster-threads=4 --enable-zero-copy --enable-gpu-memory-buffer-compositor-resources --enable-main-frame-before-activation --renderer-client-id=8 --launch-time-ticks=218623628600 --shared-files --field-trial-handle=1718379636,r,16478363022436386071,16284203153740509113,262144 --enable-features=NetworkService,NetworkServiceInProcess --disable-features=AudioServiceOutOfProcess,AvoidUnnecessaryBeforeUnloadCheckSync,BackForwardCache,BlockInsecurePrivateNetworkRequests,IntensiveWakeUpThrottling,IsolateOrigins,LocalNetworkAccessChecks,PaintHolding,PrivateNetworkAccessRespectPreflightResults,PrivateNetworkAccessSendPreflights,Translate,site-per-process --variations-seed-version --pseudonymization-salt-handle=1935764596,r,8047149696385843662,807739389007198725,4 --trace-process-track-uuid=3190708993808206286"
+          }
+        ],
+        "status": "sent"
+      }
+    ],
+    "remainingProcesses": []
+  },
+  "executionError": null
+}

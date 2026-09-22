@@ -1,0 +1,183 @@
+{
+  "performanceConclusion": null,
+  "defaultMediaSlots": 1,
+  "blockedBy": "Repeated external media contention; protected original processes may not be stopped.",
+  "attempts": [
+    {
+      "attempt": "attempt-1",
+      "qualified": false,
+      "abort": "基准中止: external_media_contention；修复后用新 outputRoot 重跑，禁止纳入有效对照",
+      "externalWaitSeconds": 180.22976190201007,
+      "runs": [
+        {
+          "variant": "old_serial",
+          "condition": "cold",
+          "trial": 1,
+          "status": "external_media_contention",
+          "wallSeconds": 71.6675030660117,
+          "stages": [
+            {
+              "name": "prepare",
+              "wallSeconds": 0.7984777230012696,
+              "reason": null,
+              "exitCode": 0,
+              "peakAggregateRssKiB": 2444,
+              "peakCpuPercent": 0,
+              "blockers": [],
+              "cleanupComplete": true,
+              "cleanupErrors": []
+            },
+            {
+              "name": "freeze",
+              "wallSeconds": 0.7924103070108686,
+              "reason": null,
+              "exitCode": 0,
+              "peakAggregateRssKiB": 2492,
+              "peakCpuPercent": 0,
+              "blockers": [],
+              "cleanupComplete": true,
+              "cleanupErrors": []
+            },
+            {
+              "name": "render",
+              "wallSeconds": 70.07475235700258,
+              "reason": "external_media_contention",
+              "exitCode": -15,
+              "peakAggregateRssKiB": 1776104,
+              "peakCpuPercent": 707.6,
+              "blockers": [
+                {
+                  "pid": 43599,
+                  "started": "Tue Sep 22 21:46:42 2026",
+                  "cpu": 1.1
+                }
+              ],
+              "cleanupComplete": true,
+              "cleanupErrors": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "attempt": "attempt-2",
+      "qualified": false,
+      "abort": "基准中止: external_media_contention；修复后用新 outputRoot 重跑，禁止纳入有效对照",
+      "externalWaitSeconds": 361.3139569189807,
+      "runs": [
+        {
+          "variant": "old_serial",
+          "condition": "cold",
+          "trial": 1,
+          "status": "passed",
+          "wallSeconds": 1156.3349109370029,
+          "stages": [
+            {
+              "name": "prepare",
+              "wallSeconds": 0.7744621330057271,
+              "reason": null,
+              "exitCode": 0,
+              "peakAggregateRssKiB": 2476,
+              "peakCpuPercent": 0,
+              "blockers": [],
+              "cleanupComplete": true,
+              "cleanupErrors": []
+            },
+            {
+              "name": "freeze",
+              "wallSeconds": 0.7448627119883895,
+              "reason": null,
+              "exitCode": 0,
+              "peakAggregateRssKiB": 2048,
+              "peakCpuPercent": 0,
+              "blockers": [],
+              "cleanupComplete": true,
+              "cleanupErrors": []
+            },
+            {
+              "name": "render",
+              "wallSeconds": 958.1384271610004,
+              "reason": null,
+              "exitCode": 0,
+              "peakAggregateRssKiB": 1884020,
+              "peakCpuPercent": 739.5,
+              "blockers": [],
+              "cleanupComplete": true,
+              "cleanupErrors": []
+            },
+            {
+              "name": "assemble",
+              "wallSeconds": 8.606240057997638,
+              "reason": null,
+              "exitCode": 0,
+              "peakAggregateRssKiB": 39576,
+              "peakCpuPercent": 111.9,
+              "blockers": [],
+              "cleanupComplete": true,
+              "cleanupErrors": []
+            },
+            {
+              "name": "check",
+              "wallSeconds": 188.06595713400748,
+              "reason": null,
+              "exitCode": 0,
+              "peakAggregateRssKiB": 172228,
+              "peakCpuPercent": 691.9,
+              "blockers": [],
+              "cleanupComplete": true,
+              "cleanupErrors": []
+            }
+          ]
+        },
+        {
+          "variant": "old_serial",
+          "condition": "warm",
+          "trial": 1,
+          "status": "external_media_contention",
+          "wallSeconds": 244.27152432501316,
+          "stages": [
+            {
+              "name": "prepare",
+              "wallSeconds": 0.7727152860024944,
+              "reason": null,
+              "exitCode": 0,
+              "peakAggregateRssKiB": 2188,
+              "peakCpuPercent": 0,
+              "blockers": [],
+              "cleanupComplete": true,
+              "cleanupErrors": []
+            },
+            {
+              "name": "freeze",
+              "wallSeconds": 0.7597784230019897,
+              "reason": null,
+              "exitCode": 0,
+              "peakAggregateRssKiB": 1856,
+              "peakCpuPercent": 0,
+              "blockers": [],
+              "cleanupComplete": true,
+              "cleanupErrors": []
+            },
+            {
+              "name": "render",
+              "wallSeconds": 242.73675956000807,
+              "reason": "external_media_contention",
+              "exitCode": -15,
+              "peakAggregateRssKiB": 1852336,
+              "peakCpuPercent": 734.7,
+              "blockers": [
+                {
+                  "pid": 63332,
+                  "started": "Tue Sep 22 23:36:01 2026",
+                  "cpu": 4.8
+                }
+              ],
+              "cleanupComplete": true,
+              "cleanupErrors": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

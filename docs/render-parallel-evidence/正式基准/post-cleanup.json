@@ -1,0 +1,92 @@
+{
+  "at": 1790105458.854353,
+  "ownRenderResidue": [],
+  "originalBaselineAliveCount": 21,
+  "originalBaselineSignatures": [
+    {
+      "pid": 43599,
+      "started": "Tue Sep 22 21:46:42 2026"
+    },
+    {
+      "pid": 43622,
+      "started": "Tue Sep 22 21:46:42 2026"
+    },
+    {
+      "pid": 43623,
+      "started": "Tue Sep 22 21:46:42 2026"
+    },
+    {
+      "pid": 43624,
+      "started": "Tue Sep 22 21:46:42 2026"
+    },
+    {
+      "pid": 43628,
+      "started": "Tue Sep 22 21:46:43 2026"
+    },
+    {
+      "pid": 43629,
+      "started": "Tue Sep 22 21:46:43 2026"
+    },
+    {
+      "pid": 43688,
+      "started": "Tue Sep 22 21:46:52 2026"
+    },
+    {
+      "pid": 57824,
+      "started": "Tue Sep 22 23:06:03 2026"
+    },
+    {
+      "pid": 57835,
+      "started": "Tue Sep 22 23:06:05 2026"
+    },
+    {
+      "pid": 57836,
+      "started": "Tue Sep 22 23:06:05 2026"
+    },
+    {
+      "pid": 57838,
+      "started": "Tue Sep 22 23:06:05 2026"
+    },
+    {
+      "pid": 57845,
+      "started": "Tue Sep 22 23:06:06 2026"
+    },
+    {
+      "pid": 58021,
+      "started": "Tue Sep 22 23:06:07 2026"
+    },
+    {
+      "pid": 58207,
+      "started": "Tue Sep 22 23:06:21 2026"
+    },
+    {
+      "pid": 63332,
+      "started": "Tue Sep 22 23:36:01 2026"
+    },
+    {
+      "pid": 63349,
+      "started": "Tue Sep 22 23:36:02 2026"
+    },
+    {
+      "pid": 63350,
+      "started": "Tue Sep 22 23:36:02 2026"
+    },
+    {
+      "pid": 63352,
+      "started": "Tue Sep 22 23:36:02 2026"
+    },
+    {
+      "pid": 63360,
+      "started": "Tue Sep 22 23:36:03 2026"
+    },
+    {
+      "pid": 63362,
+      "started": "Tue Sep 22 23:36:03 2026"
+    },
+    {
+      "pid": 63373,
+      "started": "Tue Sep 22 23:36:05 2026"
+    }
+  ],
+  "note": "只读核对；未向原进程发信号。"
+}
