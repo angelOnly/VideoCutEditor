@@ -1,0 +1,23 @@
+{
+  "observedAt": 1790097999.989411,
+  "processes": [
+    {
+      "pid": 43599,
+      "ppid": 1,
+      "pgid": 43599,
+      "started": "Tue Sep 22 21:46:42 2026",
+      "cpu": 7.9,
+      "rssKiB": 109100,
+      "command": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome about:blank --allow-pre-commit-input --disable-background-networking --enable-features=NetworkService,NetworkServiceInProcess --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-default-apps --disable-dev-shm-usage --no-proxy-server --proxy-server='direct://' --proxy-bypass-list=* --force-gpu-mem-available-mb=4096 --disable-hang-monitor --disable-extensions --allow-chrome-scheme-url --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --disable-sync --force-color-profile=srgb --metrics-recording-only --mute-audio --no-first-run --video-threads=1 --enable-automation --password-store=basic --use-mock-keychain --enable-blink-features=IdleDetection --export-tagged-pdf --intensive-wake-up-throttling-policy=0 --headless=old --no-sandbox --disable-setuid-sandbox --disable-background-media-suspend --allow-running-insecure-content --disable-component-update --disable-domain-reliability --disable-features=AudioServiceOutOfProcess,IsolateOrigins,site-per-process,Translate,BackForwardCache,AvoidUnnecessaryBeforeUnloadCheckSync,IntensiveWakeUpThrottling,LocalNetworkAccessChecks,BlockInsecurePrivateNetworkRequests,PrivateNetworkAccessSendPreflights,PrivateNetworkAccessRespectPreflightResults --disable-print-preview --disable-site-isolation-trials --disk-cache-size=268435456 --hide-scrollbars --no-default-browser-check --no-pings --font-render-hinting=none --no-zygote --ignore-gpu-blocklist --enable-unsafe-webgpu --remote-debugging-port=0 --user-data-dir=/Users/jiang/Documents/VideoCutEditor/claude-code-video-toolkit/projects/local-two-stage-tests/full-retest-20260922/render/render_001/work/scene_011-m5gu12k1/runtime/puppeteer_dev_chrome_profile-thUrqZ"
+    },
+    {
+      "pid": 43629,
+      "ppid": 43599,
+      "pgid": 43599,
+      "started": "Tue Sep 22 21:46:43 2026",
+      "cpu": 2.3,
+      "rssKiB": 41796,
+      "command": "/Applications/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/153.0.8010.53/Helpers/Google Chrome Helper (Renderer).app/Contents/MacOS/Google Chrome Helper (Renderer) --type=renderer --noerrdialogs --user-data-dir=/Users/jiang/Documents/VideoCutEditor/claude-code-video-toolkit/projects/local-two-stage-tests/full-retest-20260922/render/render_001/work/scene_011-m5gu12k1/runtime/puppeteer_dev_chrome_profile-thUrqZ --disable-print-preview --no-sandbox --disable-background-timer-throttling --disable-breakpad --disable-background-media-suspend --enable-automation --enable-unsafe-webgpu --force-color-profile=srgb --no-zygote --remote-debugging-port=0 --video-threads=1 --allow-pre-commit-input --force-gpu-mem-available-mb=4096 --enable-blink-features=IdleDetection --lang=zh-CN --num-raster-threads=4 --enable-zero-copy --enable-gpu-memory-buffer-compositor-resources --enable-main-frame-before-activation --renderer-client-id=7 --launch-time-ticks=199814668808 --shared-files --field-trial-handle=1718379636,r,17694583496689278159,8115090587716838209,262144 --enable-features=NetworkService,NetworkServiceInProcess --disable-features=AudioServiceOutOfProcess,AvoidUnnecessaryBeforeUnloadCheckSync,BackForwardCache,BlockInsecurePrivateNetworkRequests,IntensiveWakeUpThrottling,IsolateOrigins,LocalNetworkAccessChecks,PaintHolding,PrivateNetworkAccessRespectPreflightResults,PrivateNetworkAccessSendPreflights,Translate,site-per-process --variations-seed-version --pseudonymization-salt-handle=1935764596,r,9450456924415775980,6687478316565948697,4 --trace-process-track-uuid=3190708992871164437"
+    }
+  ]
+}

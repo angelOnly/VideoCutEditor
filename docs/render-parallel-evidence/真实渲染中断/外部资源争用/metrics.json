@@ -1,0 +1,876 @@
+{
+  "argv": [
+    "/Users/jiang/Documents/VideoCutEditor/video-worker/.venv/bin/python3",
+    "-B",
+    "projects/render-parallel-20260923/cache/render-and-audit.py"
+  ],
+  "exitCode": 1,
+  "reason": "external_media_contention",
+  "wallSeconds": 110.08025888298289,
+  "blockingProcesses": [
+    {
+      "pid": 43599,
+      "ppid": 1,
+      "pgid": 43599,
+      "started": "Tue Sep 22 21:46:42 2026",
+      "cpu": 7.9,
+      "rssKiB": 109100,
+      "command": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome about:blank --allow-pre-commit-input --disable-background-networking --enable-features=NetworkService,NetworkServiceInProcess --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-default-apps --disable-dev-shm-usage --no-proxy-server --proxy-server='direct://' --proxy-bypass-list=* --force-gpu-mem-available-mb=4096 --disable-hang-monitor --disable-extensions --allow-chrome-scheme-url --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --disable-sync --force-color-profile=srgb --metrics-recording-only --mute-audio --no-first-run --video-threads=1 --enable-automation --password-store=basic --use-mock-keychain --enable-blink-features=IdleDetection --export-tagged-pdf --intensive-wake-up-throttling-policy=0 --headless=old --no-sandbox --disable-setuid-sandbox --disable-background-media-suspend --allow-running-insecure-content --disable-component-update --disable-domain-reliability --disable-features=AudioServiceOutOfProcess,IsolateOrigins,site-per-process,Translate,BackForwardCache,AvoidUnnecessaryBeforeUnloadCheckSync,IntensiveWakeUpThrottling,LocalNetworkAccessChecks,BlockInsecurePrivateNetworkRequests,PrivateNetworkAccessSendPreflights,PrivateNetworkAccessRespectPreflightResults --disable-print-preview --disable-site-isolation-trials --disk-cache-size=268435456 --hide-scrollbars --no-default-browser-check --no-pings --font-render-hinting=none --no-zygote --ignore-gpu-blocklist --enable-unsafe-webgpu --remote-debugging-port=0 --user-data-dir=/Users/jiang/Documents/VideoCutEditor/claude-code-video-toolkit/projects/local-two-stage-tests/full-retest-20260922/render/render_001/work/scene_011-m5gu12k1/runtime/puppeteer_dev_chrome_profile-thUrqZ"
+    },
+    {
+      "pid": 43629,
+      "ppid": 43599,
+      "pgid": 43599,
+      "started": "Tue Sep 22 21:46:43 2026",
+      "cpu": 2.3,
+      "rssKiB": 41796,
+      "command": "/Applications/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/153.0.8010.53/Helpers/Google Chrome Helper (Renderer).app/Contents/MacOS/Google Chrome Helper (Renderer) --type=renderer --noerrdialogs --user-data-dir=/Users/jiang/Documents/VideoCutEditor/claude-code-video-toolkit/projects/local-two-stage-tests/full-retest-20260922/render/render_001/work/scene_011-m5gu12k1/runtime/puppeteer_dev_chrome_profile-thUrqZ --disable-print-preview --no-sandbox --disable-background-timer-throttling --disable-breakpad --disable-background-media-suspend --enable-automation --enable-unsafe-webgpu --force-color-profile=srgb --no-zygote --remote-debugging-port=0 --video-threads=1 --allow-pre-commit-input --force-gpu-mem-available-mb=4096 --enable-blink-features=IdleDetection --lang=zh-CN --num-raster-threads=4 --enable-zero-copy --enable-gpu-memory-buffer-compositor-resources --enable-main-frame-before-activation --renderer-client-id=7 --launch-time-ticks=199814668808 --shared-files --field-trial-handle=1718379636,r,17694583496689278159,8115090587716838209,262144 --enable-features=NetworkService,NetworkServiceInProcess --disable-features=AudioServiceOutOfProcess,AvoidUnnecessaryBeforeUnloadCheckSync,BackForwardCache,BlockInsecurePrivateNetworkRequests,IntensiveWakeUpThrottling,IsolateOrigins,LocalNetworkAccessChecks,PaintHolding,PrivateNetworkAccessRespectPreflightResults,PrivateNetworkAccessSendPreflights,Translate,site-per-process --variations-seed-version --pseudonymization-salt-handle=1935764596,r,9450456924415775980,6687478316565948697,4 --trace-process-track-uuid=3190708992871164437"
+    }
+  ],
+  "peakAggregateRssKiB": 2366184,
+  "peakCpuPercent": 727.9,
+  "externalIdleBaselinePeakRssKiB": 1134216,
+  "sampledCpuSecondsEstimate": 272.6579496486878,
+  "samples": [
+    {
+      "seconds": 0.12840254697948694,
+      "rssKiB": 1928,
+      "cpuPercent": 0.0,
+      "externalIdleBaselineRssKiB": 1120912
+    },
+    {
+      "seconds": 0.7513069639971945,
+      "rssKiB": 53928,
+      "cpuPercent": 87.6,
+      "externalIdleBaselineRssKiB": 1120912
+    },
+    {
+      "seconds": 1.3858314989774954,
+      "rssKiB": 51188,
+      "cpuPercent": 99.4,
+      "externalIdleBaselineRssKiB": 1120912
+    },
+    {
+      "seconds": 2.0277777689916547,
+      "rssKiB": 122884,
+      "cpuPercent": 96.69999999999999,
+      "externalIdleBaselineRssKiB": 1120912
+    },
+    {
+      "seconds": 2.656400023988681,
+      "rssKiB": 198308,
+      "cpuPercent": 104.0,
+      "externalIdleBaselineRssKiB": 1120912
+    },
+    {
+      "seconds": 3.2941492149839178,
+      "rssKiB": 331580,
+      "cpuPercent": 202.4,
+      "externalIdleBaselineRssKiB": 1120912
+    },
+    {
+      "seconds": 3.9405769089935347,
+      "rssKiB": 388584,
+      "cpuPercent": 221.1,
+      "externalIdleBaselineRssKiB": 1120916
+    },
+    {
+      "seconds": 4.572086415981175,
+      "rssKiB": 463636,
+      "cpuPercent": 212.1,
+      "externalIdleBaselineRssKiB": 1120916
+    },
+    {
+      "seconds": 5.184188204002567,
+      "rssKiB": 52772,
+      "cpuPercent": 11.8,
+      "externalIdleBaselineRssKiB": 1120916
+    },
+    {
+      "seconds": 5.801250024000183,
+      "rssKiB": 51824,
+      "cpuPercent": 88.5,
+      "externalIdleBaselineRssKiB": 1120916
+    },
+    {
+      "seconds": 6.43424186098855,
+      "rssKiB": 60820,
+      "cpuPercent": 88.4,
+      "externalIdleBaselineRssKiB": 1120916
+    },
+    {
+      "seconds": 7.086103043984622,
+      "rssKiB": 96088,
+      "cpuPercent": 120.7,
+      "externalIdleBaselineRssKiB": 1120916
+    },
+    {
+      "seconds": 7.731554502999643,
+      "rssKiB": 271372,
+      "cpuPercent": 161.0,
+      "externalIdleBaselineRssKiB": 1120916
+    },
+    {
+      "seconds": 8.432584465976106,
+      "rssKiB": 692200,
+      "cpuPercent": 277.4,
+      "externalIdleBaselineRssKiB": 1120916
+    },
+    {
+      "seconds": 9.401051633991301,
+      "rssKiB": 1080252,
+      "cpuPercent": 340.8,
+      "externalIdleBaselineRssKiB": 1120932
+    },
+    {
+      "seconds": 10.052704649977386,
+      "rssKiB": 1250600,
+      "cpuPercent": 84.9,
+      "externalIdleBaselineRssKiB": 1120932
+    },
+    {
+      "seconds": 10.709464327985188,
+      "rssKiB": 1320980,
+      "cpuPercent": 94.2,
+      "externalIdleBaselineRssKiB": 1120932
+    },
+    {
+      "seconds": 11.361271328001749,
+      "rssKiB": 1166948,
+      "cpuPercent": 42.8,
+      "externalIdleBaselineRssKiB": 1120932
+    },
+    {
+      "seconds": 12.025208079983713,
+      "rssKiB": 1175224,
+      "cpuPercent": 35.4,
+      "externalIdleBaselineRssKiB": 1120932
+    },
+    {
+      "seconds": 12.679705136979464,
+      "rssKiB": 1176308,
+      "cpuPercent": 6.8,
+      "externalIdleBaselineRssKiB": 1120932
+    },
+    {
+      "seconds": 13.364916991995415,
+      "rssKiB": 1191456,
+      "cpuPercent": 31.0,
+      "externalIdleBaselineRssKiB": 1120932
+    },
+    {
+      "seconds": 14.04050072497921,
+      "rssKiB": 1193792,
+      "cpuPercent": 4.0,
+      "externalIdleBaselineRssKiB": 1120980
+    },
+    {
+      "seconds": 14.768630787002621,
+      "rssKiB": 1276236,
+      "cpuPercent": 81.3,
+      "externalIdleBaselineRssKiB": 1120980
+    },
+    {
+      "seconds": 15.451299291977193,
+      "rssKiB": 1405252,
+      "cpuPercent": 132.7,
+      "externalIdleBaselineRssKiB": 1120980
+    },
+    {
+      "seconds": 16.12877603797824,
+      "rssKiB": 1499540,
+      "cpuPercent": 108.7,
+      "externalIdleBaselineRssKiB": 1120980
+    },
+    {
+      "seconds": 16.800050149002345,
+      "rssKiB": 1489716,
+      "cpuPercent": 69.8,
+      "externalIdleBaselineRssKiB": 1120980
+    },
+    {
+      "seconds": 17.462851119984407,
+      "rssKiB": 1521380,
+      "cpuPercent": 46.2,
+      "externalIdleBaselineRssKiB": 1120988
+    },
+    {
+      "seconds": 18.12850274099037,
+      "rssKiB": 1548440,
+      "cpuPercent": 50.5,
+      "externalIdleBaselineRssKiB": 1120988
+    },
+    {
+      "seconds": 18.81512288498925,
+      "rssKiB": 1573244,
+      "cpuPercent": 134.4,
+      "externalIdleBaselineRssKiB": 1120988
+    },
+    {
+      "seconds": 19.465968295000494,
+      "rssKiB": 1566116,
+      "cpuPercent": 122.4,
+      "externalIdleBaselineRssKiB": 1120988
+    },
+    {
+      "seconds": 20.11292509100167,
+      "rssKiB": 1572908,
+      "cpuPercent": 121.3,
+      "externalIdleBaselineRssKiB": 1120988
+    },
+    {
+      "seconds": 20.811738349002553,
+      "rssKiB": 1615980,
+      "cpuPercent": 140.9,
+      "externalIdleBaselineRssKiB": 1120988
+    },
+    {
+      "seconds": 21.504256015003193,
+      "rssKiB": 1631768,
+      "cpuPercent": 150.5,
+      "externalIdleBaselineRssKiB": 1120988
+    },
+    {
+      "seconds": 22.2660731599899,
+      "rssKiB": 1637428,
+      "cpuPercent": 182.4,
+      "externalIdleBaselineRssKiB": 1120988
+    },
+    {
+      "seconds": 22.97830410199822,
+      "rssKiB": 1601460,
+      "cpuPercent": 169.5,
+      "externalIdleBaselineRssKiB": 1120988
+    },
+    {
+      "seconds": 23.698343686002772,
+      "rssKiB": 1673872,
+      "cpuPercent": 201.9,
+      "externalIdleBaselineRssKiB": 1120988
+    },
+    {
+      "seconds": 24.422576291981386,
+      "rssKiB": 1753952,
+      "cpuPercent": 222.6,
+      "externalIdleBaselineRssKiB": 1120988
+    },
+    {
+      "seconds": 25.200832161994185,
+      "rssKiB": 1760372,
+      "cpuPercent": 201.6,
+      "externalIdleBaselineRssKiB": 1120988
+    },
+    {
+      "seconds": 25.885734401002992,
+      "rssKiB": 1727692,
+      "cpuPercent": 150.1,
+      "externalIdleBaselineRssKiB": 1120956
+    },
+    {
+      "seconds": 26.589171150000766,
+      "rssKiB": 1700108,
+      "cpuPercent": 131.29999999999998,
+      "externalIdleBaselineRssKiB": 1120956
+    },
+    {
+      "seconds": 27.27492248598719,
+      "rssKiB": 1769824,
+      "cpuPercent": 168.0,
+      "externalIdleBaselineRssKiB": 1120956
+    },
+    {
+      "seconds": 28.031971575983334,
+      "rssKiB": 1759668,
+      "cpuPercent": 156.4,
+      "externalIdleBaselineRssKiB": 1120956
+    },
+    {
+      "seconds": 28.85252740298165,
+      "rssKiB": 1777832,
+      "cpuPercent": 216.0,
+      "externalIdleBaselineRssKiB": 1120960
+    },
+    {
+      "seconds": 29.550352595979348,
+      "rssKiB": 1775476,
+      "cpuPercent": 189.1,
+      "externalIdleBaselineRssKiB": 1120960
+    },
+    {
+      "seconds": 30.268061991984723,
+      "rssKiB": 1789080,
+      "cpuPercent": 216.4,
+      "externalIdleBaselineRssKiB": 1120960
+    },
+    {
+      "seconds": 30.989796465990366,
+      "rssKiB": 1792740,
+      "cpuPercent": 273.9,
+      "externalIdleBaselineRssKiB": 1120960
+    },
+    {
+      "seconds": 31.6832592819992,
+      "rssKiB": 1812964,
+      "cpuPercent": 264.2,
+      "externalIdleBaselineRssKiB": 1120960
+    },
+    {
+      "seconds": 32.396560355991824,
+      "rssKiB": 1788796,
+      "cpuPercent": 241.1,
+      "externalIdleBaselineRssKiB": 1120960
+    },
+    {
+      "seconds": 33.119330428977264,
+      "rssKiB": 1822496,
+      "cpuPercent": 264.9,
+      "externalIdleBaselineRssKiB": 1120960
+    },
+    {
+      "seconds": 33.8698247759894,
+      "rssKiB": 1790456,
+      "cpuPercent": 291.8,
+      "externalIdleBaselineRssKiB": 1120960
+    },
+    {
+      "seconds": 34.5379843589908,
+      "rssKiB": 1787684,
+      "cpuPercent": 230.1,
+      "externalIdleBaselineRssKiB": 1120960
+    },
+    {
+      "seconds": 35.23564820698812,
+      "rssKiB": 1801604,
+      "cpuPercent": 256.6,
+      "externalIdleBaselineRssKiB": 1120960
+    },
+    {
+      "seconds": 35.931710197997745,
+      "rssKiB": 1796148,
+      "cpuPercent": 270.9,
+      "externalIdleBaselineRssKiB": 1120960
+    },
+    {
+      "seconds": 36.63541239200276,
+      "rssKiB": 1811860,
+      "cpuPercent": 263.8,
+      "externalIdleBaselineRssKiB": 1120960
+    },
+    {
+      "seconds": 37.37075637097587,
+      "rssKiB": 1815724,
+      "cpuPercent": 273.1,
+      "externalIdleBaselineRssKiB": 1120960
+    },
+    {
+      "seconds": 38.104220137989614,
+      "rssKiB": 1844460,
+      "cpuPercent": 279.2,
+      "externalIdleBaselineRssKiB": 1120960
+    },
+    {
+      "seconds": 38.8024487469811,
+      "rssKiB": 1810472,
+      "cpuPercent": 289.4,
+      "externalIdleBaselineRssKiB": 1120960
+    },
+    {
+      "seconds": 39.50586663300055,
+      "rssKiB": 1825632,
+      "cpuPercent": 222.5,
+      "externalIdleBaselineRssKiB": 1120960
+    },
+    {
+      "seconds": 40.20952926998143,
+      "rssKiB": 1811212,
+      "cpuPercent": 284.5,
+      "externalIdleBaselineRssKiB": 1120960
+    },
+    {
+      "seconds": 40.90550347798853,
+      "rssKiB": 1845420,
+      "cpuPercent": 247.1,
+      "externalIdleBaselineRssKiB": 1120960
+    },
+    {
+      "seconds": 41.598999335983535,
+      "rssKiB": 1851744,
+      "cpuPercent": 268.9,
+      "externalIdleBaselineRssKiB": 1120960
+    },
+    {
+      "seconds": 42.34827084999415,
+      "rssKiB": 1818680,
+      "cpuPercent": 271.5,
+      "externalIdleBaselineRssKiB": 1120960
+    },
+    {
+      "seconds": 43.144527733995346,
+      "rssKiB": 1834612,
+      "cpuPercent": 266.9,
+      "externalIdleBaselineRssKiB": 1120960
+    },
+    {
+      "seconds": 43.836922193993814,
+      "rssKiB": 1828920,
+      "cpuPercent": 103.5,
+      "externalIdleBaselineRssKiB": 1120984
+    },
+    {
+      "seconds": 44.52322197399917,
+      "rssKiB": 1864676,
+      "cpuPercent": 236.79999999999998,
+      "externalIdleBaselineRssKiB": 1120984
+    },
+    {
+      "seconds": 45.322979179996764,
+      "rssKiB": 1842976,
+      "cpuPercent": 179.3,
+      "externalIdleBaselineRssKiB": 1120992
+    },
+    {
+      "seconds": 46.02691499798675,
+      "rssKiB": 1869348,
+      "cpuPercent": 230.70000000000002,
+      "externalIdleBaselineRssKiB": 1120992
+    },
+    {
+      "seconds": 46.719918550981674,
+      "rssKiB": 1841744,
+      "cpuPercent": 249.2,
+      "externalIdleBaselineRssKiB": 1120992
+    },
+    {
+      "seconds": 47.415120766992914,
+      "rssKiB": 1852940,
+      "cpuPercent": 282.9,
+      "externalIdleBaselineRssKiB": 1120992
+    },
+    {
+      "seconds": 48.10432708897861,
+      "rssKiB": 1850608,
+      "cpuPercent": 256.0,
+      "externalIdleBaselineRssKiB": 1120992
+    },
+    {
+      "seconds": 48.78696419499465,
+      "rssKiB": 1860040,
+      "cpuPercent": 251.4,
+      "externalIdleBaselineRssKiB": 1120992
+    },
+    {
+      "seconds": 49.48585387098137,
+      "rssKiB": 1850392,
+      "cpuPercent": 176.9,
+      "externalIdleBaselineRssKiB": 1120996
+    },
+    {
+      "seconds": 50.203781642980175,
+      "rssKiB": 1856964,
+      "cpuPercent": 270.9,
+      "externalIdleBaselineRssKiB": 1120996
+    },
+    {
+      "seconds": 50.872108461975586,
+      "rssKiB": 1851600,
+      "cpuPercent": 290.1,
+      "externalIdleBaselineRssKiB": 1120996
+    },
+    {
+      "seconds": 51.54338786000153,
+      "rssKiB": 1856332,
+      "cpuPercent": 279.2,
+      "externalIdleBaselineRssKiB": 1120996
+    },
+    {
+      "seconds": 52.22650770898326,
+      "rssKiB": 1850540,
+      "cpuPercent": 259.7,
+      "externalIdleBaselineRssKiB": 1120996
+    },
+    {
+      "seconds": 52.9412040419993,
+      "rssKiB": 1857912,
+      "cpuPercent": 298.0,
+      "externalIdleBaselineRssKiB": 1120996
+    },
+    {
+      "seconds": 53.63156400297885,
+      "rssKiB": 1876688,
+      "cpuPercent": 251.3,
+      "externalIdleBaselineRssKiB": 1121036
+    },
+    {
+      "seconds": 54.32590094397892,
+      "rssKiB": 1892604,
+      "cpuPercent": 247.4,
+      "externalIdleBaselineRssKiB": 1121036
+    },
+    {
+      "seconds": 55.02951705799205,
+      "rssKiB": 1875696,
+      "cpuPercent": 274.2,
+      "externalIdleBaselineRssKiB": 1121036
+    },
+    {
+      "seconds": 55.746345753985224,
+      "rssKiB": 1881836,
+      "cpuPercent": 266.1,
+      "externalIdleBaselineRssKiB": 1121036
+    },
+    {
+      "seconds": 56.458689477003645,
+      "rssKiB": 1871484,
+      "cpuPercent": 291.7,
+      "externalIdleBaselineRssKiB": 1121036
+    },
+    {
+      "seconds": 57.16525439999532,
+      "rssKiB": 1875432,
+      "cpuPercent": 291.2,
+      "externalIdleBaselineRssKiB": 1121040
+    },
+    {
+      "seconds": 57.8573183179833,
+      "rssKiB": 1865708,
+      "cpuPercent": 211.79999999999998,
+      "externalIdleBaselineRssKiB": 1121040
+    },
+    {
+      "seconds": 58.54627938699559,
+      "rssKiB": 1875304,
+      "cpuPercent": 168.4,
+      "externalIdleBaselineRssKiB": 1121044
+    },
+    {
+      "seconds": 59.269200609996915,
+      "rssKiB": 1867976,
+      "cpuPercent": 234.4,
+      "externalIdleBaselineRssKiB": 1121048
+    },
+    {
+      "seconds": 59.977769470977364,
+      "rssKiB": 1872960,
+      "cpuPercent": 281.4,
+      "externalIdleBaselineRssKiB": 1121048
+    },
+    {
+      "seconds": 60.68007696198765,
+      "rssKiB": 1874788,
+      "cpuPercent": 317.8,
+      "externalIdleBaselineRssKiB": 1121048
+    },
+    {
+      "seconds": 61.379423560982104,
+      "rssKiB": 1875632,
+      "cpuPercent": 267.4,
+      "externalIdleBaselineRssKiB": 1121048
+    },
+    {
+      "seconds": 62.10133102198597,
+      "rssKiB": 1849436,
+      "cpuPercent": 252.0,
+      "externalIdleBaselineRssKiB": 1121048
+    },
+    {
+      "seconds": 62.78222477098461,
+      "rssKiB": 1858300,
+      "cpuPercent": 182.9,
+      "externalIdleBaselineRssKiB": 1121048
+    },
+    {
+      "seconds": 63.44887088399264,
+      "rssKiB": 1861156,
+      "cpuPercent": 275.0,
+      "externalIdleBaselineRssKiB": 1121048
+    },
+    {
+      "seconds": 64.13248050998664,
+      "rssKiB": 1873840,
+      "cpuPercent": 271.7,
+      "externalIdleBaselineRssKiB": 1121104
+    },
+    {
+      "seconds": 64.82752784399781,
+      "rssKiB": 1872160,
+      "cpuPercent": 279.0,
+      "externalIdleBaselineRssKiB": 1121104
+    },
+    {
+      "seconds": 65.51735703699524,
+      "rssKiB": 1880668,
+      "cpuPercent": 253.4,
+      "externalIdleBaselineRssKiB": 1121108
+    },
+    {
+      "seconds": 66.20354828500422,
+      "rssKiB": 1885464,
+      "cpuPercent": 238.79999999999998,
+      "externalIdleBaselineRssKiB": 1121108
+    },
+    {
+      "seconds": 66.88395643999684,
+      "rssKiB": 1857608,
+      "cpuPercent": 249.4,
+      "externalIdleBaselineRssKiB": 1121172
+    },
+    {
+      "seconds": 67.56533322998439,
+      "rssKiB": 1881748,
+      "cpuPercent": 267.7,
+      "externalIdleBaselineRssKiB": 1121180
+    },
+    {
+      "seconds": 68.25496748799924,
+      "rssKiB": 1873892,
+      "cpuPercent": 265.1,
+      "externalIdleBaselineRssKiB": 1121180
+    },
+    {
+      "seconds": 68.93313427400426,
+      "rssKiB": 1883896,
+      "cpuPercent": 258.9,
+      "externalIdleBaselineRssKiB": 1121196
+    },
+    {
+      "seconds": 69.64841993298614,
+      "rssKiB": 1880456,
+      "cpuPercent": 292.4,
+      "externalIdleBaselineRssKiB": 1121196
+    },
+    {
+      "seconds": 70.33992957998998,
+      "rssKiB": 1875388,
+      "cpuPercent": 234.6,
+      "externalIdleBaselineRssKiB": 1121200
+    },
+    {
+      "seconds": 71.0253573609807,
+      "rssKiB": 1868872,
+      "cpuPercent": 285.0,
+      "externalIdleBaselineRssKiB": 1121204
+    },
+    {
+      "seconds": 71.71823533199495,
+      "rssKiB": 1878008,
+      "cpuPercent": 265.0,
+      "externalIdleBaselineRssKiB": 1121204
+    },
+    {
+      "seconds": 72.44766710599652,
+      "rssKiB": 1863980,
+      "cpuPercent": 302.2,
+      "externalIdleBaselineRssKiB": 1121204
+    },
+    {
+      "seconds": 73.15257900799043,
+      "rssKiB": 1913388,
+      "cpuPercent": 289.8,
+      "externalIdleBaselineRssKiB": 1121204
+    },
+    {
+      "seconds": 73.83531190699432,
+      "rssKiB": 1878304,
+      "cpuPercent": 289.8,
+      "externalIdleBaselineRssKiB": 1121204
+    },
+    {
+      "seconds": 74.52505254300195,
+      "rssKiB": 1865396,
+      "cpuPercent": 253.9,
+      "externalIdleBaselineRssKiB": 1121184
+    },
+    {
+      "seconds": 75.21172587899491,
+      "rssKiB": 1871756,
+      "cpuPercent": 294.7,
+      "externalIdleBaselineRssKiB": 1121184
+    },
+    {
+      "seconds": 75.90759881999111,
+      "rssKiB": 1870356,
+      "cpuPercent": 275.6,
+      "externalIdleBaselineRssKiB": 1121184
+    },
+    {
+      "seconds": 76.60943521000445,
+      "rssKiB": 1832024,
+      "cpuPercent": 281.5,
+      "externalIdleBaselineRssKiB": 1121184
+    },
+    {
+      "seconds": 77.31216560598114,
+      "rssKiB": 1828756,
+      "cpuPercent": 291.6,
+      "externalIdleBaselineRssKiB": 1121184
+    },
+    {
+      "seconds": 77.99105226699612,
+      "rssKiB": 1822660,
+      "cpuPercent": 245.2,
+      "externalIdleBaselineRssKiB": 1121188
+    },
+    {
+      "seconds": 78.67782378400443,
+      "rssKiB": 1843344,
+      "cpuPercent": 282.4,
+      "externalIdleBaselineRssKiB": 1121188
+    },
+    {
+      "seconds": 79.37032333799289,
+      "rssKiB": 1852528,
+      "cpuPercent": 254.5,
+      "externalIdleBaselineRssKiB": 1121192
+    },
+    {
+      "seconds": 80.07463212599396,
+      "rssKiB": 1851340,
+      "cpuPercent": 272.7,
+      "externalIdleBaselineRssKiB": 1121192
+    },
+    {
+      "seconds": 80.7938074519916,
+      "rssKiB": 1845292,
+      "cpuPercent": 280.9,
+      "externalIdleBaselineRssKiB": 1121192
+    },
+    {
+      "seconds": 81.49679905097582,
+      "rssKiB": 1836596,
+      "cpuPercent": 285.6,
+      "externalIdleBaselineRssKiB": 1121192
+    },
+    {
+      "seconds": 82.18928396498086,
+      "rssKiB": 1835496,
+      "cpuPercent": 265.2,
+      "externalIdleBaselineRssKiB": 1121192
+    },
+    {
+      "seconds": 82.8780354859773,
+      "rssKiB": 1868440,
+      "cpuPercent": 249.0,
+      "externalIdleBaselineRssKiB": 1121192
+    },
+    {
+      "seconds": 83.56264038500376,
+      "rssKiB": 1798624,
+      "cpuPercent": 262.7,
+      "externalIdleBaselineRssKiB": 1121192
+    },
+    {
+      "seconds": 84.29342451799312,
+      "rssKiB": 1844664,
+      "cpuPercent": 297.59999999999997,
+      "externalIdleBaselineRssKiB": 1121212
+    },
+    {
+      "seconds": 84.99621431500418,
+      "rssKiB": 1796940,
+      "cpuPercent": 278.3,
+      "externalIdleBaselineRssKiB": 1121212
+    },
+    {
+      "seconds": 85.6877267099917,
+      "rssKiB": 1786252,
+      "cpuPercent": 295.5,
+      "externalIdleBaselineRssKiB": 1121216
+    },
+    {
+      "seconds": 86.37186700900202,
+      "rssKiB": 1776820,
+      "cpuPercent": 260.3,
+      "externalIdleBaselineRssKiB": 1121216
+    },
+    {
+      "seconds": 87.05179604000296,
+      "rssKiB": 1808052,
+      "cpuPercent": 258.0,
+      "externalIdleBaselineRssKiB": 1121220
+    },
+    {
+      "seconds": 87.75593070397736,
+      "rssKiB": 1857888,
+      "cpuPercent": 253.0,
+      "externalIdleBaselineRssKiB": 1121220
+    },
+    {
+      "seconds": 88.49973979199422,
+      "rssKiB": 1632436,
+      "cpuPercent": 304.1,
+      "externalIdleBaselineRssKiB": 1121224
+    },
+    {
+      "seconds": 89.37302385698422,
+      "rssKiB": 1849004,
+      "cpuPercent": 466.0,
+      "externalIdleBaselineRssKiB": 1121228
+    },
+    {
+      "seconds": 90.43964581200271,
+      "rssKiB": 2219056,
+      "cpuPercent": 511.79999999999995,
+      "externalIdleBaselineRssKiB": 1120628
+    },
+    {
+      "seconds": 91.39923112100223,
+      "rssKiB": 2356468,
+      "cpuPercent": 722.5,
+      "externalIdleBaselineRssKiB": 1120632
+    },
+    {
+      "seconds": 92.54694198697689,
+      "rssKiB": 2357324,
+      "cpuPercent": 727.9,
+      "externalIdleBaselineRssKiB": 1120840
+    },
+    {
+      "seconds": 93.69006255897693,
+      "rssKiB": 2353748,
+      "cpuPercent": 700.7,
+      "externalIdleBaselineRssKiB": 1121084
+    },
+    {
+      "seconds": 94.81480974398437,
+      "rssKiB": 2360320,
+      "cpuPercent": 713.8,
+      "externalIdleBaselineRssKiB": 1131556
+    },
+    {
+      "seconds": 95.97482969600242,
+      "rssKiB": 2366184,
+      "cpuPercent": 699.1999999999999,
+      "externalIdleBaselineRssKiB": 1131564
+    },
+    {
+      "seconds": 97.16568197199376,
+      "rssKiB": 2323492,
+      "cpuPercent": 700.9,
+      "externalIdleBaselineRssKiB": 1131584
+    },
+    {
+      "seconds": 98.40118380499189,
+      "rssKiB": 2324920,
+      "cpuPercent": 711.7,
+      "externalIdleBaselineRssKiB": 1131584
+    },
+    {
+      "seconds": 99.48563431500224,
+      "rssKiB": 2331900,
+      "cpuPercent": 677.6,
+      "externalIdleBaselineRssKiB": 1131584
+    },
+    {
+      "seconds": 100.40434260197799,
+      "rssKiB": 2140028,
+      "cpuPercent": 597.7,
+      "externalIdleBaselineRssKiB": 1131584
+    },
+    {
+      "seconds": 101.1967508700036,
+      "rssKiB": 823592,
+      "cpuPercent": 61.8,
+      "externalIdleBaselineRssKiB": 1134216
+    }
+  ]
+}

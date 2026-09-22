@@ -1,0 +1,13 @@
+{
+  "version": "5cf2d6048e53a5cd687e66a2d75516939e00f98989ef77b7f5757ab874264370",
+  "attemptId": "2f66c791a7d5452dbb08157d8fd01a9e",
+  "results": [],
+  "failures": [],
+  "metrics": {
+    "slots": 2,
+    "bundleSeconds": 4.774046791979345,
+    "bundleReused": false,
+    "sceneSeconds": {},
+    "wallSeconds": 101.07626903700293
+  }
+}

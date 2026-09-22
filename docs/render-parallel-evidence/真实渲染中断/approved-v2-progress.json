@@ -1,0 +1,116 @@
+{
+  "version": "825fd9e81c194ddf3d30f002b57f431f43a8db5eff68ccda65d71f463443b64e",
+  "attemptId": "da67dc953dcd4eed91ccd4a635a314d3",
+  "results": [
+    {
+      "sceneId": "scene_008",
+      "project": "project/renderer",
+      "projectHash": "2c8f1433f0c8c04bc510405a80dc0e05a01c87f477eff76fc22ea0b47edd6b31",
+      "timelineHash": "de75fd5dc178124a6eb47f5446943b07100f0b25c08924108e1d094fdd8f2db5",
+      "sha256": "aaa9030e8f328ccff60500fb1616782873084d7726e94fd49e5dd08cda731e79",
+      "frames": 471,
+      "durationSeconds": 15.7,
+      "audioCheck": {
+        "correlation": 0.9998674802664823,
+        "silent": false
+      },
+      "mixBoundaryAdjustmentSamples": 16,
+      "zeroTailPaddingSamples": 16,
+      "path": "output/render_001/scenes/scene_008.mp4",
+      "mix": {
+        "path": "render/render_001/work/scene_008-sh4ujcay/mix.wav",
+        "sha256": "ba2d4998c64d859057333cb8d31abaa7f07a2ea51af0f0b67fb909952a9b4acd"
+      },
+      "evidence": [
+        {
+          "frame": 0,
+          "path": "render/render_001/frames/scene_008-0.png",
+          "sha256": "e99ddd961177848524da743144fa9d943f3286ef9a5c5ec9d5648ec73b1d6c8a"
+        },
+        {
+          "frame": 235,
+          "path": "render/render_001/frames/scene_008-235.png",
+          "sha256": "32bcecfd589029deb66b9a570be8b8c5bc80e1de55c72259183cb294f12590e2"
+        },
+        {
+          "frame": 470,
+          "path": "render/render_001/frames/scene_008-470.png",
+          "sha256": "966d39970da3d637d635d990635c7114d83c8b6eceff37ce8d4e0e2ff9da2985"
+        }
+      ],
+      "reused": false,
+      "timings": {
+        "renderSeconds": 116.44539922400145,
+        "mixAndValidationSeconds": 4.361943530006101,
+        "evidenceSeconds": 1.5936820370261557,
+        "wallSeconds": 126.33059399999911
+      },
+      "renderReused": false,
+      "recommendations": []
+    },
+    {
+      "sceneId": "scene_010",
+      "project": "project/renderer",
+      "projectHash": "2c8f1433f0c8c04bc510405a80dc0e05a01c87f477eff76fc22ea0b47edd6b31",
+      "timelineHash": "de75fd5dc178124a6eb47f5446943b07100f0b25c08924108e1d094fdd8f2db5",
+      "sha256": "5162439073961fff3174ac824a4da1525b97bb405821c78c5041def8a8b07311",
+      "frames": 428,
+      "durationSeconds": 14.266666666666667,
+      "audioCheck": {
+        "correlation": 0.9998882077546564,
+        "silent": false
+      },
+      "mixBoundaryAdjustmentSamples": 16,
+      "zeroTailPaddingSamples": 16,
+      "path": "output/render_001/scenes/scene_010.mp4",
+      "mix": {
+        "path": "render/render_001/work/scene_010-7ylyr7bj/mix.wav",
+        "sha256": "57c3309ef7935f098b7fa76c867b9371ae89231142009d7693135a62e471517b"
+      },
+      "evidence": [
+        {
+          "frame": 0,
+          "path": "render/render_001/frames/scene_010-0.png",
+          "sha256": "e45eba6e5976d8d44dc5b5bef276cdc57e12ea3d5ab5656b1ec32c89d2ee5ce0"
+        },
+        {
+          "frame": 214,
+          "path": "render/render_001/frames/scene_010-214.png",
+          "sha256": "f8374b6448f80994d278807a79b77391017d9656556fafa4f0bde42be9c851de"
+        },
+        {
+          "frame": 427,
+          "path": "render/render_001/frames/scene_010-427.png",
+          "sha256": "0c19e9be391999da43189889dab4ad21a1267c0bdf820d5a8a48f81067691337"
+        }
+      ],
+      "reused": false,
+      "timings": {
+        "renderSeconds": 102.23284902700107,
+        "mixAndValidationSeconds": 14.207211285014637,
+        "evidenceSeconds": 1.5066095820220653,
+        "wallSeconds": 123.22384559799684
+      },
+      "renderReused": false,
+      "recommendations": []
+    }
+  ],
+  "failures": [
+    {
+      "sceneId": "scene_006",
+      "code": "TASK_CANCELLED",
+      "message": "批次已取消",
+      "details": null
+    }
+  ],
+  "metrics": {
+    "slots": 2,
+    "bundleSeconds": 5.509437489003176,
+    "bundleReused": false,
+    "sceneSeconds": {
+      "scene_010": 123.22424572298769,
+      "scene_008": 126.33116891598911
+    },
+    "wallSeconds": 226.5992866049928
+  }
+}

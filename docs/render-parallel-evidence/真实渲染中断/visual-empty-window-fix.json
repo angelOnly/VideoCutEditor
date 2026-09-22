@@ -1,0 +1,8 @@
+{
+  "reason": "实际MP4 scene_008 frame235暴露首项入场前80帧无图解；同类章节段落也有等待真实句级锚点的空窗。",
+  "fix": "在等待首项期间显示已有段落主题卡，首项按原句级锚点开始后切换原图解；所有口播/字幕/事件帧不变。",
+  "discardedBatch": "approved-v2",
+  "newBatch": "approved-v3",
+  "mediaCancellation": "通过己方guard cancel文件停止，已完成镜头保留但不复用到新版。",
+  "reviewPending": true
+}
