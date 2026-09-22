@@ -73,7 +73,7 @@ def generate(args):
         variants.append({'name': name, 'slots': slots, 'stages': [{'name': step, 'argv': common + ['--step', step]} for step in ['prepare', 'freeze', 'render', 'assemble', 'check']]})
     config = {'cwd': str(repo/'claude-code-video-toolkit'), 'outputRoot': str(Path(args.output).resolve()),
               'protectedRoot': args.protected_root, 'immutableInputs': frozen, 'variants': variants, 'repetitions': 3,
-              'cleanupRelativePaths': ['artifacts'], 'sampleIntervalSeconds': .5,
+              'cleanupRelativePaths': ['artifacts'], 'sampleIntervalSeconds': .5, 'quietSeconds': 180,
               'env': {'PYTHONDONTWRITEBYTECODE': '1'}, 'cacheCondition': settings['cacheCondition']}
     if args.idle_baseline_evidence:
         evidence_path = Path(args.idle_baseline_evidence).resolve(strict=True)

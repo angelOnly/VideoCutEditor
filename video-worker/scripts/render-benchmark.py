@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import re
@@ -224,6 +225,26 @@ def validate_idle_baseline(config):
     return baseline
 
 
+def wait_for_quiet(protected_root, idle_baseline=(), quiet_seconds=0, timeout=43200, interval=1):
+    if not all(math.isfinite(value) for value in (quiet_seconds, timeout, interval)) or quiet_seconds < 0 or timeout <= 0 or interval <= 0:
+        raise ValueError('空闲窗口需为非负有限数，等待期限及采样间隔需为正有限数')
+    started = time.monotonic()
+    quiet_since = None
+    while True:
+        busy = blockers(processes(), protected_root, idle_baseline=idle_baseline)
+        now = time.monotonic()
+        if busy:
+            quiet_since = None
+        else:
+            if quiet_since is None:
+                quiet_since = now
+            if now - quiet_since >= quiet_seconds:
+                return now - started
+        if now - started >= timeout:
+            raise TimeoutError('未达到连续空闲窗口；保留原始记录，退出基准')
+        time.sleep(min(interval, timeout - (now - started)))
+
+
 def run(config):
     root = Path(config['outputRoot']).resolve()
     protected = str(Path(config['protectedRoot']).resolve())
@@ -262,11 +283,16 @@ def run(config):
                 cache.mkdir()
                 for condition in ['cold', 'warm']:
                     wait_start = time.monotonic()
-                    while blockers(processes(), protected, idle_baseline=idle_baseline):
-                        if time.monotonic()-wait_start > config.get('externalWaitTimeoutSeconds', 43200):
-                            raise TimeoutError('原测试持续占用；保留原始记录，退出基准')
-                        time.sleep(config.get('guardIntervalSeconds', 1))
-                    report['externalWaitSeconds'] += time.monotonic()-wait_start
+                    try:
+                        wait_for_quiet(protected, idle_baseline, config.get('quietSeconds', 0),
+                                       config.get('externalWaitTimeoutSeconds', 43200), config.get('guardIntervalSeconds', 1))
+                    finally:
+                        # 镜间空隙不会触发抢跑；包括超时的全部守卫等待都单列，绝不计入渲染墙钟。
+                        waited = time.monotonic() - wait_start
+                        report['externalWaitSeconds'] += waited
+                        report.setdefault('externalWaits', []).append({'variant': variant['name'], 'condition': condition,
+                            'trial': trial, 'wallSeconds': waited, 'quietSeconds': config.get('quietSeconds', 0)})
+                        save()
                     if fingerprint(config['immutableInputs']) != frozen:
                         raise ValueError('冻结输入发生变化；停止对比')
                     folder = root / f'{variant["name"]}-{trial}-{condition}'

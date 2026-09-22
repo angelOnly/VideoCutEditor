@@ -64,3 +64,9 @@ python3 -B video-worker/scripts/render-benchmark-adapter.py --generate \
 证据必须含 `observationSeconds >= 60`、真实 `maxCpuPercent <= 0.5`（保留闲置维护的 0.1% 等真实值，不能写成零）、`noActiveProducer: true`、完整 `processes` 签名、`completionEvidence: [{path,sha256}]`，以及 `observationFile`/`observationSha256`。原始观察是 `[{at: epoch秒, processes: [{pid,started,cpu,...}]}]`，驱动验证时间跨度、每次均覆盖全部签名、CPU摘要及文件摘要。完结证据与“无活跃生产者”需基于只读原状态判断，不能仅凭没有 candidate 作结论。
 
 原观察必须覆盖浏览器全部后代，包括 GPU/网络 Helper。精确签名匹配且当前 CPU 不超过 1% 才临时忽略；任何名单进程恢复到 >1%、签名变化，或发现未知原媒体后代，仍阻挡/污染停止。绝不向这些进程发送信号。其常驻 RSS 通过 `externalIdleBaselineRssKiB` 原始采样和 `externalIdleBaselinePeakRssKiB` 单独记录，不算己方开销；报告须声明仍存在外部常驻内存，不声称机器完全独占。
+
+## 连续空闲窗口
+
+通用驱动配置 `quietSeconds` 默认 0，保持已有短测试行为；本次实际工程适配生成的配置默认 180 秒。每轮开始前必须连续观察满这个窗口，期间一旦发现原媒体生产者或未获豁免浏览器，计时重新开始，避免原测试镜间的短暂空隙触发新渲染。已有运行中的争用取消规则保持不变。
+
+`guardIntervalSeconds` 默认 1 秒，`externalWaitTimeoutSeconds` 默认 43200 秒。全部等待（包括连续空闲观察和最终超时）单列在 `externalWaitSeconds`，并逐轮记录在 `externalWaits`；这段时间不进入该轮 `wallSeconds` 或性能中位数。可直接调用 `wait_for_quiet(protected_root, idle_baseline=..., quiet_seconds=180)` 复用相同守卫逻辑。

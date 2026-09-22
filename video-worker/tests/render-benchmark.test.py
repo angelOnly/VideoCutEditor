@@ -5,6 +5,7 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 SPEC = importlib.util.spec_from_file_location('benchmark', Path(__file__).parents[1] / 'scripts/render-benchmark.py')
 bench = importlib.util.module_from_spec(SPEC)
@@ -12,6 +13,31 @@ SPEC.loader.exec_module(bench)
 
 
 class BenchmarkTest(unittest.TestCase):
+    def test_quiet_window_resets_when_original_render_resumes(self):
+        clock = [0.0]
+        producer = dict(pid=1, ppid=0, pgid=1, command='ffmpeg /original/task')
+        def sleep(seconds):
+            clock[0] += seconds
+        with patch.object(bench.time, 'monotonic', side_effect=lambda: clock[0]), \
+             patch.object(bench.time, 'sleep', side_effect=sleep), \
+             patch.object(bench, 'processes', side_effect=lambda: [producer] if clock[0] in (0, 3) else []):
+            self.assertEqual(bench.wait_for_quiet('/original', quiet_seconds=2, timeout=10), 6)
+
+    def test_quiet_default_is_immediate_and_busy_timeout_is_bounded(self):
+        clock = [0.0]
+        def sleep(seconds):
+            clock[0] += seconds
+        with patch.object(bench.time, 'monotonic', side_effect=lambda: clock[0]), \
+             patch.object(bench.time, 'sleep', side_effect=sleep), \
+             patch.object(bench, 'processes', return_value=[]) as processes:
+            self.assertEqual(bench.wait_for_quiet('/original'), 0)
+            processes.return_value = [dict(pid=1, ppid=0, pgid=1, command='ffmpeg /original/task')]
+            with self.assertRaises(TimeoutError):
+                bench.wait_for_quiet('/original', quiet_seconds=2, timeout=3)
+            self.assertEqual(clock[0], 3)
+            with self.assertRaises(ValueError):
+                bench.wait_for_quiet('/original', quiet_seconds=-1)
+
     def test_guard_tracks_original_descendants_but_excludes_own(self):
         rows = [dict(pid=1, ppid=0, pgid=1, command='worker /original/task'),
                 dict(pid=2, ppid=1, pgid=1, command='ffmpeg -i input'),
