@@ -269,7 +269,7 @@ def run(config):
               'idleBaselineEvidence': json.loads(Path(config['idleBaselineEvidence']).read_text()) if idle_baseline else None,
               'measurementNotes': ['显式闲置浏览器仍占用外部常驻内存，本基准不假设机器完全独占。', 'RSS 为采样时自有后代进程 RSS 之和（共享页可能重复），不是系统精确峰值。',
                                    'CPU 为 ps 百分比积分估计，短进程可能漏采；所有组采用相同采样。',
-                                   'cold 表示新建应用缓存；不清除系统页缓存。warm 复用紧邻 cold 缓存，但必须重渲而非复用成片。']}
+                                   config.get('cacheCondition') or 'cold 使用新 cacheDir，warm 传入相邻轮同一 cacheDir；命令是否启用并复用应用缓存需另行验证，不保证命中。不清除系统页缓存，各轮必须重新渲染。']}
     def save():
         report['summary'] = summarize(report['runs'])
         persist(root / 'results.json', report)
@@ -298,6 +298,7 @@ def run(config):
                     folder = root / f'{variant["name"]}-{trial}-{condition}'
                     folder.mkdir()
                     (folder / 'tmp').mkdir()
+                    (folder / 'home').mkdir()
                     replace = {'runDir': str(folder), 'cacheDir': str(cache), 'slots': str(variant['slots']), 'trial': str(trial)}
                     def expand(value):
                         for key, replacement in replace.items():
@@ -308,6 +309,8 @@ def run(config):
                     env.update({'XDG_CACHE_HOME': str(cache), 'TMPDIR': str(folder / 'tmp'), 'BENCHMARK_CACHE_DIR': str(cache),
                                 'VIDEOCUT_BATCH_CANCEL_FILE': str(folder / 'cancel')})
                     env.update({k: expand(v) for k, v in config.get('env', {}).items()})
+                    # 子命令的用户目录也隔离；配置不能把浏览器缓存重新指回真实 HOME。
+                    env['HOME'] = str(folder / 'home')
                     measurement = {'variant': variant['name'], 'condition': condition, 'trial': trial,
                                    'stages': [], 'status': 'passed'}
                     started = time.monotonic()

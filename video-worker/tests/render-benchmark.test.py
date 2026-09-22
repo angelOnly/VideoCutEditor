@@ -128,14 +128,16 @@ class BenchmarkTest(unittest.TestCase):
             frozen = root / 'input.json'
             frozen.write_text('{}')
             config = dict(outputRoot=str(root / 'results'), protectedRoot='/never-original', cwd=folder,
-                          immutableInputs=[str(frozen)], sampleIntervalSeconds=.01,
+                          immutableInputs=[str(frozen)], sampleIntervalSeconds=.01, cacheCondition='应用缓存明确关闭', env={'HOME': '/must-not-use-shared-home'},
                           variants=[dict(name=name, slots=slots, stages=[dict(name='render', argv=[sys.executable,
-                            '-c', 'import pathlib,sys; pathlib.Path(sys.argv[1]).write_text(sys.argv[2])',
+                            '-c', 'import os,pathlib,sys; h=pathlib.Path(os.environ["HOME"]); assert h.is_dir() and h.parent==pathlib.Path(sys.argv[1]).parent; pathlib.Path(sys.argv[1]).write_text(sys.argv[2])',
                             '{runDir}/output.txt', '{cacheDir}'])])
                             for name, slots in [('old_serial', 1), ('new_1', 1), ('new_2', 2), ('new_3', 3)]])
             result = bench.run(config)
             self.assertEqual(len(result['runs']), 24)
             self.assertTrue(result['qualified'])
+            self.assertIn('应用缓存明确关闭', result['measurementNotes'])
+            self.assertEqual(len(result['externalWaits']), 24)
             self.assertEqual((root/'results/old_serial-1-cold/output.txt').read_text(),
                              (root/'results/old_serial-1-warm/output.txt').read_text())
             with self.assertRaises(ValueError):
