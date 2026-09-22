@@ -174,3 +174,7 @@ pnpm test:stages
 父预算、取消和租约覆盖全部章节。内部记录位于 `.control/chapters/`，含真实线程、turn、父令牌、时间与运行时提供的 token 使用信息。重启不把旧运行记录恢复为成功；重新派发新 attempt，并由主 Render 决定是否采用经核验的旧候选。收到明确额度耗尽错误后该管理器拒绝新章节派发，不消费重置信用。
 
 `video_media` 增加 `freeze-batch`（`batch`、`project`、`entry`、`scenes`）和 `render-batch`（`manifest`、可选 `slots`）。scenes 是任务相对 JSON 文件，批次结果逐镜返回，宿主在重新核对租约后串行登记进度。所有任务的受控媒体调用共享宿主 FIFO 槽，整批申请避免资源互等；每镜帧并发仍由媒体层固定为 1。`HOST_RENDER_SLOTS` 可设 1 至 3，默认保守为 1；目标机测得稳定收益后再显式设为 2，3 路只用于验证后启用。章节创作三路和渲染槽是独立限制。Linux 进程控制组验收仍需在专用 Ubuntu 环境执行，普通单元测试不代表已验证该外部环境。
+
+章节入口另外独立核对 `request.confirmation.planSha256`、`direction.confirmationSha256`、`direction.sceneOrder` 与确认稿；`direction.chapters` 必须按确认顺序完整且互不交叉。brief 的分镜与对应章完全一致，`audioAnchors` 保留 `utteranceId`、`sceneId`、`text`、局部/全局起止帧及实际音频 `audioSha256`，与正式 timeline 逐项复核。主控审查状态 `reviews` 可以更新；编排正文即使未提升版本也会使旧候选失效。
+
+不调用模型的文件代理负测可运行 `pnpm exec tsx scripts/check-chapter-permissions.ts --output /专属测试目录/chapter-permissions.json`。此测试实际尝试越界与链接写入并保存报告，RPC 输送使用明确测试桩，不能替代真实模型会话或 Linux 控制组验收。

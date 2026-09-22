@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHash } from 'node:crypto';
 import { constants } from 'node:fs';
 import { open } from 'node:fs/promises';
 import { mkdir, readFile, readdir, lstat, realpath } from 'node:fs/promises';
@@ -7,6 +7,7 @@ import type { Rpc } from '../infrastructure/app-server.js';
 import { codexOverrides } from '../infrastructure/app-server.js';
 import { hashFile, readJson, safeFile, within, writeJson } from '../infrastructure/files.js';
 import type { Config } from '../config.js';
+import { validateChapterBrief } from './chapter-contract.js';
 
 export const chapterTool = {
   type: 'function',
@@ -24,6 +25,10 @@ export const chapterTool = {
       executionId: { type: 'string' },
     },
   },
+};
+const directionDigest = (direction: any) => {
+  const { reviews, ...content } = direction;
+  return createHash('sha256').update(JSON.stringify(content)).digest('hex');
 };
 const fileTool = {
   type: 'function',
@@ -46,6 +51,7 @@ interface Chapter {
   chapterId: string;
   attemptId: string;
   directionVersion: unknown;
+  directionHash: string;
   brief: string;
   briefHash: string;
   workspace: string;
@@ -217,6 +223,7 @@ export class Chapters {
     if (input.brief !== expected) throw Error('brief 必须属于指定章节');
     const briefPath = await safeFile(this.parent.root, expected),
       brief = await readJson(briefPath);
+    await validateChapterBrief(this.parent.root, this.parent.runId, brief);
     const direction = await readJson(
       await safeFile(this.parent.root, `render/${this.parent.runId}/direction.json`),
     );
@@ -243,6 +250,7 @@ export class Chapters {
       brief: expected,
       briefHash: await hashFile(briefPath),
       directionVersion: brief.directionVersion,
+      directionHash: directionDigest(direction),
       workspace,
       status: 'starting',
       startedAt: new Date().toISOString(),
@@ -393,10 +401,12 @@ export class Chapters {
     );
     if (
       direction.directionVersion !== c.directionVersion ||
+      directionDigest(direction) !== c.directionHash ||
       (await hashFile(await safeFile(this.parent.root, c.brief))) !== c.briefHash
     )
       throw Error('章节编排或 brief 已过期');
     const brief = await readJson(await safeFile(this.parent.root, c.brief));
+    await validateChapterBrief(this.parent.root, this.parent.runId, brief);
     const root = path.join(this.parent.root, c.workspace),
       result = await readJson(await safeFile(root, 'result.json'));
     for (const key of ['chapterId', 'attemptId', 'directionVersion', 'briefHash'] as const)

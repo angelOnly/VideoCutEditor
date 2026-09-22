@@ -7,6 +7,7 @@ import path from 'node:path';
 import { Chapters } from '../src/runner/chapters.js';
 import { MediaSlots } from '../src/runner/media-slots.js';
 import { writeJson, hashFile } from '../src/infrastructure/files.js';
+import { validateChapterBrief } from '../src/runner/chapter-contract.js';
 import { mediaArguments } from '../src/runner/media-tool.js';
 import type { Config } from '../src/config.js';
 
@@ -45,12 +46,57 @@ async function fixture() {
       if (!valid) throw Error('租约已过期');
     },
   });
-  await writeJson(path.join(root, 'render/r1/direction.json'), { directionVersion: 1 });
+  await writeJson(path.join(root, 'confirmation/plan.json'), {
+    scenes: [{ id: 's1', text: '原文。' }],
+  });
+  const confirmationSha256 = await hashFile(path.join(root, 'confirmation/plan.json'));
+  await writeJson(path.join(root, 'render/r1/request.json'), {
+    runId: 'r1',
+    stage: 'render',
+    confirmation: { planFile: 'confirmation/plan.json', planSha256: confirmationSha256 },
+  });
+  await writeJson(path.join(root, 'audio.json'), { actual: true });
+  const audioSha256 = await hashFile(path.join(root, 'audio.json'));
+  await writeJson(path.join(root, 'render/r1/timeline.json'), {
+    scenes: [
+      {
+        id: 's1',
+        startFrame: 0,
+        frames: 30,
+        utterances: [
+          {
+            id: 'u1',
+            text: '原文。',
+            startFrame: 0,
+            endFrameExclusive: 30,
+            audioPath: 'audio.json',
+          },
+        ],
+      },
+    ],
+  });
+  await writeJson(path.join(root, 'render/r1/direction.json'), {
+    directionVersion: 1,
+    confirmationSha256,
+    sceneOrder: ['s1'],
+    chapters: [{ chapterId: 'c1', sceneIds: ['s1'] }],
+  });
   const brief = {
     chapterId: 'c1',
     directionVersion: 1,
     sceneIds: ['s1'],
-    audioAnchors: [{ utteranceId: 'u1', startFrame: 0, endFrameExclusive: 30 }],
+    audioAnchors: [
+      {
+        utteranceId: 'u1',
+        sceneId: 's1',
+        text: '原文。',
+        startFrame: 0,
+        endFrameExclusive: 30,
+        globalStartFrame: 0,
+        globalEndFrameExclusive: 30,
+        audioSha256,
+      },
+    ],
   };
   await writeJson(path.join(root, 'render/r1/chapters/c1/brief.json'), brief);
   const dispatch = () =>
@@ -213,4 +259,50 @@ test('批次媒体参数是白名单且渲染槽严格校验', () => {
   assert.throws(() =>
     mediaArguments(config, w, { command: 'render-batch', manifest: 'm', shell: 'bad' }),
   );
+});
+
+test('章节约定绑定确认稿、互斥分章及实际音频摘要，重启不接管旧执行', async () => {
+  const f = await fixture();
+  try {
+    await validateChapterBrief(f.root, 'r1', f.brief);
+    await assert.rejects(
+      validateChapterBrief(f.root, 'r1', { ...f.brief, sceneIds: ['other'] }),
+      /范围/,
+    );
+    await assert.rejects(
+      validateChapterBrief(f.root, 'r1', {
+        ...f.brief,
+        audioAnchors: [{ ...f.brief.audioAnchors[0], startFrame: 1 }],
+      }),
+      /音频锚点/,
+    );
+    const directionFile = path.join(f.root, 'render/r1/direction.json');
+    const direction = JSON.parse(await readFile(directionFile, 'utf8'));
+    await writeJson(directionFile, {
+      ...direction,
+      chapters: [...direction.chapters, { chapterId: 'c2', sceneIds: ['s1'] }],
+    });
+    await assert.rejects(f.dispatch(), /交叉/);
+    await writeJson(directionFile, direction);
+    const execution = await f.dispatch();
+    const other = new Chapters(new TestRpc(), {} as Config, {
+      root: f.root,
+      runId: 'r1',
+      token: 8,
+      signal: new AbortController().signal,
+      check: async () => {},
+    });
+    try {
+      await assert.rejects(
+        other.operate({ operation: 'status', executionId: execution.executionId }),
+        /旧进程/,
+      );
+    } finally {
+      await other.close();
+    }
+    await writeJson(path.join(f.root, 'audio.json'), { actual: false });
+    await assert.rejects(validateChapterBrief(f.root, 'r1', f.brief), /音频锚点/);
+  } finally {
+    await f.close();
+  }
 });
