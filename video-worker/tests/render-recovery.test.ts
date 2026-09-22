@@ -1,7 +1,7 @@
 import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { hashFile } from '../src/infrastructure/files.js';
+import { hashFile, readJson } from '../src/infrastructure/files.js';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { decideRecovery } from '../src/application/render-recovery.js';
@@ -149,12 +149,56 @@ test('混音进展独立于成片数量，失效文件和旧时间轴不计完�
     assert.deepEqual(await verifiedMediaProgress(root, 'run'), ['mix:scene:' + sha256]);
     await writeFile(path.join(root, 'scene.mp4'), '成片替身');
     const videoHash = await hashFile(path.join(root, 'scene.mp4'));
-    await recordMediaProgress(root, 'run', 'scene', { path: 'scene.mp4', sha256: videoHash });
+    await recordMediaProgress(root, 'run', 'scene', {
+      path: 'scene.mp4',
+      sha256: videoHash,
+      timelineHash: await hashFile(path.join(root, 'render/run/timeline.json')),
+    });
     assert.equal((await verifiedMediaProgress(root, 'run')).length, 2);
     await writeFile(path.join(root, 'render/run/timeline.json'), '{"frames":150}');
     assert.deepEqual(await verifiedMediaProgress(root, 'run'), ['mix:scene:' + sha256]);
     await writeFile(path.join(root, 'mix.wav'), '损坏');
     assert.deepEqual(await verifiedMediaProgress(root, 'run'), []);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test('并发媒体登记不丢记录；旧时间轴结果不能重新盖章且失败队列可继续', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'media-progress-concurrent-'));
+  try {
+    await mkdir(path.join(root, 'render/run'), { recursive: true });
+    const timeline = path.join(root, 'render/run/timeline.json');
+    await writeFile(timeline, '{"version":1}');
+    const timelineHash = await hashFile(timeline);
+    await writeFile(path.join(root, 'scene.mp4'), '真实文件校验用替身，不是媒体测试');
+    const sha256 = await hashFile(path.join(root, 'scene.mp4'));
+    const value = { path: 'scene.mp4', sha256, timelineHash };
+    await Promise.all(
+      Array.from({ length: 32 }, (_, i) => recordMediaProgress(root, 'run', 'scene_' + i, value)),
+    );
+    assert.equal((await verifiedMediaProgress(root, 'run')).length, 32);
+    await writeFile(timeline, '{"version":2}');
+    await assert.rejects(recordMediaProgress(root, 'run', 'stale', value), /过期/);
+    await assert.rejects(
+      recordMediaProgress(root, 'run', 'missing', { path: 'scene.mp4', sha256 }),
+      /摘要/,
+    );
+    const latest = { ...value, timelineHash: await hashFile(timeline) };
+    const settled = await Promise.allSettled([
+      recordMediaProgress(root, 'run', 'stale_again', value),
+      recordMediaProgress(root, 'run', 'latest', latest),
+    ]);
+    assert.deepEqual(
+      settled.map((s) => s.status),
+      ['rejected', 'fulfilled'],
+    );
+    const progress = await readJson(path.join(root, '.control/progress.json'));
+    assert.equal(progress.scene_0.timelineHash, timelineHash);
+    assert.equal(progress.stale, undefined);
+    assert.equal(progress.missing, undefined);
+    assert.equal(progress.stale_again, undefined);
+    assert.deepEqual(await verifiedMediaProgress(root, 'run'), ['latest:' + sha256]);
   } finally {
     await rm(root, { recursive: true, force: true });
   }

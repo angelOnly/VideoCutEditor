@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { realpath } from 'node:fs/promises';
 import { AppError } from '../domain/task.js';
 import type { Config } from '../config.js';
 import type { Workspace } from '../infrastructure/workspace.js';
@@ -70,9 +71,39 @@ export function mediaArguments(config: Config, w: Workspace, input: any): string
   return argv;
 }
 
-/** 只记录可信媒体工具的实测产物；工程改字或反复改时间戳不算进展。 */
+const progressWrites = new Map<string, Promise<void>>();
+/** 同一登记文件只允许一个读改写；失败不阻塞后续独立结果。 */
 export async function recordMediaProgress(root: string, runId: string, scene: string, value: any) {
+  root = await realpath(root);
   const registry = path.join(root, '.control/progress.json');
+  const pending = (progressWrites.get(registry) ?? Promise.resolve())
+    .catch(() => {})
+    .then(() => writeMediaProgress(root, runId, scene, value, registry));
+  progressWrites.set(registry, pending);
+  try {
+    await pending;
+  } finally {
+    if (progressWrites.get(registry) === pending) progressWrites.delete(registry);
+  }
+}
+/** 只采用渲染时的版本凭据，禁止把旧结果重新盖成当前时间轴。 */
+async function writeMediaProgress(
+  root: string,
+  runId: string,
+  scene: string,
+  value: any,
+  registry: string,
+) {
+  const complete = !value.error && value.path && value.sha256;
+  const timeline = path.join(root, 'render', runId, 'timeline.json');
+  const assertVersion = async () => {
+    if (
+      complete &&
+      (typeof value.timelineHash !== 'string' || value.timelineHash !== (await hashFile(timeline)))
+    )
+      throw new AppError('STALE_MEDIA_RESULT', '媒体结果缺少渲染时的时间轴摘要或已过期，拒绝登记');
+  };
+  await assertVersion();
   let progress: Record<string, any> = {};
   try {
     progress = await readJson(registry);
@@ -100,9 +131,10 @@ export async function recordMediaProgress(root: string, runId: string, scene: st
       sha256: value.sha256,
       project: value.project,
       projectHash: value.projectHash,
-      timelineHash: await hashFile(path.join(root, 'render', runId, 'timeline.json')),
+      timelineHash: value.timelineHash,
     };
   }
+  await assertVersion();
   await writeJson(registry, progress);
 }
 

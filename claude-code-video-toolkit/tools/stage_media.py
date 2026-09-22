@@ -426,7 +426,7 @@ def render_scene(request_path, scene_id, project_name, entry_name, composition, 
         modules = Path(modules).resolve()
         packages = {n: digest(modules / n / 'package.json') for n in ('remotion', '@remotion/renderer', '@remotion/bundler')}
         project_entries = project_fingerprint(project)
-        receipt = {'project': str(project.relative_to(root)), 'projectHash': json_digest(project_entries)}
+        receipt = {'project': str(project.relative_to(root)), 'projectHash': json_digest(project_entries), 'timelineHash': timeline_hash}
         fingerprint = json_digest({'project': project_entries, 'entry': str(entry), 'composition': composition,
                                    'props': props, 'spec': request['outputSpec'], 'frames': frames, 'packages': packages,
                                    'confirmedPlanSha256': request['confirmation']['planSha256'],

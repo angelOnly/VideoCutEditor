@@ -5,7 +5,7 @@
   "defaultExecutor": "host-app-server",
   "taskIsolation": "bubblewrap-systemd-user",
   "remotionVersion": "4.0.425",
-  "runtimeSourceSha256": "60227ef301c7883394b5d9ff25899c444cabee68fd6005e5afc785f6ef01879b",
+  "runtimeSourceSha256": "fcf49320f40dd9f76d911b03ac9fa0f63dd6d3bbd463bb8d125fb6844140bf22",
   "files": {
     "claude-code-video-toolkit/.agents/skills/video-pipeline/SKILL.md": "653f7cd155e5e490b9941ec1742dd07b70cc908074727fffcc78b78c7ea77abb",
     "claude-code-video-toolkit/.agents/skills/video-pipeline/agents/openai.yaml": "8b31a00612837d7ca772138b38441ae244015f329c746ce34e2d622439bd646a",
@@ -37,7 +37,7 @@
     "claude-code-video-toolkit/tools/generate_dialogue_audio.py": "2af11064f2067b9b51aa580af4e438e45932d53de08ffda70fe0b59fd749cc5b",
     "claude-code-video-toolkit/tools/render_batch.py": "0a601f90d04213e1adc2cb43aa6c25fa7427326c2785f6d4be3276fcf1d7cfcf",
     "claude-code-video-toolkit/tools/render_scene.cjs": "36b3b4d138cc46757fc44783ce5ec3a89b13b10723f0741569eed113ce8280c0",
-    "claude-code-video-toolkit/tools/stage_media.py": "b3f511c9ab4a661aada6545262079299139ed4c1d40db9ff7d0e2c5ba13f56d1",
+    "claude-code-video-toolkit/tools/stage_media.py": "a5ab1197e88dbd8c4823174e435343fe7e61fb5b793d55d98546f754b0ccc032",
     "claude-code-video-toolkit/tools/stage_tts.py": "46ac3af5b04470bb27008f73f85fc4a3415512c8f9d402f9edac85029b6262ce",
     "claude-code-video-toolkit/tools/two_stage.py": "d75026e1e4db17c5b9ded371a34578bb56b8caf10d1ddc6ee3701ec6842cf34b",
     "claude-code-video-toolkit/tools/voiceover.py": "8aa120b0099e7b4bf757e93f1f9250990d910ac67e79fae97302c0587a4d4c9d",
@@ -87,7 +87,7 @@
     "video-worker/src/runner/chapters.ts": "f1c2577bdbbdc341d9292238896391308dcb1eacd5e0f39a1324e8c8616b92fa",
     "video-worker/src/runner/codex-host.ts": "269f57dfcc4792be22c185e76a6d1ef56cf13bb7b25dafc901ee0c05795d462d",
     "video-worker/src/runner/media-slots.ts": "8f16ac7a3e02a5fdc698438d1485b876cece9cde33642cac9dc6d2e90d6f2c2e",
-    "video-worker/src/runner/media-tool.ts": "6ed89c587136a30234a3db49838b76524a1555c7fc774f20738f6f02c1cd7b48",
+    "video-worker/src/runner/media-tool.ts": "10843219c2a513a30c9c7f0ef024382fcfc13ee483fb6a308159d6a43de2519c",
     "video-worker/src/runner/prompts.ts": "fb7da4704b22f85d693436a2e3d8ef86e071e61c97b0bcd5bbf531b699a14e22"
   }
 }
