@@ -68,6 +68,7 @@ interface Chapter {
   terminal: Promise<void>;
   finish: () => void;
   busy?: boolean;
+  pendingTool?: Promise<void>;
 }
 export interface ChapterParent {
   root: string;
@@ -116,11 +117,11 @@ export class Chapters {
         c.status = 'failed';
         c.error = error.message;
         c.finish();
-        void this.persist(c);
+        void this.persist(c).catch(() => {});
       }
   };
   private persist(c: Chapter) {
-    const { terminal, finish, busy, ...record } = c;
+    const { terminal, finish, busy, pendingTool, ...record } = c;
     const value = { ...record, parentRunId: this.parent.runId, fencingToken: this.parent.token };
     this.writes = this.writes.then(async () => {
       await writeJson(
@@ -194,7 +195,7 @@ export class Chapters {
         await this.persist(c);
       }
     }
-    const { terminal, finish, busy, ...record } = c;
+    const { terminal, finish, busy, pendingTool, ...record } = c;
     return record;
   }
   private async dispatch(input: any) {
@@ -341,9 +342,14 @@ export class Chapters {
       c.busy
     )
       throw Error('章节工具无权限或已过期');
-    await this.check();
     c.busy = true;
+    let finishTool!: () => void;
+    c.pendingTool = new Promise<void>((resolve) => {
+      finishTool = resolve;
+    });
     try {
+      await this.check();
+      if (!['starting', 'running'].includes(c.status)) throw Error('章节工具已取消');
       const a = p.arguments;
       if (!a || typeof a.path !== 'string') throw Error('文件参数无效');
       let value: unknown;
@@ -396,11 +402,14 @@ export class Chapters {
         value = await readdir(target);
       } else throw Error('未知文件操作');
       await this.check();
+      if (!['starting', 'running'].includes(c.status)) throw Error('章节工具已取消');
       return { success: true, contentItems: [{ type: 'inputText', text: JSON.stringify(value) }] };
     } catch (e) {
       return { success: false, contentItems: [{ type: 'inputText', text: String(e) }] };
     } finally {
       c.busy = false;
+      c.pendingTool = undefined;
+      finishTool();
     }
   }
   private async verify(c: Chapter) {
@@ -457,7 +466,10 @@ export class Chapters {
     return pending;
   }
   private async cancelOne(c: Chapter) {
-    if (!['starting', 'running'].includes(c.status)) return;
+    if (!['starting', 'running'].includes(c.status)) {
+      await c.pendingTool;
+      return;
+    }
     c.status = 'cancelled';
     if (c.requested && !c.turnId && this.rpc.healthy) {
       this.rpc.invalidate?.(Error('CHAPTER_TURN_UNKNOWN'));
@@ -477,6 +489,7 @@ export class Chapters {
         clearTimeout(timer);
       }
     }
+    await c.pendingTool;
     c.endedAt = new Date().toISOString();
     await this.persist(c);
   }

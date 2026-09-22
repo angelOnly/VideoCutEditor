@@ -38,12 +38,14 @@ async function fixture() {
   const rpc = new TestRpc(),
     abort = new AbortController();
   let valid = true;
+  let checkPause: Promise<void> | undefined;
   const manager = new Chapters(rpc, {} as Config, {
     root,
     runId: 'r1',
     token: 7,
     signal: abort.signal,
     check: async () => {
+      await checkPause;
       if (!valid) throw Error('租约已过期');
     },
   });
@@ -113,6 +115,16 @@ async function fixture() {
     manager,
     brief,
     dispatch,
+    pauseCheck: () => {
+      let release!: () => void;
+      checkPause = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      return () => {
+        checkPause = undefined;
+        release();
+      };
+    },
     expire: () => {
       valid = false;
     },
@@ -193,14 +205,16 @@ test('父取消中断全部章节，租约过期拒绝继续读写', async () =>
   try {
     const c = await f.dispatch();
     f.expire();
-    await assert.rejects(
-      f.manager.handleRequest('item/tool/call', {
-        threadId: c.threadId,
-        turnId: 'turn-' + c.threadId,
-        tool: 'video_chapter_files',
-        arguments: { operation: 'read', path: 'render/r1/direction.json' },
-      }),
-      /租约/,
+    assert.equal(
+      (
+        await f.manager.handleRequest('item/tool/call', {
+          threadId: c.threadId,
+          turnId: 'turn-' + c.threadId,
+          tool: 'video_chapter_files',
+          arguments: { operation: 'read', path: 'render/r1/direction.json' },
+        })
+      ).success,
+      false,
     );
     f.abort.abort();
     await f.manager.close();
@@ -364,6 +378,34 @@ test('章节累计 total 幂等汇总；新控制器保留取消 attempt 用量�
     } finally {
       await next.close();
     }
+  } finally {
+    await f.close();
+  }
+});
+
+test('章节取消等待已进入的文件代理，租约检查间隙不再写入', async () => {
+  const f = await fixture();
+  try {
+    const c = await f.dispatch(),
+      release = f.pauseCheck();
+    const call = {
+      threadId: c.threadId,
+      turnId: 'turn-' + c.threadId,
+      tool: 'video_chapter_files',
+      arguments: { operation: 'write', path: 'late.json', text: '{}' },
+    };
+    const pending = f.manager.handleRequest('item/tool/call', call);
+    await assert.rejects(f.manager.handleRequest('item/tool/call', call), /无权限/);
+    let stopped = false;
+    const stop = f.manager.cancelAll().then(() => {
+      stopped = true;
+    });
+    await new Promise((r) => setImmediate(r));
+    assert.equal(stopped, false);
+    release();
+    assert.equal((await pending).success, false);
+    await stop;
+    await assert.rejects(readFile(path.join(f.root, c.workspace, 'late.json')), { code: 'ENOENT' });
   } finally {
     await f.close();
   }
