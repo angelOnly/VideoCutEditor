@@ -1,0 +1,9 @@
+{
+  "observedAt": 1790099353.8702772,
+  "scope": "当前空闲时主机快照；历史swap占用不等同当前内存压力。",
+  "commands": {
+    "sysctl hw.memsize vm.swapusage": "hw.memsize: 17179869184\nvm.swapusage: total = 12288.00M  used = 10799.75M  free = 1488.25M  (encrypted)\n",
+    "memory_pressure -Q": "The system has 17179869184 (4194304 pages with a page size of 4096).\nSystem-wide memory free percentage: 66%\n",
+    "vm_stat": "Mach Virtual Memory Statistics: (page size of 4096 bytes)\nPages free:                                   177157.\nPages active:                                1299237.\nPages inactive:                              1285411.\nPages speculative:                             13278.\nPages throttled:                                   0.\nPages wired down:                            1178105.\nPages purgeable:                              249148.\n\"Translation faults\":                     2437535959.\nPages copy-on-write:                        76764562.\nPages zero filled:                        2821368830.\nPages reactivated:                          70633672.\nPages purged:                               17470093.\nFile-backed pages:                            803288.\nAnonymous pages:                             1794638.\nPages stored in compressor:                  5534014.\nPages occupied by compressor:                 240599.\nDecompressions:                             63860651.\nCompressions:                               89109557.\nPageins:                                    45833497.\nPageouts:                                     518874.\nSwapins:                                   118808921.\nSwapouts:                                  124417221.\n"
+  }
+}

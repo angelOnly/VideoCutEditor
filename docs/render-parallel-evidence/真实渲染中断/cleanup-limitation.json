@@ -1,0 +1,7 @@
+{
+  "attempt": "guard-1790098649774242000",
+  "metricsAvailable": false,
+  "reason": "旧守卫stop_group的PermissionError覆盖了原结果，未落盘完整采样，不能重建有效墙钟性能。",
+  "manualRecovery": "对两个已核验整组属于本task的Chrome组发送SIGTERM成功；原21基线签名仍齐全。",
+  "performanceEligible": false
+}

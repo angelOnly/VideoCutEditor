@@ -1,0 +1,72 @@
+[
+  {
+    "group": 89465,
+    "members": [
+      {
+        "pid": 89465,
+        "started": "Wed Sep 23 01:40:42 2026"
+      },
+      {
+        "pid": 89478,
+        "started": "Wed Sep 23 01:40:42 2026"
+      },
+      {
+        "pid": 89480,
+        "started": "Wed Sep 23 01:40:42 2026"
+      },
+      {
+        "pid": 89483,
+        "started": "Wed Sep 23 01:40:42 2026"
+      },
+      {
+        "pid": 89485,
+        "started": "Wed Sep 23 01:40:43 2026"
+      },
+      {
+        "pid": 89489,
+        "started": "Wed Sep 23 01:40:43 2026"
+      },
+      {
+        "pid": 89522,
+        "started": "Wed Sep 23 01:40:49 2026"
+      }
+    ],
+    "at": 1790099072.575068,
+    "signal": "SIGTERM sent"
+  },
+  {
+    "group": 89467,
+    "members": [
+      {
+        "pid": 89467,
+        "started": "Wed Sep 23 01:40:42 2026"
+      },
+      {
+        "pid": 89477,
+        "started": "Wed Sep 23 01:40:42 2026"
+      },
+      {
+        "pid": 89479,
+        "started": "Wed Sep 23 01:40:42 2026"
+      },
+      {
+        "pid": 89481,
+        "started": "Wed Sep 23 01:40:42 2026"
+      },
+      {
+        "pid": 89486,
+        "started": "Wed Sep 23 01:40:43 2026"
+      },
+      {
+        "pid": 89488,
+        "started": "Wed Sep 23 01:40:43 2026"
+      },
+      {
+        "pid": 89521,
+        "started": "Wed Sep 23 01:40:49 2026"
+      }
+    ],
+    "at": 1790099072.58751,
+    "signal": "SIGTERM sent"
+  }
+]

@@ -1,0 +1,75 @@
+{
+  "observationFile": "/Users/jiang/.codex/worktrees/b9ba/VideoCutEditor/claude-code-video-toolkit/projects/render-parallel-20260923/evidence/idle-followup-observation.json",
+  "observationSha256": "888742066e5805d005bab043e036c57993cced4884b50c968b322e3fe8728d3a",
+  "initial": {
+    "samples": 86,
+    "spanSeconds": 180.01560401916504,
+    "maximumIndividualCpuPercent": 0.4,
+    "maximumAggregateCpuPercent": 0.8999999999999999,
+    "meanSampledAggregateCpuPercent": 0.047674418604651166,
+    "samplesAboveOnePercent": 0,
+    "missingSignatureSamples": 0,
+    "medianExternalRssKiB": 1135440.0,
+    "peakExternalRssKiB": 1135476
+  },
+  "extended": {
+    "samples": 57,
+    "spanSeconds": 120.00944519042969,
+    "maximumIndividualCpuPercent": 0.4,
+    "maximumAggregateCpuPercent": 0.4,
+    "meanSampledAggregateCpuPercent": 0.06315789473684211,
+    "samplesAboveOnePercent": 0,
+    "missingSignatureSamples": 0,
+    "medianExternalRssKiB": 1116424,
+    "peakExternalRssKiB": 1135784
+  },
+  "interPhaseGapSeconds": 18.352587938308716,
+  "triggerAllMatchKnownBaseline": true,
+  "triggerProcesses": [
+    {
+      "pid": 43599,
+      "cpu": 7.9,
+      "started": "Tue Sep 22 21:46:42 2026"
+    },
+    {
+      "pid": 43629,
+      "cpu": 2.3,
+      "started": "Tue Sep 22 21:46:43 2026"
+    }
+  ],
+  "ownMediaObservedElapsedRange": [
+    248.07737708091736,
+    254.73042511940002
+  ],
+  "pathOnlyUnknownCandidates": [
+    {
+      "elapsedSeconds": 250.31756591796875,
+      "pid": 88994,
+      "ppid": 88956,
+      "command": "/Users/jiang/Documents/VideoCutEditor/claude-code-video-toolkit/examples/hello-world/node_modules/@remotion/compositor-darwin-x64/remotion {\"nonce\":\"n7jo91pbpagounjy9bhyr\",\"payload\":{\"type\":\"StartLongRunningProcess\",\"params\":{\"concurrency\":2,\"maximum_frame_cache_size_in_bytes\":null,\"verbose\":false}}}"
+    },
+    {
+      "elapsedSeconds": 252.54696083068848,
+      "pid": 89007,
+      "ppid": 88956,
+      "command": "/Users/jiang/Documents/VideoCutEditor/claude-code-video-toolkit/examples/hello-world/node_modules/@remotion/compositor-darwin-x64/remotion {\"nonce\":\"mfroabte5zi9jobvqclp3l\",\"payload\":{\"type\":\"StartLongRunningProcess\",\"params\":{\"concurrency\":2,\"maximum_frame_cache_size_in_bytes\":null,\"verbose\":false}}}"
+    },
+    {
+      "elapsedSeconds": 254.73042511940002,
+      "pid": 89024,
+      "ppid": 88956,
+      "command": "/Users/jiang/Documents/VideoCutEditor/claude-code-video-toolkit/examples/hello-world/node_modules/@remotion/compositor-darwin-x64/remotion {\"nonce\":\"f6yrz4wzi6b2hgp5mctng7\",\"payload\":{\"type\":\"StartLongRunningProcess\",\"params\":{\"concurrency\":2,\"maximum_frame_cache_size_in_bytes\":null,\"verbose\":false}}}"
+    }
+  ],
+  "findings": [
+    "本次触发是已知遗留浏览器的CPU阈值命中，不能据此断定原生产任务恢复。",
+    "约180秒原观察加120秒延长均未复现>1%的旧组活动；延长覆盖己方Chrome短媒体启停。",
+    "unknownOriginalMedia是路径初筛：3个候选来自共享Remotion compositor路径、共同父88956且与己方短媒体重合，不应仅因依赖位于原仓库就判为原生产者。",
+    "观察间隔约2秒，不能排除短于采样间隔的活动；ps CPU不是精确瞬时内核记账。",
+    "证据不足以确定7.9%峰值持续时间、来源或可靠的放宽窗口；不建议据此直接改阈值。",
+    "保持未知/新原生产者立即阻挡；如未来重复同签名尖峰，应先记录更细时间序列，再评估仅针对已验证旧组的连续样本规则。"
+  ],
+  "guardModified": false,
+  "baselineModified": false,
+  "mediaLaunchedByObserver": false
+}

@@ -1,0 +1,79 @@
+{
+  "checkedAt": "2026-09-22T17:36:43.244Z",
+  "fps": 30,
+  "scenes": [
+    {
+      "id": "scene_001",
+      "sentenceCount": 3
+    },
+    {
+      "id": "scene_002",
+      "sentenceCount": 2
+    },
+    {
+      "id": "scene_003",
+      "sentenceCount": 4
+    },
+    {
+      "id": "scene_004",
+      "sentenceCount": 3
+    },
+    {
+      "id": "scene_005",
+      "sentenceCount": 1
+    },
+    {
+      "id": "scene_006",
+      "sentenceCount": 5
+    },
+    {
+      "id": "scene_007",
+      "sentenceCount": 3
+    },
+    {
+      "id": "scene_008",
+      "sentenceCount": 7
+    },
+    {
+      "id": "scene_009",
+      "sentenceCount": 1
+    },
+    {
+      "id": "scene_010",
+      "sentenceCount": 5
+    },
+    {
+      "id": "scene_011",
+      "sentenceCount": 3
+    },
+    {
+      "id": "scene_012",
+      "sentenceCount": 4
+    },
+    {
+      "id": "scene_013",
+      "sentenceCount": 2
+    },
+    {
+      "id": "scene_014",
+      "sentenceCount": 1
+    },
+    {
+      "id": "scene_015",
+      "sentenceCount": 2
+    },
+    {
+      "id": "scene_016",
+      "sentenceCount": 2
+    },
+    {
+      "id": "scene_017",
+      "sentenceCount": 4
+    },
+    {
+      "id": "scene_018",
+      "sentenceCount": 5
+    }
+  ],
+  "recommendations": []
+}
