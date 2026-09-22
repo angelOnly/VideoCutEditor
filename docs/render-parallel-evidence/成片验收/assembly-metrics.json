@@ -1,0 +1,27 @@
+{
+  "argv": [
+    "/Users/jiang/Documents/VideoCutEditor/video-worker/.venv/bin/python3",
+    "-B",
+    "tools/stage_media.py",
+    "assemble",
+    "--request",
+    "/Users/jiang/.codex/worktrees/b9ba/VideoCutEditor/claude-code-video-toolkit/projects/render-parallel-20260923/render/render_001/request.json",
+    "--manifest",
+    "/Users/jiang/.codex/worktrees/b9ba/VideoCutEditor/claude-code-video-toolkit/projects/render-parallel-20260923/render/render_001/manifest.json"
+  ],
+  "exitCode": 0,
+  "reason": null,
+  "wallSeconds": 59.35991556299268,
+  "blockingProcesses": [],
+  "peakAggregateRssKiB": 127672,
+  "peakCpuPercent": 645.4,
+  "externalIdleBaselinePeakRssKiB": 1134576,
+  "sampledCpuSecondsEstimate": 61.37691325643237,
+  "cleanup": {
+    "complete": true,
+    "errors": [],
+    "signals": [],
+    "remainingProcesses": []
+  },
+  "executionError": null
+}

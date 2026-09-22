@@ -1,0 +1,5 @@
+{
+  "note": "独立终检启动时已读取此前的视觉审查说明；其执行期间主控完成整片播放，quality.json 随后仅更新 limitations 文本。媒体、时间轴、逐镜证据和 manifest 未修改。终检原始回执原样保留，最终播放证据另列 whole-video-playback-review.json。",
+  "mediaUnchanged": true,
+  "humanListeningPerformed": false
+}
