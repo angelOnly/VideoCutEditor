@@ -56,3 +56,11 @@ python3 -B video-worker/scripts/render-benchmark-adapter.py --generate \
 每轮分别记录 prepare、freeze、render、assemble、check。技术合片复用正式媒体工具的混音规则，技术检查验证确认原文、全部 MP4 解码、帧数/规格/音频一致性、合片边界及全量解码像素摘要。首个旧串行建立像素参考，此后任何不同都会停止结论。它**不生成生产 review、Worker 成功账本或声称人工已看**；`technical-check.json` 明确标记未人工试听、未视觉审查。最终候选仍需主控独立视觉审查，不能把这里的像素参考当作已经审美验收。
 
 大文件位于每轮 `artifacts`，基准驱动记录摘要后清理；各轮 `render.json`、`technical-check.json`、合片摘要、日志和资源采样保留。最终供人工审查的候选请另用同一冻结工程正常渲染保存，不能把已被清理的基准路径当交付路径。
+
+## 原工作区遗留闲置浏览器
+
+不能停止原测试遗留浏览器，也不能仅凭进程存在永久推断原测试仍在渲染。可设置 `idleBaselineProcesses: [{"pid": 123, "started": "ps lstart 的完整值"}]` 和 `idleBaselineEvidence` 文件路径，作严格且有证据的闲置例外。适配配置生成支持 `--idle-baseline-evidence 文件` 自动填入。
+
+证据必须含 `observationSeconds >= 60`、真实 `maxCpuPercent <= 0.5`（保留闲置维护的 0.1% 等真实值，不能写成零）、`noActiveProducer: true`、完整 `processes` 签名、`completionEvidence: [{path,sha256}]`，以及 `observationFile`/`observationSha256`。原始观察是 `[{at: epoch秒, processes: [{pid,started,cpu,...}]}]`，驱动验证时间跨度、每次均覆盖全部签名、CPU摘要及文件摘要。完结证据与“无活跃生产者”需基于只读原状态判断，不能仅凭没有 candidate 作结论。
+
+原观察必须覆盖浏览器全部后代，包括 GPU/网络 Helper。精确签名匹配且当前 CPU 不超过 1% 才临时忽略；任何名单进程恢复到 >1%、签名变化，或发现未知原媒体后代，仍阻挡/污染停止。绝不向这些进程发送信号。其常驻 RSS 通过 `externalIdleBaselineRssKiB` 原始采样和 `externalIdleBaselinePeakRssKiB` 单独记录，不算己方开销；报告须声明仍存在外部常驻内存，不声称机器完全独占。

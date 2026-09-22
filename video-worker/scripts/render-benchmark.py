@@ -12,7 +12,7 @@ import statistics
 import subprocess
 import time
 
-MEDIA = re.compile(r'ffmpeg|ffprobe|remotion|render[_-](?:scene|batch)|chrome.*(?:headless|renderer)', re.I)
+MEDIA = re.compile(r'ffmpeg|ffprobe|remotion|render[_-](?:scene|batch)|chrome|chromium', re.I)
 
 
 def processes():
@@ -35,11 +35,14 @@ def descendants(rows, seeds):
         ids = newer
 
 
-def blockers(rows, protected_root, own_group=None, own_pids=()):
+def blockers(rows, protected_root, own_group=None, own_pids=(), idle_baseline=()):
     # 原工作区命令及其子孙中的媒体进程；永远不向这些 PID 发信号。
+    idle = {(p['pid'], p['started']) for p in idle_baseline}
     roots = {p['pid'] for p in rows if protected_root in p['command'] and p['pgid'] != own_group and p['pid'] not in own_pids}
+    roots |= {p['pid'] for p in rows if (p['pid'], p.get('started')) in idle}
     protected = descendants(rows, roots)
-    return [p for p in rows if p['pid'] in protected and p['pgid'] != own_group and p['pid'] not in own_pids and MEDIA.search(p['command'])]
+    return [p for p in rows if p['pid'] in protected and p['pgid'] != own_group and p['pid'] not in own_pids and MEDIA.search(p['command'])
+            and not ((p['pid'], p.get('started')) in idle and p.get('cpu', 0) <= 1)]
 
 
 def sha256(path):
@@ -103,9 +106,9 @@ def stop_group(proc, known=None, cooperative=False):
     proc.wait(timeout=2)
 
 
-def execute(argv, cwd, env, folder, protected_root, timeout, interval, max_rss_kib):
+def execute(argv, cwd, env, folder, protected_root, timeout, interval, max_rss_kib, idle_baseline=()):
     start = time.monotonic()
-    peak_rss = peak_cpu = cpu_integral = 0
+    peak_rss = peak_cpu = cpu_integral = external_peak_rss = 0
     last = start
     samples = []
     reason = None
@@ -122,8 +125,11 @@ def execute(argv, cwd, env, folder, protected_root, timeout, interval, max_rss_k
                 cpu_integral += cpu / 100 * (now - last)
                 last = now
                 peak_rss, peak_cpu = max(peak_rss, rss), max(peak_cpu, cpu)
-                samples.append({'seconds': now-start, 'rssKiB': rss, 'cpuPercent': cpu})
-                busy = blockers(rows, protected_root, proc.pid, {p['pid'] for p in own})
+                idle_signatures = {(p['pid'], p['started']) for p in idle_baseline}
+                external_rss = sum(p['rssKiB'] for p in rows if (p['pid'], p.get('started')) in idle_signatures)
+                external_peak_rss = max(external_peak_rss, external_rss)
+                samples.append({'seconds': now-start, 'rssKiB': rss, 'cpuPercent': cpu, 'externalIdleBaselineRssKiB': external_rss})
+                busy = blockers(rows, protected_root, proc.pid, {p['pid'] for p in own}, idle_baseline)
                 if busy:
                     reason = 'external_media_contention'
                 elif now-start > timeout:
@@ -142,7 +148,7 @@ def execute(argv, cwd, env, folder, protected_root, timeout, interval, max_rss_k
             stop_group(proc, known)
     return {'argv': argv, 'exitCode': proc.returncode, 'reason': reason,
             'wallSeconds': time.monotonic()-start, 'peakAggregateRssKiB': peak_rss,
-            'peakCpuPercent': peak_cpu, 'sampledCpuSecondsEstimate': cpu_integral, 'samples': samples}
+            'peakCpuPercent': peak_cpu, 'externalIdleBaselinePeakRssKiB': external_peak_rss, 'sampledCpuSecondsEstimate': cpu_integral, 'samples': samples}
 
 
 def cleanup_outputs(folder, relative_paths):
@@ -184,6 +190,36 @@ def summarize(runs):
     return result
 
 
+def validate_idle_baseline(config):
+    baseline = config.get('idleBaselineProcesses', [])
+    if not baseline:
+        return []
+    evidence = json.loads(Path(config['idleBaselineEvidence']).read_text())
+    if evidence.get('observationSeconds', 0) < 60 or not 0 <= evidence.get('maxCpuPercent', 999) <= .5 or evidence.get('noActiveProducer') is not True:
+        raise ValueError('闲置豁免必须有至少60秒CPU不超过0.5%且无原Node/ffmpeg生产者的只读证据')
+    signatures = {(p['pid'], p['started']) for p in baseline}
+    if signatures != {(p['pid'], p['started']) for p in evidence['processes']}:
+        raise ValueError('豁免签名与观察证据不一致')
+    observation = evidence.get('observationFile')
+    if not observation or sha256(Path(observation)) != evidence.get('observationSha256'):
+        raise ValueError('闲置豁免必须绑定原始观察文件及摘要')
+    samples = json.loads(Path(observation).read_text())
+    if not samples or samples[-1]['at'] - samples[0]['at'] < 60:
+        raise ValueError('原始观察不足60秒')
+    measured_max = 0
+    for sample in samples:
+        present = {(p['pid'], p['started']) for p in sample['processes']}
+        if not signatures.issubset(present):
+            raise ValueError('原始观察未持续覆盖全部豁免签名')
+        measured_max = max(measured_max, max(p['cpu'] for p in sample['processes'] if (p['pid'], p['started']) in signatures))
+    if measured_max > .5 or abs(measured_max - evidence['maxCpuPercent']) > .00001:
+        raise ValueError('CPU摘要与原始观察不符或超过0.5%')
+    completions = evidence.get('completionEvidence', [])
+    if not completions or any(sha256(Path(p['path'])) != p['sha256'] for p in completions):
+        raise ValueError('缺少旧任务已完结证据或证据摘要改变')
+    return baseline
+
+
 def run(config):
     root = Path(config['outputRoot']).resolve()
     protected = str(Path(config['protectedRoot']).resolve())
@@ -201,10 +237,12 @@ def run(config):
         raise ValueError('每组至少一个阶段命令')
     if not config.get('immutableInputs'):
         raise ValueError('必须列出确认稿、工程、音频与输出规格的冻结输入')
+    idle_baseline = validate_idle_baseline(config)
     root.mkdir(parents=True)
     frozen = fingerprint(config['immutableInputs'])
     report = {'schemaVersion': 1, 'config': config, 'frozenInputs': frozen, 'runs': [], 'externalWaitSeconds': 0,
-              'measurementNotes': ['RSS 为采样时自有后代进程 RSS 之和（共享页可能重复），不是系统精确峰值。',
+              'idleBaselineEvidence': json.loads(Path(config['idleBaselineEvidence']).read_text()) if idle_baseline else None,
+              'measurementNotes': ['显式闲置浏览器仍占用外部常驻内存，本基准不假设机器完全独占。', 'RSS 为采样时自有后代进程 RSS 之和（共享页可能重复），不是系统精确峰值。',
                                    'CPU 为 ps 百分比积分估计，短进程可能漏采；所有组采用相同采样。',
                                    'cold 表示新建应用缓存；不清除系统页缓存。warm 复用紧邻 cold 缓存，但必须重渲而非复用成片。']}
     def save():
@@ -220,7 +258,7 @@ def run(config):
                 cache.mkdir()
                 for condition in ['cold', 'warm']:
                     wait_start = time.monotonic()
-                    while blockers(processes(), protected):
+                    while blockers(processes(), protected, idle_baseline=idle_baseline):
                         if time.monotonic()-wait_start > config.get('externalWaitTimeoutSeconds', 43200):
                             raise TimeoutError('原测试持续占用；保留原始记录，退出基准')
                         time.sleep(config.get('guardIntervalSeconds', 1))
@@ -248,7 +286,7 @@ def run(config):
                         stage_dir.mkdir()
                         item = execute([expand(s) for s in stage['argv']], cwd, env, stage_dir, protected,
                                        stage.get('timeoutSeconds', 7200), config.get('sampleIntervalSeconds', .5),
-                                       config.get('maxAggregateRssKiB', 10 * 1024 * 1024))
+                                       config.get('maxAggregateRssKiB', 10 * 1024 * 1024), idle_baseline)
                         item['name'] = stage['name']
                         measurement['stages'].append(item)
                         if item['reason'] or item['exitCode'] != 0:

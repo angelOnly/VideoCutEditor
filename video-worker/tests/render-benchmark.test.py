@@ -18,6 +18,35 @@ class BenchmarkTest(unittest.TestCase):
                 dict(pid=3, ppid=0, pgid=3, command='remotion /original/node_modules')]
         self.assertEqual([p['pid'] for p in bench.blockers(rows, '/original', 3)], [2])
 
+    def test_idle_baseline_requires_signature_and_stops_when_cpu_returns(self):
+        baseline = [dict(pid=20, started='original')]
+        idle = dict(pid=20, ppid=1, pgid=20, started='original', cpu=0, command='Chrome /original/task')
+        self.assertEqual(bench.blockers([idle], '/original', idle_baseline=baseline), [])
+        for change in [dict(started='reused'), dict(cpu=1.1)]:
+            self.assertEqual(len(bench.blockers([{**idle, **change}], '/original', idle_baseline=baseline)), 1)
+        child = dict(pid=21, ppid=20, pgid=20, started='new', cpu=0, command='Chrome --type=gpu-process')
+        self.assertEqual([p['pid'] for p in bench.blockers([idle, child], '/original', idle_baseline=baseline)], [21])
+
+    def test_idle_baseline_rejects_unproven_exception(self):
+        import json
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            done = root / 'complete.json'
+            done.write_text('{}')
+            observations = root / 'observations.json'
+            observations.write_text(json.dumps([dict(at=t, processes=[dict(pid=20, started='original', cpu=.1)]) for t in [0, 65]]))
+            evidence = dict(observationFile=str(observations), observationSha256=bench.sha256(observations), observationSeconds=65, maxCpuPercent=.1, noActiveProducer=True,
+                            processes=[dict(pid=20, started='original')],
+                            completionEvidence=[dict(path=str(done), sha256=bench.sha256(done))])
+            path = root / 'evidence.json'
+            path.write_text(json.dumps(evidence))
+            config = dict(idleBaselineProcesses=evidence['processes'], idleBaselineEvidence=str(path))
+            self.assertEqual(bench.validate_idle_baseline(config), evidence['processes'])
+            evidence['observationSeconds'] = 59
+            path.write_text(json.dumps(evidence))
+            with self.assertRaises(ValueError):
+                bench.validate_idle_baseline(config)
+
     def test_summary_excludes_contaminated_and_failed(self):
         def item(status, wall):
             return dict(variant='new_2', condition='cold', status=status, wallSeconds=wall,

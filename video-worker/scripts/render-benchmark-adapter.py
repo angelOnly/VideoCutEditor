@@ -75,6 +75,10 @@ def generate(args):
               'protectedRoot': args.protected_root, 'immutableInputs': frozen, 'variants': variants, 'repetitions': 3,
               'cleanupRelativePaths': ['artifacts'], 'sampleIntervalSeconds': .5,
               'env': {'PYTHONDONTWRITEBYTECODE': '1'}, 'cacheCondition': settings['cacheCondition']}
+    if args.idle_baseline_evidence:
+        evidence_path = Path(args.idle_baseline_evidence).resolve(strict=True)
+        config['idleBaselineProcesses'] = read(evidence_path)['processes']
+        config['idleBaselineEvidence'] = str(evidence_path)
     write(settings_file.with_suffix('.benchmark.json'), config)
     print(settings_file.with_suffix('.benchmark.json'))
 
@@ -234,7 +238,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--generate', action='store_true')
     parser.add_argument('--settings', required=True)
-    parser.add_argument('--source'); parser.add_argument('--output'); parser.add_argument('--protected-root')
+    parser.add_argument('--idle-baseline-evidence'); parser.add_argument('--source'); parser.add_argument('--output'); parser.add_argument('--protected-root')
     parser.add_argument('--python'); parser.add_argument('--node'); parser.add_argument('--modules'); parser.add_argument('--browser')
     parser.add_argument('--run-dir'); parser.add_argument('--variant'); parser.add_argument('--slots', type=int)
     parser.add_argument('--step', choices=['prepare', 'freeze', 'render', 'assemble', 'check'])
