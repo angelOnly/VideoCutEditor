@@ -70,3 +70,9 @@ python3 -B video-worker/scripts/render-benchmark-adapter.py --generate \
 通用驱动配置 `quietSeconds` 默认 0，保持已有短测试行为；本次实际工程适配生成的配置默认 180 秒。每轮开始前必须连续观察满这个窗口，期间一旦发现原媒体生产者或未获豁免浏览器，计时重新开始，避免原测试镜间的短暂空隙触发新渲染。已有运行中的争用取消规则保持不变。
 
 `guardIntervalSeconds` 默认 1 秒，`externalWaitTimeoutSeconds` 默认 43200 秒。全部等待（包括连续空闲观察和最终超时）单列在 `externalWaitSeconds`，并逐轮记录在 `externalWaits`；这段时间不进入该轮 `wallSeconds` 或性能中位数。可直接调用 `wait_for_quiet(protected_root, idle_baseline=..., quiet_seconds=180)` 复用相同守卫逻辑。
+
+## 清理故障与信号边界
+
+每次发信号前重新核对 PID、启动时间及完整进程组。只有 PGID 大于 1、不是守卫自身进程组，且该组当前所有成员均为已确认自有签名时，才可整组发送。混合组、PGID 1 或守卫所在组只对再次匹配签名的自有 PID 单独发送，绝不因某个自有辅助进程位于共享组而终止整组。
+
+清理逐目标记录信号、PGID/PID、已核验成员及 errno；一个目标 EPERM 不阻止其余自有目标清理。每阶段在清理前先写 `metrics.json` 保存全部采样，清理后补充 `cleanup.signals/errors/remainingProcesses/complete`。确认残留时 complete 为 false；观察失败、无法确认时 remainingProcesses 为 null，也不能标记清理完成。无原始争用原因但清理未完成的轮次标记 `cleanup_failed`，不得纳入成功性能统计。

@@ -80,31 +80,74 @@ def track_owned(rows, root_pid, known):
     return own
 
 
+def process_record(process):
+    return {k: process.get(k) for k in ('pid', 'ppid', 'pgid', 'started', 'cpu', 'rssKiB')} | {'command': process.get('command', '')[:2048]}
+
+
 def stop_group(proc, known=None, cooperative=False):
     known = known if known is not None else {}
+    errors, signals = [], []
+    def snapshot():
+        try:
+            proc.poll()
+            rows = processes()
+            return rows, track_owned(rows, proc.pid, known)
+        except Exception as exc:
+            errors.append({'operation': 'snapshot', 'error': repr(exc)})
+            return None, None
+    def finish(own):
+        return {'complete': own is not None and not own, 'errors': errors, 'signals': signals,
+                'remainingProcesses': [process_record(p) for p in own] if own is not None else None}
+    def send(kind, target, sig, members):
+        record = {'kind': kind, 'target': target, 'signal': int(sig), 'members': [process_record(p) for p in members]}
+        try:
+            (os.killpg if kind == 'group' else os.kill)(target, sig)
+            record['status'] = 'sent'
+        except ProcessLookupError:
+            record['status'] = 'already_exited'
+        except OSError as exc:
+            record.update(status='error', errno=exc.errno, error=str(exc))
+            errors.append(record.copy())
+        signals.append(record)
     if cooperative:
         deadline = time.monotonic() + 8
         while time.monotonic() < deadline:
-            proc.poll()
-            if not track_owned(processes(), proc.pid, known):
-                return
+            _, own = snapshot()
+            if not own:
+                return finish(own)
             time.sleep(.1)
     for sig, seconds in [(signal.SIGTERM, 8), (signal.SIGKILL, 2)]:
-        rows = track_owned(processes(), proc.pid, known)
-        for pgid in {p['pgid'] for p in rows}:
-            if pgid == os.getpgrp():
+        _, own = snapshot()
+        if not own:
+            return finish(own)
+        for pgid in sorted({p['pgid'] for p in own}):
+            # 每次发信号前重读整组；混合组、PGID 1 和当前控制器组只能逐个核验自有 PID。
+            fresh, members = snapshot()
+            if fresh is None:
+                return finish(None)
+            members = [p for p in members if p['pgid'] == pgid]
+            all_members = [p for p in fresh if p['pgid'] == pgid]
+            if not members:
                 continue
-            try:
-                os.killpg(pgid, sig)
-            except ProcessLookupError:
-                pass
+            if pgid > 1 and pgid != os.getpgrp() and {p['pid'] for p in all_members} == {p['pid'] for p in members}:
+                send('group', pgid, sig, members)
+            else:
+                for candidate in members:
+                    _, verified = snapshot()
+                    if verified is None:
+                        return finish(None)
+                    matched = [p for p in verified if p['pid'] == candidate['pid'] and
+                               (p.get('started'), p['pgid']) == (candidate.get('started'), candidate['pgid'])]
+                    if matched and candidate['pid'] > 1 and candidate['pid'] != os.getpid():
+                        send('pid', candidate['pid'], sig, matched)
         deadline = time.monotonic() + seconds
         while time.monotonic() < deadline:
-            proc.poll()
-            if not track_owned(processes(), proc.pid, known):
-                return
+            _, own = snapshot()
+            if not own:
+                return finish(own)
             time.sleep(.1)
-    proc.wait(timeout=2)
+    _, own = snapshot()
+    return finish(own)
 
 
 def execute(argv, cwd, env, folder, protected_root, timeout, interval, max_rss_kib, idle_baseline=()):
@@ -115,6 +158,15 @@ def execute(argv, cwd, env, folder, protected_root, timeout, interval, max_rss_k
     reason = None
     blocking_processes = []
     known = {}
+    execution_error = None
+    cooperative = False
+    cleanup = {"complete": False, "status": "pending", "remainingProcesses": None}
+    def measurement():
+        return {"argv": argv, "exitCode": proc.returncode, "reason": reason,
+                "wallSeconds": time.monotonic()-start, "blockingProcesses": blocking_processes,
+                "peakAggregateRssKiB": peak_rss, "peakCpuPercent": peak_cpu,
+                "externalIdleBaselinePeakRssKiB": external_peak_rss, "sampledCpuSecondsEstimate": cpu_integral,
+                "samples": samples, "cleanup": cleanup, "executionError": repr(execution_error) if execution_error else None}
     with (folder / 'stdout.log').open('w') as out, (folder / 'stderr.log').open('w') as err:
         proc = subprocess.Popen(argv, cwd=cwd, env=env, stdout=out, stderr=err, start_new_session=True)
         try:
@@ -134,8 +186,7 @@ def execute(argv, cwd, env, folder, protected_root, timeout, interval, max_rss_k
                 busy = blockers(rows, protected_root, proc.pid, {p['pid'] for p in own}, idle_baseline)
                 if busy:
                     reason = 'external_media_contention'
-                    blocking_processes = [{k: p.get(k) for k in ('pid', 'ppid', 'pgid', 'started', 'cpu', 'rssKiB')}
-                                          | {'command': p['command'][:2048]} for p in busy]
+                    blocking_processes = [process_record(p) for p in busy]
                     persist(folder / 'blocking-processes.json', {'observedAt': time.time(), 'processes': blocking_processes})
                 elif now-start > timeout:
                     reason = 'timeout'
@@ -145,15 +196,28 @@ def execute(argv, cwd, env, folder, protected_root, timeout, interval, max_rss_k
                     cancel = env.get('VIDEOCUT_BATCH_CANCEL_FILE')
                     if cancel:
                         Path(cancel).write_text(reason + '\n')
-                    stop_group(proc, known, cooperative=bool(cancel))
+                    cooperative = bool(cancel)
                     break
                 time.sleep(interval)
+        except BaseException as exc:
+            execution_error = exc
+            reason = reason or 'execution_error'
         finally:
-            # 包括 Ctrl-C、异常和正常父进程退出后留下的自有子进程。
-            stop_group(proc, known)
-    return {'argv': argv, 'exitCode': proc.returncode, 'reason': reason,
-            'wallSeconds': time.monotonic()-start, 'blockingProcesses': blocking_processes, 'peakAggregateRssKiB': peak_rss,
-            'peakCpuPercent': peak_cpu, 'externalIdleBaselinePeakRssKiB': external_peak_rss, 'sampledCpuSecondsEstimate': cpu_integral, 'samples': samples}
+            # 先保留采样，再清理；权限错误或清理异常不能覆盖争用证据，也不能伪装资源已释放。
+            persist(folder / 'metrics.json', measurement())
+            try:
+                cleanup = stop_group(proc, known, cooperative=cooperative)
+            except BaseException as exc:
+                cleanup = {'complete': False, 'errors': [{'operation': 'cleanup', 'error': repr(exc)}],
+                           'remainingProcesses': None, 'signals': [],
+                           'lastKnownSignatures': [{'pid': pid, 'started': signature[0], 'pgid': signature[1]} for pid, signature in known.items()]}
+            if not cleanup['complete']:
+                reason = reason or 'cleanup_failed'
+            persist(folder / 'metrics.json', measurement())
+    result = measurement()
+    if execution_error is not None:
+        raise execution_error
+    return result
 
 
 def cleanup_outputs(folder, relative_paths):

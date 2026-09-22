@@ -5,7 +5,7 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 SPEC = importlib.util.spec_from_file_location('benchmark', Path(__file__).parents[1] / 'scripts/render-benchmark.py')
 bench = importlib.util.module_from_spec(SPEC)
@@ -13,6 +13,75 @@ SPEC.loader.exec_module(bench)
 
 
 class BenchmarkTest(unittest.TestCase):
+    def test_cleanup_mixed_group_and_pgid_one_use_only_verified_pids(self):
+        rows = [dict(pid=10, ppid=2, pgid=10, started='a'),
+                dict(pid=11, ppid=10, pgid=1, started='b'),
+                dict(pid=99, ppid=1, pgid=10, started='unrelated'),
+                dict(pid=1, ppid=0, pgid=1, started='system')]
+        proc = Mock(pid=10)
+        def kill(pid, sig):
+            rows[:] = [p for p in rows if p['pid'] != pid]
+        with patch.object(bench, 'processes', side_effect=lambda: list(rows)), \
+             patch.object(bench.os, 'getpgrp', return_value=9999), \
+             patch.object(bench.os, 'killpg') as group_signal, \
+             patch.object(bench.os, 'kill', side_effect=kill) as pid_signal:
+            result = bench.stop_group(proc)
+        self.assertTrue(result['complete'])
+        group_signal.assert_not_called()
+        self.assertEqual({c.args[0] for c in pid_signal.call_args_list}, {10, 11})
+        self.assertEqual({p['pid'] for p in rows}, {1, 99})
+
+    def test_cleanup_permission_error_preserves_residue_and_continues_other_groups(self):
+        rows = [dict(pid=30, ppid=2, pgid=30, started='a'), dict(pid=40, ppid=30, pgid=40, started='b')]
+        clock = [0.0]
+        proc = Mock(pid=30)
+        def killpg(pgid, sig):
+            if pgid == 30:
+                raise PermissionError(1, 'mock denied')
+            rows[:] = [p for p in rows if p['pgid'] != pgid]
+        def sleep(seconds):
+            clock[0] += seconds
+        with patch.object(bench, 'processes', side_effect=lambda: list(rows)), \
+             patch.object(bench.time, 'monotonic', side_effect=lambda: clock[0]), \
+             patch.object(bench.time, 'sleep', side_effect=sleep), \
+             patch.object(bench.os, 'getpgrp', return_value=9999), \
+             patch.object(bench.os, 'killpg', side_effect=killpg) as signals:
+            result = bench.stop_group(proc)
+        self.assertFalse(result['complete'])
+        self.assertEqual([p['pid'] for p in result['remainingProcesses']], [30])
+        self.assertEqual([e['errno'] for e in result['errors']], [1, 1])
+        self.assertIn(40, [call.args[0] for call in signals.call_args_list])
+
+    def test_execute_persists_samples_even_if_cleanup_unexpectedly_raises(self):
+        import json
+        proc = Mock(pid=100, returncode=None)
+        proc.poll.return_value = None
+        rows = [dict(pid=100, ppid=2, pgid=100, started='ours', rssKiB=2048, cpu=2, command='python ours'),
+                dict(pid=200, ppid=1, pgid=200, started='external', rssKiB=1024, cpu=10, command='ffmpeg /original/task')]
+        with tempfile.TemporaryDirectory() as directory:
+            folder = Path(directory)
+            with patch.object(bench.subprocess, 'Popen', return_value=proc), \
+                 patch.object(bench, 'processes', return_value=rows), \
+                 patch.object(bench, 'stop_group', side_effect=PermissionError(1, 'mock cleanup error')):
+                result = bench.execute(['mock'], directory, {}, folder, '/original', 10, .1, 10000)
+            saved = json.loads((folder/'metrics.json').read_text())
+            self.assertEqual(result['reason'], 'external_media_contention')
+            self.assertFalse(saved['cleanup']['complete'])
+            self.assertIsNone(saved['cleanup']['remainingProcesses'])
+            self.assertEqual(len(saved['samples']), 1)
+            self.assertEqual(saved['blockingProcesses'][0]['pid'], 200)
+            self.assertEqual(saved['cleanup']['lastKnownSignatures'][0]['pid'], 100)
+
+    def test_successful_command_with_residue_is_not_a_successful_measurement(self):
+        proc = Mock(pid=100, returncode=0)
+        proc.poll.return_value = 0
+        with tempfile.TemporaryDirectory() as directory:
+            with patch.object(bench.subprocess, 'Popen', return_value=proc), \
+                 patch.object(bench, 'stop_group', return_value={'complete': False, 'remainingProcesses': [{'pid': 101}], 'errors': [], 'signals': []}):
+                result = bench.execute(['mock'], directory, {}, Path(directory), '/original', 10, .1, 10000)
+            self.assertEqual(result['reason'], 'cleanup_failed')
+            self.assertEqual(result['exitCode'], 0)
+
     def test_quiet_window_resets_when_original_render_resumes(self):
         clock = [0.0]
         producer = dict(pid=1, ppid=0, pgid=1, command='ffmpeg /original/task')
