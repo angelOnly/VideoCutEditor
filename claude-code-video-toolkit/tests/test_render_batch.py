@@ -2,6 +2,8 @@
 import os
 from pathlib import Path
 import sys
+import signal
+import subprocess
 import threading
 import time
 from types import SimpleNamespace
@@ -10,9 +12,10 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'tools'))
 from test_two_stage import Fixture
-from two_stage import StageError, read, write
+from two_stage import StageError, read, write, json_digest, active_processes
 from render_batch import freeze_batch, render_batch
 import stage_media
+import render_batch as batch_module
 
 
 class BatchTests(Fixture):
@@ -74,13 +77,90 @@ class BatchTests(Fixture):
         cancel = self.base/'cancel'
         timer = threading.Timer(.15, lambda: cancel.touch()); timer.start()
         def render(*args, **kwargs):
-            return stage_media.command([sys.executable, '-c', 'import time; time.sleep(30)'])
+            return stage_media.command([sys.executable, '-c', 'import subprocess,sys,time; subprocess.Popen([sys.executable,"-c","import time; time.sleep(30)"]); time.sleep(30)'])
         began = time.monotonic()
         try:
             with patch.dict(os.environ, {'VIDEOCUT_BATCH_CANCEL_FILE': str(cancel)}), patch('stage_media.supervise', side_effect=self.build), patch('stage_media.render_scene', side_effect=render):
                 with self.assertRaises(StageError): render_batch(self.args)
         finally: timer.join()
         self.assertLess(time.monotonic()-began, 3)
+        records = [read(p) for p in (self.args.request.parent/'work').glob('batch-media-*.process.json')]
+        self.assertTrue(records)
+        self.assertTrue(all(r['state'] == 'ended' for r in records))
+        groups = {r['pid'] for r in records}
+        rows = subprocess.check_output(['ps', '-axo', 'pgid=,stat='], text=True).splitlines()
+        self.assertFalse(any(int(row.split()[0]) in groups and not row.split()[1].startswith('Z') for row in rows if row.strip()))
+
+    def test_input_change_during_render_is_not_published(self):
+        def render(*args, **kwargs):
+            (self.job/'project/index.js').write_text('changed-during-render')
+            return {'path': 'untrusted.mp4', 'reused': False}
+        self.args.slots = 1
+        with patch('stage_media.supervise', side_effect=self.build), patch('stage_media.render_scene', side_effect=render):
+            with self.assertRaises(StageError) as error: render_batch(self.args)
+        self.assertEqual(error.exception.code, 'TIMELINE_STALE')
+        self.assertEqual(read(self.dir/'progress.json')['results'], [])
+
+    def test_self_hashed_invalid_manifest_cannot_bypass_freeze(self):
+        original = read(self.job/self.args.manifest)
+        for scenes in ([self.scenes[0], self.scenes[0]],
+                       [{**self.scenes[0], 'sceneId': 'scene_unknown'}], list(reversed(self.scenes))):
+            tampered = {**original, 'scenes': scenes}
+            tampered['version'] = json_digest({k: v for k, v in tampered.items() if k != 'version'})
+            write(self.job/self.args.manifest, tampered)
+            with self.assertRaises(StageError): render_batch(self.args)
+
+    def test_runtime_code_change_with_same_package_version_invalidates(self):
+        (Path(self.args.modules)/'remotion/runtime.js').write_text('modified-with-same-version')
+        with self.assertRaises(StageError) as error: render_batch(self.args)
+        self.assertEqual(error.exception.code, 'TIMELINE_STALE')
+
+    def test_sigkill_parent_keeps_live_group_visible_for_recovery(self):
+        work = self.args.request.parent/'work'; work.mkdir(exist_ok=True)
+        script = "from pathlib import Path; import sys; sys.path.insert(0, sys.argv[1]); from stage_media import supervise; supervise([sys.executable,'-c','import time; time.sleep(30)'],Path(sys.argv[2]),Path(sys.argv[2])/'orphan.log',Path(sys.argv[2])/'done',60)"
+        parent = subprocess.Popen([sys.executable, '-c', script, str(Path(stage_media.__file__).parent), str(work)], start_new_session=True)
+        record = work/'orphan.process.json'
+        pid = None
+        try:
+            deadline = time.monotonic()+5
+            while not record.exists() and time.monotonic() < deadline: time.sleep(.02)
+            pid = read(record)['pid']
+            parent.kill(); parent.wait(timeout=5)
+            self.assertIn(pid, [p['pid'] for p in active_processes(self.job)])
+        finally:
+            if parent.poll() is None: parent.kill(); parent.wait()
+            if pid:
+                try: os.killpg(pid, signal.SIGKILL)
+                except ProcessLookupError: pass
+
+    @unittest.skipUnless(sys.platform == 'darwin', '本项验证真实 macOS Seatbelt')
+    def test_bundle_and_source_are_read_only_in_real_sandbox(self):
+        scratch = self.base/'sandbox'; scratch.mkdir()
+        bundle = self.base/'readonly-bundle'; bundle.mkdir(); (bundle/'index.html').write_text('frozen')
+        code = "from pathlib import Path; import sys; failures=0\nfor name in sys.argv[1:3]:\n try: Path(name).write_text('forbidden')\n except PermissionError: failures+=1\nPath(sys.argv[3]).write_text(str(failures))\nassert failures==2"
+        completed = subprocess.run(['/usr/bin/sandbox-exec', '-p', stage_media.render_seatbelt_profile(scratch),
+             sys.executable, '-c', code, str(self.job/'project/index.js'), str(bundle/'index.html'), str(scratch/'result')], capture_output=True)
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        self.assertEqual((scratch/'result').read_text(), '2')
+        self.assertEqual((bundle/'index.html').read_text(), 'frozen')
+
+    def test_parent_validation_can_invoke_nested_audio_probe(self):
+        original = batch_module.load_request
+        def validate(*args, **kwargs):
+            # 实测音频方案会在 load_request 内调用媒体工具；取消检查不能死锁。
+            stage_media.check_batch()
+            return original(*args, **kwargs)
+        with patch('render_batch.load_request', side_effect=validate), patch('stage_media.supervise', side_effect=self.build), patch('stage_media.render_scene', return_value={'reused': False}):
+            result = render_batch(self.args)
+        self.assertEqual(len(result['results']), 2)
+
+    def test_warm_bundle_rejects_new_timeline_without_scene_dispatch(self):
+        with patch('stage_media.supervise', side_effect=self.build), patch('stage_media.render_scene', return_value={'reused': False}):
+            render_batch(self.args)
+        write(self.args.request.parent/'timeline.json', {'changed': True})
+        with patch('stage_media.render_scene', side_effect=AssertionError('不允许派发旧版本')):
+            with self.assertRaises(StageError) as error: render_batch(self.args)
+        self.assertEqual(error.exception.code, 'TIMELINE_STALE')
 
     def test_duplicate_scene_rejected(self):
         write(self.job/'scenes.json', [self.scenes[0], self.scenes[0]])

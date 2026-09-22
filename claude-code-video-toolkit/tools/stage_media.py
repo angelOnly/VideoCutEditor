@@ -435,7 +435,7 @@ def render_scene(request_path, scene_id, project_name, entry_name, composition, 
                                    'batchVersion': batch_context['version'] if batch_context else None})
         if marker.exists() and out.exists():
             old = read(marker)
-            if old['fingerprint'] == fingerprint and old['sha256'] == digest(out):
+            if old['fingerprint'] == fingerprint and old.get('timelineHash') == timeline_hash and old['sha256'] == digest(out):
                 return {**receipt, **validate_mp4(out, request['outputSpec'], frames), 'path': str(out.relative_to(root)),
                         'mix': old.get('mix'), 'evidence': extract_frames(root, request, scene_id, out, frames), 'reused': True}
         # 编码和封装分开缓存：只修封装时复用原画面及 PCM，不再次启动浏览器。
@@ -561,6 +561,7 @@ def assemble(request_path, manifest_path):
 
 def render_seatbelt_profile(temp):
     """可信管理器在启动工程子进程前施加独立沙箱，供真实启动回归复用。"""
+    temp = Path(temp).resolve()
     darwin_temp = command(['/usr/bin/getconf', 'DARWIN_USER_TEMP_DIR']).decode().strip()
     import re
     sockets = [re.escape(str(Path(darwin_temp).resolve())) + r'/\.?com\.google\.Chrome\.[^/]+(/.*)?$',
@@ -664,7 +665,7 @@ def main():
     except (StageError, OSError, ValueError, KeyError) as exc:
         result = failure(getattr(a, 'request', None), a.command, exc)
         if result['status'] != 'adjustment_required':
-            current_project = {'TASK_LAYOUT_INVALID', 'RENDER_FAILED', 'RENDER_TIMEOUT', 'MEDIA_INVALID', 'AUDIO_MISMATCH',
+            current_project = {'RENDER_BATCH_FAILED', 'TASK_LAYOUT_INVALID', 'RENDER_FAILED', 'RENDER_TIMEOUT', 'MEDIA_INVALID', 'AUDIO_MISMATCH',
                                'CAPTION_MISSING', 'INVALID_CONTRACT', 'MISSING_INPUT', 'TIMELINE_STALE'}
             result['status'] = 'repair_required' if result['error']['code'] in current_project else 'human_required'
             result['scope'] = 'task_project' if result['status'] == 'repair_required' else 'shared_pipeline'

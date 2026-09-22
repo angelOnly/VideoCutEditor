@@ -14,12 +14,42 @@ import stage_media as media
 from two_stage import StageError, digest, execution, identifier, json_digest, load_request, local, read, require, write
 
 
+def package_fingerprint(modules):
+    """有界实际运行时代码摘要；不在取消轮询中扫描依赖。"""
+    modules = Path(modules).resolve()
+    values = {}
+    for name in ('@remotion', 'remotion', 'react', 'react-dom', 'scheduler', 'webpack', '.package-lock.json'):
+        path = modules / name
+        if path.is_file(): values[name] = digest(path)
+        elif path.is_dir():
+            for file in sorted(path.rglob('*')):
+                if file.is_file(): values[str(file.relative_to(modules))] = digest(file)
+    for name in ('remotion', '@remotion/renderer', '@remotion/bundler'):
+        require((modules/name/'package.json').is_file(), '缺少渲染依赖：' + name, 'CAPABILITY_MISSING')
+    return values
+
+
+def validate_scenes(root, request, scenes):
+    require(isinstance(scenes, list) and scenes, '分镜批次不能为空')
+    require(all(isinstance(s, dict) and {'sceneId', 'composition', 'frames'} <= s.keys() for s in scenes), '分镜参数缺失')
+    ids = [s['sceneId'] for s in scenes]
+    require(all(isinstance(s, str) for s in ids), '分镜 ID 必须为字符串')
+    require(len(ids) == len(set(ids)), '批次不能重复分镜')
+    confirmed = [s['id'] for s in read(local(root, request['confirmation']['planFile']))['scenes']]
+    require(all(s in confirmed for s in ids), '批次包含未确认分镜')
+    for scene in scenes:
+        identifier(scene['sceneId'])
+        require(type(scene['frames']) is int and scene['frames'] > 0, '分镜帧数无效')
+        require(isinstance(scene['composition'], str) and scene['composition'], '缺少 Composition')
+        require(type(scene.get('fixedMix', False)) is bool, 'fixedMix 必须为布尔值')
+    return confirmed
+
+
 def inputs(root, request_path, request, project, entry, scenes, modules, browser):
     project_path = local(root, project, exists=False)
     require(project_path.is_dir() and project_path != root, '需要独立工程目录')
     require(local(root, entry).is_relative_to(project_path), '入口必须属于冻结工程')
-    packages = {name: digest(Path(modules).resolve() / name / 'package.json')
-                for name in ('remotion', '@remotion/renderer', '@remotion/bundler')}
+    packages = package_fingerprint(modules)
     # 公共工具和组件也属于输入；不尝试推测复杂跨章依赖。
     toolkit = Path(__file__).resolve().parent.parent
     shared = {str(p.relative_to(toolkit)): digest(p) for directory in ('lib',)
@@ -39,16 +69,8 @@ def freeze_batch(args):
     identifier(args.batch)
     with execution(args.request, 'freeze-batch') as (root, request, _budget):
         scenes = read(local(root, args.scenes))
-        plan = read(local(root, request['confirmation']['planFile']))
-        require(isinstance(scenes, list) and scenes, '分镜批次不能为空')
+        confirmed = validate_scenes(root, request, scenes)
         ids = [s['sceneId'] for s in scenes]
-        require(len(ids) == len(set(ids)), '批次不能重复分镜')
-        confirmed = [s['id'] for s in plan['scenes']]
-        require(all(s in confirmed for s in ids), '批次包含未确认分镜')
-        for scene in scenes:
-            identifier(scene['sceneId'])
-            require(type(scene['frames']) is int and scene['frames'] > 0, '分镜帧数无效')
-            require(isinstance(scene['composition'], str) and scene['composition'], '缺少 Composition')
         scenes.sort(key=lambda s: confirmed.index(s['sceneId']))
         frozen = inputs(root, args.request, request, args.project, args.entry, scenes, args.modules, args.browser)
         contract = {'schemaVersion': 1, 'runId': request['runId'], 'project': args.project,
@@ -61,6 +83,10 @@ def freeze_batch(args):
 
 
 def verify_manifest(root, request_path, request, manifest, modules, browser):
+    require(isinstance(manifest, dict) and manifest.get('schemaVersion') == 1, '不支持的批次版本')
+    require({'schemaVersion', 'runId', 'project', 'entry', 'scenes', 'inputs', 'version'} == manifest.keys(), '批次字段不完整')
+    confirmed = validate_scenes(root, request, manifest['scenes'])
+    require([s['sceneId'] for s in manifest['scenes']] == sorted([s['sceneId'] for s in manifest['scenes']], key=confirmed.index), '批次顺序须遵守确认稿')
     contract = {k: v for k, v in manifest.items() if k != 'version'}
     require(manifest['version'] == json_digest(contract), '冻结清单摘要不匹配', 'TIMELINE_STALE')
     require(manifest['runId'] == request['runId'], '批次归属不匹配')
@@ -78,6 +104,8 @@ def render_batch(args):
         manifest = read(manifest_path)
         require(args.slots in (1, 2, 3), '只支持 1/2/3 个渲染槽')
         verify_manifest(root, args.request, request, manifest, args.modules, args.browser)
+        require(os.environ.get('VIDEOCUT_RENDER_SANDBOX', 'seatbelt' if sys.platform == 'darwin' else 'bwrap') in ('seatbelt', 'bwrap'),
+                '批次必须使用只读输入沙箱', 'CAPABILITY_MISSING')
         stop = threading.Event()
         deadline = started + budget
         cancel = os.environ.get('VIDEOCUT_BATCH_CANCEL_FILE')
@@ -91,11 +119,16 @@ def render_batch(args):
         def check():
             require(not stop.is_set() and not (cancel and Path(cancel).exists()), '批次已取消', 'TASK_CANCELLED')
             require(time.monotonic() < deadline, '批次总墙钟预算耗尽', 'BUDGET_EXHAUSTED')
+            if getattr(media._BATCH_CONTEXT, 'checking_parent', False): return
             with parent_check_lock:
                 if time.monotonic() - last_parent_check[0] >= 1:
-                    load_request(args.request, 'render')
-                    last_parent_check[0] = time.monotonic()
+                    media._BATCH_CONTEXT.checking_parent = True
+                    try:
+                        load_request(args.request, 'render')
+                        last_parent_check[0] = time.monotonic()
+                    finally: media._BATCH_CONTEXT.checking_parent = False
         def validate():
+            require(read(manifest_path) == manifest, '运行中的冻结清单已变化', 'TIMELINE_STALE')
             check()
             load_request(args.request, 'render')
             verify_manifest(root, args.request, request, manifest, args.modules, args.browser)
@@ -183,8 +216,15 @@ def render_batch(args):
                                 write(batch_dir / 'results' / scene_id / (attempt + '.json'),
                                       {'version': manifest['version'], 'attemptId': attempt, 'result': results[scene_id], 'seconds': seconds})
                             except Exception as exc:
-                                failures.append({'sceneId': scene_id, 'code': getattr(exc, 'code', 'RENDER_FAILED'),
-                                                 'message': str(exc), 'details': getattr(exc, 'details', None)})
+                                error = {'sceneId': scene_id, 'code': getattr(exc, 'code', 'RENDER_FAILED'),
+                                         'message': str(exc), 'details': getattr(exc, 'details', None)}
+                                failures.append(error)
+                                write(batch_dir / 'results' / scene_id / (attempt + '.json'),
+                                      {'version': manifest['version'], 'attemptId': attempt, 'error': error})
+                                if error['code'] in ('TASK_CANCELLED', 'BUDGET_EXHAUSTED', 'TIMELINE_STALE',
+                                                     'STALE_CONFIRMATION', 'INPUT_CHANGED', 'CONFIRMATION_CHANGED', 'CACHE_CORRUPT'):
+                                    stop.set()
+                                    raise
                             snapshot()
                 except BaseException:
                     stop.set()
