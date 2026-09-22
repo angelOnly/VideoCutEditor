@@ -1,0 +1,93 @@
+{
+  "chapterId": "chapter_01",
+  "directionVersion": 1,
+  "status": "candidate",
+  "coordinateSystem": "chapter-local",
+  "durationInFrames": 750,
+  "layout": [
+    {
+      "startFrame": 0,
+      "endFrameExclusive": 372,
+      "mode": "existing-chapter-card",
+      "description": "保留原章节卡承接采访和警告铺垫，不提前展示国运结论。"
+    },
+    {
+      "startFrame": 372,
+      "endFrameExclusive": 458,
+      "blockId": "chapter_01-warning",
+      "kind": "quote",
+      "slot": "full",
+      "description": "使用现有 quote 大字引文、主题及安全区。"
+    },
+    {
+      "startFrame": 458,
+      "endFrameExclusive": 750,
+      "blockId": "chapter_01-winner",
+      "kind": "labels",
+      "slot": "full",
+      "description": "使用现有 labels；三个原文句段按边界累积出现。保留统一字号、布局和主题，不添加重复脉冲、闪烁或缩放。"
+    }
+  ],
+  "visualEvents": [
+    {
+      "id": "chapter_01-event-1",
+      "type": "block-enter",
+      "frame": 372,
+      "blockId": "chapter_01-warning",
+      "utteranceId": "utterance_003_04",
+      "sceneId": "scene_003",
+      "emphasis": true,
+      "description": "国运警告：第一次强化。"
+    },
+    {
+      "id": "chapter_01-event-2",
+      "type": "item-reveal",
+      "frame": 458,
+      "blockId": "chapter_01-winner",
+      "itemIndex": 0,
+      "utteranceId": "utterance_004_01",
+      "sceneId": "scene_004",
+      "emphasis": false,
+      "description": "技术领先句段出现。"
+    },
+    {
+      "id": "chapter_01-event-3",
+      "type": "item-reveal",
+      "frame": 526,
+      "blockId": "chapter_01-winner",
+      "itemIndex": 1,
+      "utteranceId": "utterance_004_02",
+      "sceneId": "scene_004",
+      "emphasis": false,
+      "description": "应用句段出现，保留上一行。"
+    },
+    {
+      "id": "chapter_01-event-4",
+      "type": "item-reveal",
+      "frame": 588,
+      "blockId": "chapter_01-winner",
+      "itemIndex": 2,
+      "utteranceId": "utterance_004_03",
+      "sceneId": "scene_004",
+      "emphasis": true,
+      "description": "赢家判断：第二次强化，完整三行保持至章末。"
+    }
+  ],
+  "timingRules": {
+    "eventFrames": "audioAnchor.globalStartFrame - chapter.from",
+    "itemFrames": "audioAnchor.globalStartFrame - chapter.from - block.startFrame",
+    "revealFrame": "未使用",
+    "gapPolicy": "单帧音频间隙保留前一画面，不移动时间轴。"
+  },
+  "transitions": {
+    "entry": "保持原章节卡；不得新增开场口播",
+    "exit": "最后观点保持到章末，下一章统一切换"
+  },
+  "notes": [
+    "scene_001 在本章起点前，保留音频元数据但不产生负帧事件。",
+    "移除口播没有对应句段的旧风险标签。",
+    "scene_005 保持最终观点，不再强化。",
+    "只修改 visualBlocks，所有引文逐字复制确认句段。",
+    "预览未生成，交由主控渲染和审核。"
+  ]
+}

@@ -1,0 +1,82 @@
+{
+  "directionVersion": 1,
+  "confirmationSha256": "e59d080a178c440af6c9029b38cefbeb632d4dc252e77eefe98fb6d434f987c6",
+  "sceneOrder": [
+    "scene_001",
+    "scene_002",
+    "scene_003",
+    "scene_004",
+    "scene_005",
+    "scene_006",
+    "scene_007",
+    "scene_008",
+    "scene_009",
+    "scene_010",
+    "scene_011",
+    "scene_012",
+    "scene_013",
+    "scene_014",
+    "scene_015",
+    "scene_016",
+    "scene_017",
+    "scene_018"
+  ],
+  "totalFrames": 4112,
+  "fps": 30,
+  "style": {
+    "template": "冻结1.2.0；保留双主持人、完整句级字幕、章节导航",
+    "colors": [
+      "#49c7df",
+      "#ef5258",
+      "#f6bc4a"
+    ],
+    "motion": "入场13帧可调，关键变化最多28帧；重点停留到对应句段结束；跨章由主控统一切换",
+    "constraint": "不删口播，不改时间轴和音频；句内无词级时间戳，不声称词级同步"
+  },
+  "chapters": [
+    {
+      "chapterId": "chapter_01",
+      "sceneIds": [
+        "scene_001",
+        "scene_002",
+        "scene_003",
+        "scene_004",
+        "scene_005"
+      ],
+      "goal": "建立警告，再提出技术领先不等于应用胜利。只在国运警告和赢家判断各强化一次。",
+      "brief": "render/render_001/chapters/chapter_01/brief.json"
+    },
+    {
+      "chapterId": "chapter_02",
+      "sceneIds": [
+        "scene_006",
+        "scene_007",
+        "scene_008",
+        "scene_009",
+        "scene_010",
+        "scene_011",
+        "scene_012",
+        "scene_013",
+        "scene_014",
+        "scene_015"
+      ],
+      "goal": "先呈现美国风险争论，亚洲落地作为反差；五层模型用上下文解释，90%到0%是唯一视觉高潮。",
+      "brief": "render/render_001/chapters/chapter_02/brief.json"
+    },
+    {
+      "chapterId": "chapter_03",
+      "sceneIds": [
+        "scene_016",
+        "scene_017",
+        "scene_018"
+      ],
+      "goal": "降低信息密度，先解释市场和生态，再强调战略武器，最后留出完整收束。",
+      "brief": "render/render_001/chapters/chapter_03/brief.json"
+    }
+  ],
+  "reviews": {
+    "draft": "等待候选",
+    "dynamic": "等待真实预览",
+    "whole": "等待合片节奏检查"
+  }
+}

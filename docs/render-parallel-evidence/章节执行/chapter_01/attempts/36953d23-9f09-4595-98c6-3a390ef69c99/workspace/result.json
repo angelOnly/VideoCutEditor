@@ -1,0 +1,298 @@
+{
+  "chapterId": "chapter_01",
+  "attemptId": "36953d23-9f09-4595-98c6-3a390ef69c99",
+  "directionVersion": 1,
+  "briefHash": "4210560dd057d5bd385e9f0d20a243bfc146c134dc2a57fcbff62479ceec1e2d",
+  "status": "candidate",
+  "sceneIds": [
+    "scene_001",
+    "scene_002",
+    "scene_003",
+    "scene_004",
+    "scene_005"
+  ],
+  "audioAnchors": [
+    {
+      "utteranceId": "utterance_001_01",
+      "sceneId": "scene_001",
+      "text": "首个全球90%的AI芯片，",
+      "startFrame": 0,
+      "endFrameExclusive": 85,
+      "globalStartFrame": 0,
+      "globalEndFrameExclusive": 85,
+      "audioSha256": "a564c73fa4322ef09fd60b8200400c65fde84fd406d274407631f781d309dd45"
+    },
+    {
+      "utteranceId": "utterance_001_02",
+      "sceneId": "scene_001",
+      "text": "站在AI技术金字塔尖的黄仁勋，",
+      "startFrame": 85,
+      "endFrameExclusive": 178,
+      "globalStartFrame": 85,
+      "globalEndFrameExclusive": 178,
+      "audioSha256": "5c365b4187f48ecca879b36ce00dbe6c7c8d384a266c4004a54ddf2e076c54ba"
+    },
+    {
+      "utteranceId": "utterance_001_03",
+      "sceneId": "scene_001",
+      "text": "这次是真的慌了。",
+      "startFrame": 178,
+      "endFrameExclusive": 227,
+      "globalStartFrame": 178,
+      "globalEndFrameExclusive": 227,
+      "audioSha256": "f594e79a315aad49a96bfbcf16c6163c604abfdd93613e98245d9f51e3a8135e"
+    },
+    {
+      "utteranceId": "utterance_002_01",
+      "sceneId": "scene_002",
+      "text": "在月初的最新采访中，",
+      "startFrame": 0,
+      "endFrameExclusive": 62,
+      "globalStartFrame": 227,
+      "globalEndFrameExclusive": 289,
+      "audioSha256": "8c040e8481b6b9390bcc0aa7cd9ad4aacafb94699a9231f2f46b7e425bfd73ef"
+    },
+    {
+      "utteranceId": "utterance_002_02",
+      "sceneId": "scene_002",
+      "text": "这位英伟达CEO全程眉头紧锁。",
+      "startFrame": 62,
+      "endFrameExclusive": 154,
+      "globalStartFrame": 289,
+      "globalEndFrameExclusive": 381,
+      "audioSha256": "0465bfaa1c37b28d7e68813194cf1019ec2e884ec440d801d0eacefe243570ba"
+    },
+    {
+      "utteranceId": "utterance_003_01",
+      "sceneId": "scene_003",
+      "text": "他没有炫耀最新的芯片技术，",
+      "startFrame": 0,
+      "endFrameExclusive": 68,
+      "globalStartFrame": 382,
+      "globalEndFrameExclusive": 450,
+      "audioSha256": "641ddc2caeaeddab9a7b5eaa38eeb6107390da2ff476dbf128cc739ce8f6d269"
+    },
+    {
+      "utteranceId": "utterance_003_02",
+      "sceneId": "scene_003",
+      "text": "也没有吹嘘英伟达的业绩，",
+      "startFrame": 68,
+      "endFrameExclusive": 124,
+      "globalStartFrame": 450,
+      "globalEndFrameExclusive": 506,
+      "audioSha256": "84bc166be141a2b24faed02496b8775adc6a21b92e96722fd382b31f1b8fcb05"
+    },
+    {
+      "utteranceId": "utterance_003_03",
+      "sceneId": "scene_003",
+      "text": "而是对着镜头发出了最严厉的警告：",
+      "startFrame": 124,
+      "endFrameExclusive": 217,
+      "globalStartFrame": 506,
+      "globalEndFrameExclusive": 599,
+      "audioSha256": "50e9d515a613499ff1c78891d6cd315f1307f563a9a416695eade08a2bd2eb90"
+    },
+    {
+      "utteranceId": "utterance_003_04",
+      "sceneId": "scene_003",
+      "text": "“美国正在亲手葬送自己的国运”。",
+      "startFrame": 217,
+      "endFrameExclusive": 302,
+      "globalStartFrame": 599,
+      "globalEndFrameExclusive": 684,
+      "audioSha256": "4c4a7a429311ccac4de925a675936718b393cfb11712d87e993ef7fc4055770b"
+    },
+    {
+      "utteranceId": "utterance_004_01",
+      "sceneId": "scene_004",
+      "text": "“技术领先根本不算赢，",
+      "startFrame": 0,
+      "endFrameExclusive": 68,
+      "globalStartFrame": 685,
+      "globalEndFrameExclusive": 753,
+      "audioSha256": "912a6b8e3fb1e65dac3217363c1243996cc7d23933f7446efc25b8dee7ff23d8"
+    },
+    {
+      "utteranceId": "utterance_004_02",
+      "sceneId": "scene_004",
+      "text": "谁能把AI真正用起来，",
+      "startFrame": 68,
+      "endFrameExclusive": 130,
+      "globalStartFrame": 753,
+      "globalEndFrameExclusive": 815,
+      "audioSha256": "678dda74bb839b14fbd4679cbcd04aff6d917d39044df5d4d87eb410405bc0d7"
+    },
+    {
+      "utteranceId": "utterance_004_03",
+      "sceneId": "scene_004",
+      "text": "谁才是最后的赢家。”",
+      "startFrame": 130,
+      "endFrameExclusive": 199,
+      "globalStartFrame": 815,
+      "globalEndFrameExclusive": 884,
+      "audioSha256": "d982c773f5ef3f4ba138b378e9ca00aee3da1df2335e3d0534288092a877ad1f"
+    },
+    {
+      "utteranceId": "utterance_005_01",
+      "sceneId": "scene_005",
+      "text": "黄仁勋戳破了华盛顿最大的幻觉。",
+      "startFrame": 0,
+      "endFrameExclusive": 92,
+      "globalStartFrame": 885,
+      "globalEndFrameExclusive": 977,
+      "audioSha256": "6346d23c04cbf1540e5dd8544cf7d6228d80285b730ae07f979864e84bd9e219"
+    }
+  ],
+  "files": [
+    {
+      "path": "chapter_01.draft.json",
+      "sha256": "b1233fc8e7df14d8aae1d8527fa6b98f7eca3c546db4568212a824f0a81aeaea"
+    },
+    {
+      "path": "chapter_01.chapter.json",
+      "sha256": "67ad0dd27702fb89aa35b09d89fd6626d7b47c1b4e5bd06351234060c9d0bcb6"
+    }
+  ],
+  "visualEvents": [
+    {
+      "id": "chapter_01-event-1",
+      "type": "block-enter",
+      "frame": 372,
+      "blockId": "chapter_01-warning",
+      "utteranceId": "utterance_003_04",
+      "sceneId": "scene_003",
+      "emphasis": true,
+      "description": "国运警告：第一次强化。"
+    },
+    {
+      "id": "chapter_01-event-2",
+      "type": "item-reveal",
+      "frame": 458,
+      "blockId": "chapter_01-winner",
+      "itemIndex": 0,
+      "utteranceId": "utterance_004_01",
+      "sceneId": "scene_004",
+      "emphasis": false,
+      "description": "技术领先句段出现。"
+    },
+    {
+      "id": "chapter_01-event-3",
+      "type": "item-reveal",
+      "frame": 526,
+      "blockId": "chapter_01-winner",
+      "itemIndex": 1,
+      "utteranceId": "utterance_004_02",
+      "sceneId": "scene_004",
+      "emphasis": false,
+      "description": "应用句段出现，保留上一行。"
+    },
+    {
+      "id": "chapter_01-event-4",
+      "type": "item-reveal",
+      "frame": 588,
+      "blockId": "chapter_01-winner",
+      "itemIndex": 2,
+      "utteranceId": "utterance_004_03",
+      "sceneId": "scene_004",
+      "emphasis": true,
+      "description": "赢家判断：第二次强化，完整三行保持至章末。"
+    }
+  ],
+  "events": [
+    {
+      "id": "chapter_01-event-1",
+      "type": "block-enter",
+      "frame": 372,
+      "blockId": "chapter_01-warning",
+      "utteranceId": "utterance_003_04",
+      "sceneId": "scene_003",
+      "emphasis": true,
+      "description": "国运警告：第一次强化。"
+    },
+    {
+      "id": "chapter_01-event-2",
+      "type": "item-reveal",
+      "frame": 458,
+      "blockId": "chapter_01-winner",
+      "itemIndex": 0,
+      "utteranceId": "utterance_004_01",
+      "sceneId": "scene_004",
+      "emphasis": false,
+      "description": "技术领先句段出现。"
+    },
+    {
+      "id": "chapter_01-event-3",
+      "type": "item-reveal",
+      "frame": 526,
+      "blockId": "chapter_01-winner",
+      "itemIndex": 1,
+      "utteranceId": "utterance_004_02",
+      "sceneId": "scene_004",
+      "emphasis": false,
+      "description": "应用句段出现，保留上一行。"
+    },
+    {
+      "id": "chapter_01-event-4",
+      "type": "item-reveal",
+      "frame": 588,
+      "blockId": "chapter_01-winner",
+      "itemIndex": 2,
+      "utteranceId": "utterance_004_03",
+      "sceneId": "scene_004",
+      "emphasis": true,
+      "description": "赢家判断：第二次强化，完整三行保持至章末。"
+    }
+  ],
+  "previews": [],
+  "previewRequests": [
+    {
+      "id": "chapter_01-timing-review",
+      "chapterId": "chapter_01",
+      "chapterFile": "chapter_01.chapter.json",
+      "coordinateSystem": "chapter-local",
+      "type": "video",
+      "startFrame": 0,
+      "endFrameExclusive": 750,
+      "status": "requested",
+      "checks": [
+        "确认0–371帧继续显示原章节卡",
+        "核对372帧国运警告与原声同步",
+        "核对458/526/588帧分别出现技术、应用、赢家句段",
+        "检查引文换行、labels长文本与字幕安全区",
+        "确认仅国运警告与赢家判断各强化一次",
+        "确认最后观点保持至749帧，章末由主控切换"
+      ]
+    },
+    {
+      "id": "chapter_01-stills-review",
+      "type": "stills",
+      "coordinateSystem": "chapter-local",
+      "frames": [
+        0,
+        371,
+        372,
+        457,
+        458,
+        525,
+        526,
+        587,
+        588,
+        658,
+        749
+      ],
+      "status": "requested"
+    }
+  ],
+  "validation": {
+    "metadataUnchanged": true,
+    "anchorFramesVerified": true,
+    "itemFramesVerified": true,
+    "rendered": false,
+    "visualReviewPassed": false
+  },
+  "handoffNotes": [
+    "候选文件使用本章前缀；result.json 按主控指定入口命名。",
+    "本清单不包含 result.json 自身摘要，避免自引用。",
+    "主控负责实际预览、审核和合并；不得将静态时序核对视为渲染通过。"
+  ]
+}

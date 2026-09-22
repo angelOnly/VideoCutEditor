@@ -1,0 +1,445 @@
+{
+  "chapterId": "chapter_03",
+  "attemptId": "b4fcd503-b5c1-46f8-9fad-16a16ce4dbf3",
+  "directionVersion": 1,
+  "briefHash": "1fd55e02f0d40b6a38d7359883b9c3511fb4ba3ec370e1070457686496499f00",
+  "status": "candidate_ready",
+  "sceneIds": [
+    "scene_016",
+    "scene_017",
+    "scene_018"
+  ],
+  "audioAnchors": [
+    {
+      "utteranceId": "utterance_016_01",
+      "sceneId": "scene_016",
+      "text": "而美国企业失去的不只是真金白银的收入，",
+      "startFrame": 30,
+      "endFrameExclusive": 123,
+      "globalStartFrame": 3292,
+      "globalEndFrameExclusive": 3385,
+      "audioSha256": "34a87214e0f57c13fc75e2fe1b03354bcd4dffc41b3956ec554792facc64ca1b"
+    },
+    {
+      "utteranceId": "utterance_016_02",
+      "sceneId": "scene_016",
+      "text": "更是能决定未来的市场份额和生态主导权。",
+      "startFrame": 123,
+      "endFrameExclusive": 233,
+      "globalStartFrame": 3385,
+      "globalEndFrameExclusive": 3495,
+      "audioSha256": "02a97ebf560d804e69b8262d591edbb0e87ffc81722d04d4d519aa76d20345e7"
+    },
+    {
+      "utteranceId": "utterance_017_01",
+      "sceneId": "scene_017",
+      "text": "“AI是全球性的产业，",
+      "startFrame": 0,
+      "endFrameExclusive": 57,
+      "globalStartFrame": 3495,
+      "globalEndFrameExclusive": 3552,
+      "audioSha256": "d50e8d8d28ed488888815a9cea92f447e161e21d36687b7d0d8aaf5d1eed5ec7"
+    },
+    {
+      "utteranceId": "utterance_017_02",
+      "sceneId": "scene_017",
+      "text": "我们应该把技术卖到全世界去，",
+      "startFrame": 57,
+      "endFrameExclusive": 125,
+      "globalStartFrame": 3552,
+      "globalEndFrameExclusive": 3620,
+      "audioSha256": "0107cef215f418d70d5f638b3a5f648f1a4eb76e4471e80a98948ba9397d2100"
+    },
+    {
+      "utteranceId": "utterance_017_03",
+      "sceneId": "scene_017",
+      "text": "市场份额本身就是",
+      "startFrame": 125,
+      "endFrameExclusive": 193,
+      "globalStartFrame": 3620,
+      "globalEndFrameExclusive": 3688,
+      "audioSha256": "ca5bcfcc25e040fd169b9f7d3b56279e4fc78134d17c15375673fabae2b5bfdc"
+    },
+    {
+      "utteranceId": "utterance_017_04",
+      "sceneId": "scene_017",
+      "text": "‘最硬的战略武器’。”",
+      "startFrame": 193,
+      "endFrameExclusive": 250,
+      "globalStartFrame": 3688,
+      "globalEndFrameExclusive": 3745,
+      "audioSha256": "3e5ae17f09d8aa23e0f5a52d7d59d0cc98695e0b9fbb86cf13781edb0a9a9667"
+    },
+    {
+      "utteranceId": "utterance_018_01",
+      "sceneId": "scene_018",
+      "text": "黄仁勋呼吁，",
+      "startFrame": 0,
+      "endFrameExclusive": 44,
+      "globalStartFrame": 3745,
+      "globalEndFrameExclusive": 3789,
+      "audioSha256": "6f4f19e722876e3a065a98bd49203e67a7dd61ea8e68e0501fc4d1c3132edc22"
+    },
+    {
+      "utteranceId": "utterance_018_02",
+      "sceneId": "scene_018",
+      "text": "如果继续被恐慌情绪绑架，",
+      "startFrame": 44,
+      "endFrameExclusive": 118,
+      "globalStartFrame": 3789,
+      "globalEndFrameExclusive": 3863,
+      "audioSha256": "4c6843c994d21de849a3c45ab2d5d78f0a089c31892ea3cd3908f1a624b33de9"
+    },
+    {
+      "utteranceId": "utterance_018_03",
+      "sceneId": "scene_018",
+      "text": "阻碍AI落地，",
+      "startFrame": 118,
+      "endFrameExclusive": 175,
+      "globalStartFrame": 3863,
+      "globalEndFrameExclusive": 3920,
+      "audioSha256": "6ea01fe4b989e0886a0f97449ccdbbdf8d184b01278bfb675b4c0d5d24139f2c"
+    },
+    {
+      "utteranceId": "utterance_018_04",
+      "sceneId": "scene_018",
+      "text": "就算美国有全世界最好的芯片和模型，",
+      "startFrame": 175,
+      "endFrameExclusive": 268,
+      "globalStartFrame": 3920,
+      "globalEndFrameExclusive": 4013,
+      "audioSha256": "2affae68697aa843c93fc2a8887dee0d3f079234aa0cc54597fc778308a44ba0"
+    },
+    {
+      "utteranceId": "utterance_018_05",
+      "sceneId": "scene_018",
+      "text": "最终也会输掉这场决定国运的工业革命。",
+      "startFrame": 268,
+      "endFrameExclusive": 366,
+      "globalStartFrame": 4013,
+      "globalEndFrameExclusive": 4111,
+      "audioSha256": "3bff901567a88be57fc3049287185546f833e422be7b177580c132cfc0b9c6a1"
+    }
+  ],
+  "files": [
+    {
+      "path": "chapter_03-draft.json",
+      "sha256": "4488429ac2a724c3ac242cb4a1855d46777ee40bcf7ac72f2519df592904265e"
+    },
+    {
+      "path": "chapter_03-chapter.json",
+      "sha256": "8631d3d745970bc402f85f604cf5a6ad819470f26b52fc807c778240e0eba5c9"
+    }
+  ],
+  "previewRequests": [
+    {
+      "id": "chapter_03-full-review",
+      "type": "video",
+      "frameBasis": "chapter-local",
+      "startFrame": 0,
+      "endFrameExclusive": 820,
+      "status": "pending",
+      "owner": "main_render",
+      "checks": [
+        "保留原章节卡，核对scene_016的30帧偏移",
+        "核对全部11个句段边界与视觉事件",
+        "确认市场与生态同时出现、战略武器在396帧才出现",
+        "收束条件逐步出现，721至819帧结论持续可读",
+        "检查现有labels组件长行、双主持人、字幕和导航不重叠"
+      ]
+    },
+    {
+      "id": "chapter_03-boundary-stills",
+      "type": "stills",
+      "frameBasis": "chapter-local",
+      "frames": [
+        0,
+        92,
+        93,
+        106,
+        203,
+        260,
+        328,
+        395,
+        396,
+        409,
+        453,
+        497,
+        571,
+        628,
+        641,
+        720,
+        721,
+        734,
+        819
+      ],
+      "status": "pending",
+      "owner": "main_render"
+    }
+  ],
+  "previews": [],
+  "visualEvents": [
+    {
+      "id": "chapter_03-event-01",
+      "sceneId": "scene_016",
+      "utteranceId": "utterance_016_01",
+      "startFrame": 0,
+      "endFrameExclusive": 93,
+      "blockId": "chapter_03-loss",
+      "action": "收入出现",
+      "anchorBoundary": "utteranceStart",
+      "anchorText": "而美国企业失去的不只是真金白银的收入，"
+    },
+    {
+      "id": "chapter_03-event-02",
+      "sceneId": "scene_016",
+      "utteranceId": "utterance_016_02",
+      "startFrame": 93,
+      "endFrameExclusive": 203,
+      "blockId": "chapter_03-loss",
+      "action": "市场份额、生态主导权同时出现；不伪造句内顺序",
+      "anchorBoundary": "utteranceStart",
+      "anchorText": "更是能决定未来的市场份额和生态主导权。"
+    },
+    {
+      "id": "chapter_03-event-03",
+      "sceneId": "scene_017",
+      "utteranceId": "utterance_017_01",
+      "startFrame": 203,
+      "endFrameExclusive": 260,
+      "blockId": "chapter_03-global",
+      "action": "全球产业出现",
+      "anchorBoundary": "utteranceStart",
+      "anchorText": "“AI是全球性的产业，"
+    },
+    {
+      "id": "chapter_03-event-04",
+      "sceneId": "scene_017",
+      "utteranceId": "utterance_017_02",
+      "startFrame": 260,
+      "endFrameExclusive": 328,
+      "blockId": "chapter_03-global",
+      "action": "技术销往全球出现",
+      "anchorBoundary": "utteranceStart",
+      "anchorText": "我们应该把技术卖到全世界去，"
+    },
+    {
+      "id": "chapter_03-event-05",
+      "sceneId": "scene_017",
+      "utteranceId": "utterance_017_03",
+      "startFrame": 328,
+      "endFrameExclusive": 396,
+      "blockId": "chapter_03-weapon",
+      "action": "市场份额出现",
+      "anchorBoundary": "utteranceStart",
+      "anchorText": "市场份额本身就是"
+    },
+    {
+      "id": "chapter_03-event-06",
+      "sceneId": "scene_017",
+      "utteranceId": "utterance_017_04",
+      "startFrame": 396,
+      "endFrameExclusive": 453,
+      "blockId": "chapter_03-weapon",
+      "action": "战略武器出现，作为本章唯一重点强化",
+      "anchorBoundary": "utteranceStart",
+      "anchorText": "‘最硬的战略武器’。”"
+    },
+    {
+      "id": "chapter_03-event-07",
+      "sceneId": "scene_018",
+      "utteranceId": "utterance_018_01",
+      "startFrame": 453,
+      "endFrameExclusive": 497,
+      "blockId": "chapter_03-warning",
+      "action": "切入收束，先保留黄仁勋呼吁标题",
+      "anchorBoundary": "utteranceStart",
+      "anchorText": "黄仁勋呼吁，"
+    },
+    {
+      "id": "chapter_03-event-08",
+      "sceneId": "scene_018",
+      "utteranceId": "utterance_018_02",
+      "startFrame": 497,
+      "endFrameExclusive": 571,
+      "blockId": "chapter_03-warning",
+      "action": "恐慌条件出现",
+      "anchorBoundary": "utteranceStart",
+      "anchorText": "如果继续被恐慌情绪绑架，"
+    },
+    {
+      "id": "chapter_03-event-09",
+      "sceneId": "scene_018",
+      "utteranceId": "utterance_018_03",
+      "startFrame": 571,
+      "endFrameExclusive": 628,
+      "blockId": "chapter_03-warning",
+      "action": "阻碍AI落地出现",
+      "anchorBoundary": "utteranceStart",
+      "anchorText": "阻碍AI落地，"
+    },
+    {
+      "id": "chapter_03-event-10",
+      "sceneId": "scene_018",
+      "utteranceId": "utterance_018_04",
+      "startFrame": 628,
+      "endFrameExclusive": 721,
+      "blockId": "chapter_03-warning",
+      "action": "芯片和模型的让步条件出现",
+      "anchorBoundary": "utteranceStart",
+      "anchorText": "就算美国有全世界最好的芯片和模型，"
+    },
+    {
+      "id": "chapter_03-event-11",
+      "sceneId": "scene_018",
+      "utteranceId": "utterance_018_05",
+      "startFrame": 721,
+      "endFrameExclusive": 820,
+      "blockId": "chapter_03-close",
+      "action": "最终结论出现并保持到章末",
+      "anchorBoundary": "utteranceStart",
+      "anchorText": "最终也会输掉这场决定国运的工业革命。"
+    }
+  ],
+  "events": [
+    {
+      "id": "chapter_03-event-01",
+      "sceneId": "scene_016",
+      "utteranceId": "utterance_016_01",
+      "startFrame": 0,
+      "endFrameExclusive": 93,
+      "blockId": "chapter_03-loss",
+      "action": "收入出现",
+      "anchorBoundary": "utteranceStart",
+      "anchorText": "而美国企业失去的不只是真金白银的收入，"
+    },
+    {
+      "id": "chapter_03-event-02",
+      "sceneId": "scene_016",
+      "utteranceId": "utterance_016_02",
+      "startFrame": 93,
+      "endFrameExclusive": 203,
+      "blockId": "chapter_03-loss",
+      "action": "市场份额、生态主导权同时出现；不伪造句内顺序",
+      "anchorBoundary": "utteranceStart",
+      "anchorText": "更是能决定未来的市场份额和生态主导权。"
+    },
+    {
+      "id": "chapter_03-event-03",
+      "sceneId": "scene_017",
+      "utteranceId": "utterance_017_01",
+      "startFrame": 203,
+      "endFrameExclusive": 260,
+      "blockId": "chapter_03-global",
+      "action": "全球产业出现",
+      "anchorBoundary": "utteranceStart",
+      "anchorText": "“AI是全球性的产业，"
+    },
+    {
+      "id": "chapter_03-event-04",
+      "sceneId": "scene_017",
+      "utteranceId": "utterance_017_02",
+      "startFrame": 260,
+      "endFrameExclusive": 328,
+      "blockId": "chapter_03-global",
+      "action": "技术销往全球出现",
+      "anchorBoundary": "utteranceStart",
+      "anchorText": "我们应该把技术卖到全世界去，"
+    },
+    {
+      "id": "chapter_03-event-05",
+      "sceneId": "scene_017",
+      "utteranceId": "utterance_017_03",
+      "startFrame": 328,
+      "endFrameExclusive": 396,
+      "blockId": "chapter_03-weapon",
+      "action": "市场份额出现",
+      "anchorBoundary": "utteranceStart",
+      "anchorText": "市场份额本身就是"
+    },
+    {
+      "id": "chapter_03-event-06",
+      "sceneId": "scene_017",
+      "utteranceId": "utterance_017_04",
+      "startFrame": 396,
+      "endFrameExclusive": 453,
+      "blockId": "chapter_03-weapon",
+      "action": "战略武器出现，作为本章唯一重点强化",
+      "anchorBoundary": "utteranceStart",
+      "anchorText": "‘最硬的战略武器’。”"
+    },
+    {
+      "id": "chapter_03-event-07",
+      "sceneId": "scene_018",
+      "utteranceId": "utterance_018_01",
+      "startFrame": 453,
+      "endFrameExclusive": 497,
+      "blockId": "chapter_03-warning",
+      "action": "切入收束，先保留黄仁勋呼吁标题",
+      "anchorBoundary": "utteranceStart",
+      "anchorText": "黄仁勋呼吁，"
+    },
+    {
+      "id": "chapter_03-event-08",
+      "sceneId": "scene_018",
+      "utteranceId": "utterance_018_02",
+      "startFrame": 497,
+      "endFrameExclusive": 571,
+      "blockId": "chapter_03-warning",
+      "action": "恐慌条件出现",
+      "anchorBoundary": "utteranceStart",
+      "anchorText": "如果继续被恐慌情绪绑架，"
+    },
+    {
+      "id": "chapter_03-event-09",
+      "sceneId": "scene_018",
+      "utteranceId": "utterance_018_03",
+      "startFrame": 571,
+      "endFrameExclusive": 628,
+      "blockId": "chapter_03-warning",
+      "action": "阻碍AI落地出现",
+      "anchorBoundary": "utteranceStart",
+      "anchorText": "阻碍AI落地，"
+    },
+    {
+      "id": "chapter_03-event-10",
+      "sceneId": "scene_018",
+      "utteranceId": "utterance_018_04",
+      "startFrame": 628,
+      "endFrameExclusive": 721,
+      "blockId": "chapter_03-warning",
+      "action": "芯片和模型的让步条件出现",
+      "anchorBoundary": "utteranceStart",
+      "anchorText": "就算美国有全世界最好的芯片和模型，"
+    },
+    {
+      "id": "chapter_03-event-11",
+      "sceneId": "scene_018",
+      "utteranceId": "utterance_018_05",
+      "startFrame": 721,
+      "endFrameExclusive": 820,
+      "blockId": "chapter_03-close",
+      "action": "最终结论出现并保持到章末",
+      "anchorBoundary": "utteranceStart",
+      "anchorText": "最终也会输掉这场决定国运的工业革命。"
+    }
+  ],
+  "validation": {
+    "static": "passed",
+    "checks": [
+      "章节非visualBlocks字段逐项保持原值",
+      "5个图解无缝覆盖章节局部[0,820)",
+      "11个视觉事件均锚定真实句段开始",
+      "所有itemFrames按句段全局起点减章节起点再减图解起点计算",
+      "草案与章节文件已回读"
+    ],
+    "rendered": false,
+    "reviewed": false
+  },
+  "notes": [
+    "候选数据只复用现有labels和quote组件，无新增组件代码。",
+    "音频锚点及确认文本保持原样；图解使用原文摘句与关键词。",
+    "result.json按任务指定名称提交；其余交付文件使用chapter_03前缀。",
+    "预览、动态布局审核和合并由主控执行。"
+  ]
+}

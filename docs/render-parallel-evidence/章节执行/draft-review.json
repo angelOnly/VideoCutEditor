@@ -1,0 +1,25 @@
+{
+  "directionVersion": 1,
+  "at": 1790094959.111629,
+  "chapter_01": {
+    "decision": "draft_accepted",
+    "sourceWorkspace": "render/render_001/chapters/chapter_01/attempts/c4af9859-9d0d-4630-bd10-cac7c6e4872f/workspace",
+    "reason": "修订版覆盖开头，保留真实警告与赢家句段锚点",
+    "dynamicPreview": "pending"
+  },
+  "chapter_03": {
+    "decision": "draft_accepted",
+    "reason": "市场和生态先铺垫；战略武器单独强调；结尾99帧完整停留",
+    "dynamicPreview": "pending"
+  },
+  "chapter_02": {
+    "decision": "accepted_with_main_edits",
+    "sourceWorkspace": "render/render_001/chapters/chapter_02/attempts/1c191a1e-6679-44c7-ab07-028a9264f64e/workspace",
+    "changes": [
+      "90%到0%的重点保持到scene_013结束，增加148帧停留，取消紧随的两次同义引语切换",
+      "scene_015取消最后32帧重复重入场，保持简洁结论125帧"
+    ],
+    "reason": "按整片节奏减少重点后的频繁切换，不改字幕或音频",
+    "dynamicPreview": "pending"
+  }
+}

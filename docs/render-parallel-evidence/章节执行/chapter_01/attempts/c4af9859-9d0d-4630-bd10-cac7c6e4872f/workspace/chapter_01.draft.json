@@ -1,0 +1,155 @@
+{
+  "chapterId": "chapter_01",
+  "directionVersion": 1,
+  "revision": 2,
+  "briefHash": "0f4e5e1ccb91cef2b19534fb2cf0354f6e9633e2bd67618ae2be442686443fca",
+  "timebase": {
+    "unit": "frame",
+    "scope": "chapter-local",
+    "durationInFrames": 750,
+    "itemFramesScope": "block-local",
+    "calculation": "audioAnchor.globalStartFrame - chapter.from；itemFrames再减block.startFrame"
+  },
+  "layout": {
+    "slot": "full",
+    "components": "沿用现有quote与labels组件及主项目样式",
+    "subtitle": "底部字幕由主控保留确认全文，图解使用简洁概括",
+    "entry": "保持原章节卡；不得新增开场口播",
+    "exit": "最后观点保持到章末，下一章统一切换",
+    "emphasis": "仅国运警告入场与赢家结论出现各强化一次；其他事件普通显示，无重复脉冲"
+  },
+  "visualBlocks": [
+    {
+      "id": "c1-interview",
+      "kind": "quote",
+      "startFrame": 0,
+      "endFrameExclusive": 155,
+      "props": {
+        "label": "采访背景",
+        "text": "采访中的紧张神情"
+      },
+      "slot": "full"
+    },
+    {
+      "id": "c1-no-boast",
+      "kind": "labels",
+      "startFrame": 155,
+      "endFrameExclusive": 372,
+      "props": {
+        "label": "没有炫耀",
+        "items": [
+          "芯片技术",
+          "英伟达业绩"
+        ],
+        "itemFrames": [
+          0,
+          68
+        ]
+      },
+      "slot": "full"
+    },
+    {
+      "id": "c1-warning",
+      "kind": "quote",
+      "startFrame": 372,
+      "endFrameExclusive": 458,
+      "props": {
+        "label": "黄仁勋的警告",
+        "text": "美国正亲手葬送国运"
+      },
+      "slot": "full"
+    },
+    {
+      "id": "c1-winner",
+      "kind": "labels",
+      "startFrame": 458,
+      "endFrameExclusive": 750,
+      "props": {
+        "label": "关键判断",
+        "items": [
+          "技术领先 ≠ 胜利",
+          "AI真正用起来",
+          "应用决定赢家"
+        ],
+        "itemFrames": [
+          0,
+          68,
+          130
+        ]
+      },
+      "slot": "full"
+    }
+  ],
+  "visualEvents": [
+    {
+      "id": "c1-e01",
+      "blockId": "c1-interview",
+      "frame": 0,
+      "anchorId": "utterance_002_01",
+      "sceneId": "scene_002",
+      "type": "enter",
+      "detail": "采访背景概括入场；神情概括依据 utterance_002_02",
+      "emphasis": false
+    },
+    {
+      "id": "c1-e02",
+      "blockId": "c1-no-boast",
+      "frame": 155,
+      "anchorId": "utterance_003_01",
+      "sceneId": "scene_003",
+      "type": "enter",
+      "detail": "显示标题与芯片技术",
+      "emphasis": false
+    },
+    {
+      "id": "c1-e03",
+      "blockId": "c1-no-boast",
+      "frame": 223,
+      "anchorId": "utterance_003_02",
+      "sceneId": "scene_003",
+      "type": "reveal-item",
+      "detail": "第二项英伟达业绩出现；块内帧68",
+      "emphasis": false
+    },
+    {
+      "id": "c1-e04",
+      "blockId": "c1-warning",
+      "frame": 372,
+      "anchorId": "utterance_003_04",
+      "sceneId": "scene_003",
+      "type": "enter",
+      "detail": "国运警告唯一一次强化",
+      "emphasis": true
+    },
+    {
+      "id": "c1-e05",
+      "blockId": "c1-winner",
+      "frame": 458,
+      "anchorId": "utterance_004_01",
+      "sceneId": "scene_004",
+      "type": "enter",
+      "detail": "显示技术领先不等于胜利",
+      "emphasis": false
+    },
+    {
+      "id": "c1-e06",
+      "blockId": "c1-winner",
+      "frame": 526,
+      "anchorId": "utterance_004_02",
+      "sceneId": "scene_004",
+      "type": "reveal-item",
+      "detail": "显示AI真正用起来；块内帧68",
+      "emphasis": false
+    },
+    {
+      "id": "c1-e07",
+      "blockId": "c1-winner",
+      "frame": 588,
+      "anchorId": "utterance_004_03",
+      "sceneId": "scene_004",
+      "type": "reveal-item",
+      "detail": "应用决定赢家；块内帧130，赢家判断唯一一次强化，保持至章末",
+      "emphasis": true
+    }
+  ]
+}

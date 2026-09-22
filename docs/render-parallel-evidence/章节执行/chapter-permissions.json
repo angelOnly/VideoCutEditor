@@ -1,0 +1,10 @@
+{
+  "passed": true,
+  "at": "2026-09-22T16:40:30.972Z",
+  "elapsedSeconds": 1.581,
+  "runtime": "v24.19.0",
+  "platform": "darwin",
+  "scope": "实际磁盘文件代理：路径越界、符号链接、无命令/TTS工具、旧租约、父取消、确认范围与真实文件摘要、重启拒绝旧执行。",
+  "limitations": "RPC 是测试桩，不调用模型、不启动生产 Worker；不是 app-server 权限配置或 Linux cgroup 的真实验收。",
+  "output": "TAP version 13\n# Subtest: 章节真实文件代理限制写入、符号链接、未注册工具；会话没有 shell 和 TTS\nok 1 - 章节真实文件代理限制写入、符号链接、未注册工具；会话没有 shell 和 TTS\n  ---\n  duration_ms: 238.913022\n  type: 'test'\n  ...\n# Subtest: 章节候选校验实际摘要、确认范围及编排版本，主控预览仍是必需\nok 2 - 章节候选校验实际摘要、确认范围及编排版本，主控预览仍是必需\n  ---\n  duration_ms: 293.008167\n  type: 'test'\n  ...\n# Subtest: 父取消中断全部章节，租约过期拒绝继续读写\nok 3 - 父取消中断全部章节，租约过期拒绝继续读写\n  ---\n  duration_ms: 201.040106\n  type: 'test'\n  ...\n# Subtest: 章节约定绑定确认稿、互斥分章及实际音频摘要，重启不接管旧执行\nok 4 - 章节约定绑定确认稿、互斥分章及实际音频摘要，重启不接管旧执行\n  ---\n  duration_ms: 273.843201\n  type: 'test'\n  ...\n1..4\n# tests 4\n# suites 0\n# pass 4\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 1470.126888\n"
+}

@@ -1,0 +1,660 @@
+{
+  "chapterId": "chapter_02",
+  "directionVersion": 1,
+  "timebase": "chapter-local-frames",
+  "originFrame": 1007,
+  "frameCalculation": "event.frame = audioAnchor.globalStartFrame - chapter.from; itemFrames/revealFrame = event.frame - visualBlock.startFrame",
+  "layout": {
+    "slot": "full",
+    "components": "仅使用既有组件；继承主控字体、配色与字幕安全区",
+    "hierarchy": "风险争论与20%引文保持普通字号；五层模型中性解释；份额骤降为唯一视觉高潮",
+    "layers": "能源到应用层按概念自下而上；四个基础层同帧出现；应用层于口播边界加入。四层领先与应用落后由原口播提供上下文。",
+    "trend": "1791帧仅显示近90%；1871帧才揭示0%。由主控核验现有trend组件revealFrame语义及目标隐藏情况。",
+    "entry": "保持原章节卡；不得新增开场口播",
+    "chapterCardGap": {
+      "startFrame": 1000,
+      "endFrameExclusive": 1030,
+      "reason": "保留scene_010口播前30帧，原章节卡由主控处理"
+    },
+    "exit": "最后观点保持到章末，下一章统一切换",
+    "quotes": "同一引文分句更新时保留位置，不重复入场或增加高潮"
+  },
+  "visualBlocks": [
+    {
+      "id": "chapter_02-risk",
+      "kind": "labels",
+      "startFrame": 0,
+      "endFrameExclusive": 275,
+      "props": {
+        "label": "美国：风险争论",
+        "items": [
+          "美国",
+          "国会、媒体",
+          "AI有多危险",
+          "怎么监管",
+          "会不会毁灭人类"
+        ],
+        "itemFrames": [
+          0,
+          44,
+          106,
+          186,
+          223
+        ]
+      },
+      "slot": "full"
+    },
+    {
+      "id": "chapter_02-alarm",
+      "kind": "quote",
+      "startFrame": 275,
+      "endFrameExclusive": 449,
+      "props": {
+        "label": "风险争论中的言论",
+        "text": "“20%概率灭绝人类”"
+      },
+      "slot": "full"
+    },
+    {
+      "id": "chapter_02-turn",
+      "kind": "comparison",
+      "startFrame": 449,
+      "endFrameExclusive": 612,
+      "props": {
+        "label": "讨论焦点的反差",
+        "items": [
+          "美国：争论监管",
+          "亚洲"
+        ],
+        "itemFrames": [
+          0,
+          32
+        ]
+      },
+      "slot": "full"
+    },
+    {
+      "id": "chapter_02-landing",
+      "kind": "flow",
+      "startFrame": 612,
+      "endFrameExclusive": 920,
+      "props": {
+        "label": "亚洲：AI落地",
+        "items": [
+          "工厂",
+          "医院",
+          "零售",
+          "商业化"
+        ],
+        "itemFrames": [
+          80,
+          80,
+          80,
+          246
+        ]
+      },
+      "slot": "full"
+    },
+    {
+      "id": "chapter_02-contrast",
+      "kind": "comparison",
+      "startFrame": 920,
+      "endFrameExclusive": 1000,
+      "props": {
+        "label": "让黄仁勋坐立难安的反差",
+        "items": [
+          "美国：争论监管",
+          "亚洲：推进应用"
+        ],
+        "itemFrames": [
+          0,
+          0
+        ]
+      },
+      "slot": "full"
+    },
+    {
+      "id": "chapter_02-stack",
+      "kind": "layers",
+      "startFrame": 1030,
+      "endFrameExclusive": 1428,
+      "props": {
+        "label": "黄仁勋的比喻：AI五层蛋糕",
+        "items": [
+          "能源",
+          "芯片",
+          "基础设施",
+          "模型",
+          "应用层"
+        ],
+        "itemFrames": [
+          109,
+          109,
+          109,
+          109,
+          286
+        ]
+      },
+      "slot": "full"
+    },
+    {
+      "id": "chapter_02-controls",
+      "kind": "labels",
+      "startFrame": 1428,
+      "endFrameExclusive": 1613,
+      "props": {
+        "label": "最让他痛心的是",
+        "items": [
+          "美国对华芯片管制政策",
+          "搬起石头砸自己的脚"
+        ],
+        "itemFrames": [
+          49,
+          129
+        ]
+      },
+      "slot": "full"
+    },
+    {
+      "id": "chapter_02-share-context",
+      "kind": "labels",
+      "startFrame": 1613,
+      "endFrameExclusive": 1791,
+      "props": {
+        "label": "黄仁勋在采访中承认",
+        "items": [
+          "英伟达在中国AI芯片市场的份额"
+        ],
+        "itemFrames": [
+          73
+        ]
+      },
+      "slot": "full"
+    },
+    {
+      "id": "chapter_02-share",
+      "kind": "trend",
+      "startFrame": 1791,
+      "endFrameExclusive": 1908,
+      "props": {
+        "label": "英伟达在中国AI芯片市场的份额",
+        "from": "近90%",
+        "to": "0%",
+        "revealFrame": 80
+      },
+      "slot": "full"
+    },
+    {
+      "id": "chapter_02-quote-first",
+      "kind": "quote",
+      "startFrame": 1908,
+      "endFrameExclusive": 1988,
+      "props": {
+        "label": "黄仁勋的战略判断",
+        "text": "把中国这么大的市场白白让出去，"
+      },
+      "slot": "full"
+    },
+    {
+      "id": "chapter_02-quote-full",
+      "kind": "quote",
+      "startFrame": 1988,
+      "endFrameExclusive": 2056,
+      "props": {
+        "label": "黄仁勋的战略判断",
+        "text": "把中国这么大的市场白白让出去，从战略上讲蠢透了。"
+      },
+      "slot": "full"
+    },
+    {
+      "id": "chapter_02-policy-result",
+      "kind": "quote",
+      "startFrame": 2056,
+      "endFrameExclusive": 2130,
+      "props": {
+        "label": "政策反噬",
+        "text": "这项政策早就适得其反了。"
+      },
+      "slot": "full"
+    },
+    {
+      "id": "chapter_02-chips-first",
+      "kind": "quote",
+      "startFrame": 2130,
+      "endFrameExclusive": 2223,
+      "props": {
+        "label": "自主芯片",
+        "text": "中国无论如何都会搞出自己的芯片，"
+      },
+      "slot": "full"
+    },
+    {
+      "id": "chapter_02-chips-final",
+      "kind": "quote",
+      "startFrame": 2223,
+      "endFrameExclusive": 2255,
+      "props": {
+        "label": "自主芯片",
+        "text": "中国无论如何都会搞出自己的芯片，谁也拦不住。"
+      },
+      "slot": "full"
+    }
+  ],
+  "visualEvents": [
+    {
+      "id": "chapter_02-event-utterance_006_01",
+      "frame": 0,
+      "endFrameExclusive": 44,
+      "blockId": "chapter_02-risk",
+      "action": "reveal-items",
+      "itemIndexes": [
+        0
+      ],
+      "utteranceId": "utterance_006_01",
+      "sceneId": "scene_006",
+      "anchorBoundary": "start",
+      "anchorText": "现在的美国，"
+    },
+    {
+      "id": "chapter_02-event-utterance_006_02",
+      "frame": 44,
+      "endFrameExclusive": 106,
+      "blockId": "chapter_02-risk",
+      "action": "reveal-items",
+      "itemIndexes": [
+        1
+      ],
+      "utteranceId": "utterance_006_02",
+      "sceneId": "scene_006",
+      "anchorBoundary": "start",
+      "anchorText": "上到国会下到媒体，"
+    },
+    {
+      "id": "chapter_02-event-utterance_006_03",
+      "frame": 106,
+      "endFrameExclusive": 186,
+      "blockId": "chapter_02-risk",
+      "action": "reveal-items",
+      "itemIndexes": [
+        2
+      ],
+      "utteranceId": "utterance_006_03",
+      "sceneId": "scene_006",
+      "anchorBoundary": "start",
+      "anchorText": "所有人都在吵着AI有多危险，"
+    },
+    {
+      "id": "chapter_02-event-utterance_006_04",
+      "frame": 186,
+      "endFrameExclusive": 223,
+      "blockId": "chapter_02-risk",
+      "action": "reveal-items",
+      "itemIndexes": [
+        3
+      ],
+      "utteranceId": "utterance_006_04",
+      "sceneId": "scene_006",
+      "anchorBoundary": "start",
+      "anchorText": "要怎么监管，"
+    },
+    {
+      "id": "chapter_02-event-utterance_006_05",
+      "frame": 223,
+      "endFrameExclusive": 272,
+      "blockId": "chapter_02-risk",
+      "action": "reveal-items",
+      "itemIndexes": [
+        4
+      ],
+      "utteranceId": "utterance_006_05",
+      "sceneId": "scene_006",
+      "anchorBoundary": "start",
+      "anchorText": "会不会毁灭人类。"
+    },
+    {
+      "id": "chapter_02-event-utterance_007_01",
+      "frame": 275,
+      "endFrameExclusive": 343,
+      "blockId": "chapter_02-alarm",
+      "action": "enter",
+      "utteranceId": "utterance_007_01",
+      "sceneId": "scene_007",
+      "anchorBoundary": "start",
+      "anchorText": "用“20%概率灭绝人类”"
+    },
+    {
+      "id": "chapter_02-event-utterance_007_02",
+      "frame": 343,
+      "endFrameExclusive": 405,
+      "blockId": "chapter_02-alarm",
+      "action": "hold",
+      "utteranceId": "utterance_007_02",
+      "sceneId": "scene_007",
+      "anchorBoundary": "start",
+      "anchorText": "这种科幻小说式的言论"
+    },
+    {
+      "id": "chapter_02-event-utterance_007_03",
+      "frame": 405,
+      "endFrameExclusive": 449,
+      "blockId": "chapter_02-alarm",
+      "action": "hold",
+      "utteranceId": "utterance_007_03",
+      "sceneId": "scene_007",
+      "anchorBoundary": "start",
+      "anchorText": "制造全民恐慌。"
+    },
+    {
+      "id": "chapter_02-event-utterance_008_01",
+      "frame": 449,
+      "endFrameExclusive": 481,
+      "blockId": "chapter_02-turn",
+      "action": "reveal-items",
+      "itemIndexes": [
+        0
+      ],
+      "utteranceId": "utterance_008_01",
+      "sceneId": "scene_008",
+      "anchorBoundary": "start",
+      "anchorText": "而另一边，"
+    },
+    {
+      "id": "chapter_02-event-utterance_008_02",
+      "frame": 481,
+      "endFrameExclusive": 555,
+      "blockId": "chapter_02-turn",
+      "action": "reveal-items",
+      "itemIndexes": [
+        1
+      ],
+      "utteranceId": "utterance_008_02",
+      "sceneId": "scene_008",
+      "anchorBoundary": "start",
+      "anchorText": "亚洲国家根本没空讨论"
+    },
+    {
+      "id": "chapter_02-event-utterance_008_03",
+      "frame": 555,
+      "endFrameExclusive": 612,
+      "blockId": "chapter_02-turn",
+      "action": "hold",
+      "utteranceId": "utterance_008_03",
+      "sceneId": "scene_008",
+      "anchorBoundary": "start",
+      "anchorText": "这些虚无缥缈的问题，"
+    },
+    {
+      "id": "chapter_02-event-utterance_008_04",
+      "frame": 612,
+      "endFrameExclusive": 692,
+      "blockId": "chapter_02-landing",
+      "action": "enter",
+      "utteranceId": "utterance_008_04",
+      "sceneId": "scene_008",
+      "anchorBoundary": "start",
+      "anchorText": "正开足马力把AI落地到"
+    },
+    {
+      "id": "chapter_02-event-utterance_008_05",
+      "frame": 692,
+      "endFrameExclusive": 790,
+      "blockId": "chapter_02-landing",
+      "action": "reveal-items",
+      "itemIndexes": [
+        0,
+        1,
+        2
+      ],
+      "utteranceId": "utterance_008_05",
+      "sceneId": "scene_008",
+      "anchorBoundary": "start",
+      "anchorText": "工厂、医院、零售的每一个角落，"
+    },
+    {
+      "id": "chapter_02-event-utterance_008_06",
+      "frame": 790,
+      "endFrameExclusive": 858,
+      "blockId": "chapter_02-landing",
+      "action": "hold",
+      "utteranceId": "utterance_008_06",
+      "sceneId": "scene_008",
+      "anchorBoundary": "start",
+      "anchorText": "以极大的热情拥抱AI，"
+    },
+    {
+      "id": "chapter_02-event-utterance_008_07",
+      "frame": 858,
+      "endFrameExclusive": 920,
+      "blockId": "chapter_02-landing",
+      "action": "reveal-items",
+      "itemIndexes": [
+        3
+      ],
+      "utteranceId": "utterance_008_07",
+      "sceneId": "scene_008",
+      "anchorBoundary": "start",
+      "anchorText": "快速推进商业化落地。"
+    },
+    {
+      "id": "chapter_02-event-utterance_009_01",
+      "frame": 920,
+      "endFrameExclusive": 1000,
+      "blockId": "chapter_02-contrast",
+      "action": "reveal-items",
+      "itemIndexes": [
+        0,
+        1
+      ],
+      "utteranceId": "utterance_009_01",
+      "sceneId": "scene_009",
+      "anchorBoundary": "start",
+      "anchorText": "这种反差让黄仁勋坐立难安。"
+    },
+    {
+      "id": "chapter_02-event-utterance_010_01",
+      "frame": 1030,
+      "endFrameExclusive": 1139,
+      "blockId": "chapter_02-stack",
+      "action": "enter",
+      "utteranceId": "utterance_010_01",
+      "sceneId": "scene_010",
+      "anchorBoundary": "start",
+      "anchorText": "他用自己提出的AI五层蛋糕模型打比方："
+    },
+    {
+      "id": "chapter_02-event-utterance_010_02",
+      "frame": 1139,
+      "endFrameExclusive": 1248,
+      "blockId": "chapter_02-stack",
+      "action": "reveal-items",
+      "itemIndexes": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "utteranceId": "utterance_010_02",
+      "sceneId": "scene_010",
+      "anchorBoundary": "start",
+      "anchorText": "美国在能源、芯片、基础设施、模型"
+    },
+    {
+      "id": "chapter_02-event-utterance_010_03",
+      "frame": 1248,
+      "endFrameExclusive": 1316,
+      "blockId": "chapter_02-stack",
+      "action": "hold",
+      "utteranceId": "utterance_010_03",
+      "sceneId": "scene_010",
+      "anchorBoundary": "start",
+      "anchorText": "这四层全都遥遥领先，"
+    },
+    {
+      "id": "chapter_02-event-utterance_010_04",
+      "frame": 1316,
+      "endFrameExclusive": 1378,
+      "blockId": "chapter_02-stack",
+      "action": "reveal-items",
+      "itemIndexes": [
+        4
+      ],
+      "utteranceId": "utterance_010_04",
+      "sceneId": "scene_010",
+      "anchorBoundary": "start",
+      "anchorText": "但在最关键的应用层"
+    },
+    {
+      "id": "chapter_02-event-utterance_010_05",
+      "frame": 1378,
+      "endFrameExclusive": 1427,
+      "blockId": "chapter_02-stack",
+      "action": "hold",
+      "utteranceId": "utterance_010_05",
+      "sceneId": "scene_010",
+      "anchorBoundary": "start",
+      "anchorText": "已经被亚洲甩在了身后。"
+    },
+    {
+      "id": "chapter_02-event-utterance_011_01",
+      "frame": 1428,
+      "endFrameExclusive": 1477,
+      "blockId": "chapter_02-controls",
+      "action": "enter",
+      "utteranceId": "utterance_011_01",
+      "sceneId": "scene_011",
+      "anchorBoundary": "start",
+      "anchorText": "最让他痛心的是，"
+    },
+    {
+      "id": "chapter_02-event-utterance_011_02",
+      "frame": 1477,
+      "endFrameExclusive": 1557,
+      "blockId": "chapter_02-controls",
+      "action": "reveal-items",
+      "itemIndexes": [
+        0
+      ],
+      "utteranceId": "utterance_011_02",
+      "sceneId": "scene_011",
+      "anchorBoundary": "start",
+      "anchorText": "美国对华芯片管制政策的"
+    },
+    {
+      "id": "chapter_02-event-utterance_011_03",
+      "frame": 1557,
+      "endFrameExclusive": 1613,
+      "blockId": "chapter_02-controls",
+      "action": "reveal-items",
+      "itemIndexes": [
+        1
+      ],
+      "utteranceId": "utterance_011_03",
+      "sceneId": "scene_011",
+      "anchorBoundary": "start",
+      "anchorText": "搬起石头砸自己的脚。"
+    },
+    {
+      "id": "chapter_02-event-utterance_012_01",
+      "frame": 1613,
+      "endFrameExclusive": 1686,
+      "blockId": "chapter_02-share-context",
+      "action": "enter",
+      "utteranceId": "utterance_012_01",
+      "sceneId": "scene_012",
+      "anchorBoundary": "start",
+      "anchorText": "黄仁勋在采访中亲口承认，"
+    },
+    {
+      "id": "chapter_02-event-utterance_012_02",
+      "frame": 1686,
+      "endFrameExclusive": 1791,
+      "blockId": "chapter_02-share-context",
+      "action": "reveal-items",
+      "itemIndexes": [
+        0
+      ],
+      "utteranceId": "utterance_012_02",
+      "sceneId": "scene_012",
+      "anchorBoundary": "start",
+      "anchorText": "英伟达在中国AI芯片市场的份额"
+    },
+    {
+      "id": "chapter_02-event-utterance_012_03",
+      "frame": 1791,
+      "endFrameExclusive": 1871,
+      "blockId": "chapter_02-share",
+      "action": "enter",
+      "utteranceId": "utterance_012_03",
+      "sceneId": "scene_012",
+      "anchorBoundary": "start",
+      "anchorText": "已经从巅峰时的近90%，"
+    },
+    {
+      "id": "chapter_02-event-utterance_012_04",
+      "frame": 1871,
+      "endFrameExclusive": 1908,
+      "blockId": "chapter_02-share",
+      "action": "reveal-target",
+      "utteranceId": "utterance_012_04",
+      "sceneId": "scene_012",
+      "anchorBoundary": "start",
+      "anchorText": "直接跌到了0。"
+    },
+    {
+      "id": "chapter_02-event-utterance_013_01",
+      "frame": 1908,
+      "endFrameExclusive": 1988,
+      "blockId": "chapter_02-quote-first",
+      "action": "enter",
+      "utteranceId": "utterance_013_01",
+      "sceneId": "scene_013",
+      "anchorBoundary": "start",
+      "anchorText": "“把中国这么大的市场白白让出去，"
+    },
+    {
+      "id": "chapter_02-event-utterance_013_02",
+      "frame": 1988,
+      "endFrameExclusive": 2056,
+      "blockId": "chapter_02-quote-full",
+      "action": "enter",
+      "utteranceId": "utterance_013_02",
+      "sceneId": "scene_013",
+      "anchorBoundary": "start",
+      "anchorText": "从战略上讲蠢透了。”"
+    },
+    {
+      "id": "chapter_02-event-utterance_014_01",
+      "frame": 2056,
+      "endFrameExclusive": 2130,
+      "blockId": "chapter_02-policy-result",
+      "action": "enter",
+      "utteranceId": "utterance_014_01",
+      "sceneId": "scene_014",
+      "anchorBoundary": "start",
+      "anchorText": "这项政策早就适得其反了。"
+    },
+    {
+      "id": "chapter_02-event-utterance_015_01",
+      "frame": 2130,
+      "endFrameExclusive": 2223,
+      "blockId": "chapter_02-chips-first",
+      "action": "enter",
+      "utteranceId": "utterance_015_01",
+      "sceneId": "scene_015",
+      "anchorBoundary": "start",
+      "anchorText": "中国无论如何都会搞出自己的芯片，"
+    },
+    {
+      "id": "chapter_02-event-utterance_015_02",
+      "frame": 2223,
+      "endFrameExclusive": 2255,
+      "blockId": "chapter_02-chips-final",
+      "action": "enter",
+      "utteranceId": "utterance_015_02",
+      "sceneId": "scene_015",
+      "anchorBoundary": "start",
+      "anchorText": "谁也拦不住。"
+    }
+  ],
+  "previewStatus": "not_generated"
+}

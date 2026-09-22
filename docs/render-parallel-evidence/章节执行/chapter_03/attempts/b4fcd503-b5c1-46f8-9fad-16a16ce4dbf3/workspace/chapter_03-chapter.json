@@ -1,0 +1,97 @@
+{
+  "id": "chapter_03",
+  "label": "战略选择",
+  "title": "市场份额也是战略武器",
+  "summary": "开放市场、推动应用，才是AI产业竞争的长期筹码。",
+  "from": 3292,
+  "endFrameExclusive": 4112,
+  "visualBlocks": [
+    {
+      "id": "chapter_03-loss",
+      "kind": "labels",
+      "startFrame": 0,
+      "endFrameExclusive": 203,
+      "props": {
+        "label": "美国企业失去的",
+        "items": [
+          "收入",
+          "市场份额",
+          "生态主导权"
+        ],
+        "itemFrames": [
+          0,
+          93,
+          93
+        ]
+      },
+      "slot": "full"
+    },
+    {
+      "id": "chapter_03-global",
+      "kind": "labels",
+      "startFrame": 203,
+      "endFrameExclusive": 328,
+      "props": {
+        "label": "全球产业",
+        "items": [
+          "AI是全球性的产业",
+          "把技术卖到全世界去"
+        ],
+        "itemFrames": [
+          0,
+          57
+        ]
+      },
+      "slot": "full"
+    },
+    {
+      "id": "chapter_03-weapon",
+      "kind": "labels",
+      "startFrame": 328,
+      "endFrameExclusive": 453,
+      "props": {
+        "label": "市场份额",
+        "items": [
+          "市场份额本身就是",
+          "最硬的战略武器"
+        ],
+        "itemFrames": [
+          0,
+          68
+        ]
+      },
+      "slot": "full"
+    },
+    {
+      "id": "chapter_03-warning",
+      "kind": "labels",
+      "startFrame": 453,
+      "endFrameExclusive": 721,
+      "props": {
+        "label": "黄仁勋呼吁",
+        "items": [
+          "如果继续被恐慌情绪绑架",
+          "阻碍AI落地",
+          "就算美国有全世界最好的芯片和模型"
+        ],
+        "itemFrames": [
+          44,
+          118,
+          175
+        ]
+      },
+      "slot": "full"
+    },
+    {
+      "id": "chapter_03-close",
+      "kind": "quote",
+      "startFrame": 721,
+      "endFrameExclusive": 820,
+      "props": {
+        "label": "如果恐慌阻碍AI落地",
+        "text": "最终也会输掉这场决定国运的工业革命。"
+      },
+      "slot": "full"
+    }
+  ]
+}

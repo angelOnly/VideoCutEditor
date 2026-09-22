@@ -1,0 +1,229 @@
+{
+  "id": "chapter_02",
+  "label": "应用落差",
+  "title": "从芯片领先到应用追赶",
+  "summary": "亚洲快速将AI部署到产业现场，应用层竞争正在拉开差距。",
+  "from": 1007,
+  "endFrameExclusive": 3262,
+  "visualBlocks": [
+    {
+      "id": "chapter_02-risk",
+      "kind": "labels",
+      "startFrame": 0,
+      "endFrameExclusive": 275,
+      "props": {
+        "label": "美国：风险争论",
+        "items": [
+          "美国",
+          "国会、媒体",
+          "AI有多危险",
+          "怎么监管",
+          "会不会毁灭人类"
+        ],
+        "itemFrames": [
+          0,
+          44,
+          106,
+          186,
+          223
+        ]
+      },
+      "slot": "full"
+    },
+    {
+      "id": "chapter_02-alarm",
+      "kind": "quote",
+      "startFrame": 275,
+      "endFrameExclusive": 449,
+      "props": {
+        "label": "风险争论中的言论",
+        "text": "“20%概率灭绝人类”"
+      },
+      "slot": "full"
+    },
+    {
+      "id": "chapter_02-turn",
+      "kind": "comparison",
+      "startFrame": 449,
+      "endFrameExclusive": 612,
+      "props": {
+        "label": "讨论焦点的反差",
+        "items": [
+          "美国：争论监管",
+          "亚洲"
+        ],
+        "itemFrames": [
+          0,
+          32
+        ]
+      },
+      "slot": "full"
+    },
+    {
+      "id": "chapter_02-landing",
+      "kind": "flow",
+      "startFrame": 612,
+      "endFrameExclusive": 920,
+      "props": {
+        "label": "亚洲：AI落地",
+        "items": [
+          "工厂",
+          "医院",
+          "零售",
+          "商业化"
+        ],
+        "itemFrames": [
+          80,
+          80,
+          80,
+          246
+        ]
+      },
+      "slot": "full"
+    },
+    {
+      "id": "chapter_02-contrast",
+      "kind": "comparison",
+      "startFrame": 920,
+      "endFrameExclusive": 1000,
+      "props": {
+        "label": "让黄仁勋坐立难安的反差",
+        "items": [
+          "美国：争论监管",
+          "亚洲：推进应用"
+        ],
+        "itemFrames": [
+          0,
+          0
+        ]
+      },
+      "slot": "full"
+    },
+    {
+      "id": "chapter_02-stack",
+      "kind": "layers",
+      "startFrame": 1030,
+      "endFrameExclusive": 1428,
+      "props": {
+        "label": "黄仁勋的比喻：AI五层蛋糕",
+        "items": [
+          "能源",
+          "芯片",
+          "基础设施",
+          "模型",
+          "应用层"
+        ],
+        "itemFrames": [
+          109,
+          109,
+          109,
+          109,
+          286
+        ]
+      },
+      "slot": "full"
+    },
+    {
+      "id": "chapter_02-controls",
+      "kind": "labels",
+      "startFrame": 1428,
+      "endFrameExclusive": 1613,
+      "props": {
+        "label": "最让他痛心的是",
+        "items": [
+          "美国对华芯片管制政策",
+          "搬起石头砸自己的脚"
+        ],
+        "itemFrames": [
+          49,
+          129
+        ]
+      },
+      "slot": "full"
+    },
+    {
+      "id": "chapter_02-share-context",
+      "kind": "labels",
+      "startFrame": 1613,
+      "endFrameExclusive": 1791,
+      "props": {
+        "label": "黄仁勋在采访中承认",
+        "items": [
+          "英伟达在中国AI芯片市场的份额"
+        ],
+        "itemFrames": [
+          73
+        ]
+      },
+      "slot": "full"
+    },
+    {
+      "id": "chapter_02-share",
+      "kind": "trend",
+      "startFrame": 1791,
+      "endFrameExclusive": 1908,
+      "props": {
+        "label": "英伟达在中国AI芯片市场的份额",
+        "from": "近90%",
+        "to": "0%",
+        "revealFrame": 80
+      },
+      "slot": "full"
+    },
+    {
+      "id": "chapter_02-quote-first",
+      "kind": "quote",
+      "startFrame": 1908,
+      "endFrameExclusive": 1988,
+      "props": {
+        "label": "黄仁勋的战略判断",
+        "text": "把中国这么大的市场白白让出去，"
+      },
+      "slot": "full"
+    },
+    {
+      "id": "chapter_02-quote-full",
+      "kind": "quote",
+      "startFrame": 1988,
+      "endFrameExclusive": 2056,
+      "props": {
+        "label": "黄仁勋的战略判断",
+        "text": "把中国这么大的市场白白让出去，从战略上讲蠢透了。"
+      },
+      "slot": "full"
+    },
+    {
+      "id": "chapter_02-policy-result",
+      "kind": "quote",
+      "startFrame": 2056,
+      "endFrameExclusive": 2130,
+      "props": {
+        "label": "政策反噬",
+        "text": "这项政策早就适得其反了。"
+      },
+      "slot": "full"
+    },
+    {
+      "id": "chapter_02-chips-first",
+      "kind": "quote",
+      "startFrame": 2130,
+      "endFrameExclusive": 2223,
+      "props": {
+        "label": "自主芯片",
+        "text": "中国无论如何都会搞出自己的芯片，"
+      },
+      "slot": "full"
+    },
+    {
+      "id": "chapter_02-chips-final",
+      "kind": "quote",
+      "startFrame": 2223,
+      "endFrameExclusive": 2255,
+      "props": {
+        "label": "自主芯片",
+        "text": "中国无论如何都会搞出自己的芯片，谁也拦不住。"
+      },
+      "slot": "full"
+    }
+  ]
+}

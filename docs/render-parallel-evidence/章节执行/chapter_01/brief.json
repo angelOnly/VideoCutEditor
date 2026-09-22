@@ -1,0 +1,210 @@
+{
+  "directionVersion": 1,
+  "chapterId": "chapter_01",
+  "sceneIds": [
+    "scene_001",
+    "scene_002",
+    "scene_003",
+    "scene_004",
+    "scene_005"
+  ],
+  "audioAnchors": [
+    {
+      "utteranceId": "utterance_001_01",
+      "sceneId": "scene_001",
+      "text": "首个全球90%的AI芯片，",
+      "startFrame": 0,
+      "endFrameExclusive": 85,
+      "globalStartFrame": 0,
+      "globalEndFrameExclusive": 85,
+      "audioSha256": "a564c73fa4322ef09fd60b8200400c65fde84fd406d274407631f781d309dd45"
+    },
+    {
+      "utteranceId": "utterance_001_02",
+      "sceneId": "scene_001",
+      "text": "站在AI技术金字塔尖的黄仁勋，",
+      "startFrame": 85,
+      "endFrameExclusive": 178,
+      "globalStartFrame": 85,
+      "globalEndFrameExclusive": 178,
+      "audioSha256": "5c365b4187f48ecca879b36ce00dbe6c7c8d384a266c4004a54ddf2e076c54ba"
+    },
+    {
+      "utteranceId": "utterance_001_03",
+      "sceneId": "scene_001",
+      "text": "这次是真的慌了。",
+      "startFrame": 178,
+      "endFrameExclusive": 227,
+      "globalStartFrame": 178,
+      "globalEndFrameExclusive": 227,
+      "audioSha256": "f594e79a315aad49a96bfbcf16c6163c604abfdd93613e98245d9f51e3a8135e"
+    },
+    {
+      "utteranceId": "utterance_002_01",
+      "sceneId": "scene_002",
+      "text": "在月初的最新采访中，",
+      "startFrame": 0,
+      "endFrameExclusive": 62,
+      "globalStartFrame": 227,
+      "globalEndFrameExclusive": 289,
+      "audioSha256": "8c040e8481b6b9390bcc0aa7cd9ad4aacafb94699a9231f2f46b7e425bfd73ef"
+    },
+    {
+      "utteranceId": "utterance_002_02",
+      "sceneId": "scene_002",
+      "text": "这位英伟达CEO全程眉头紧锁。",
+      "startFrame": 62,
+      "endFrameExclusive": 154,
+      "globalStartFrame": 289,
+      "globalEndFrameExclusive": 381,
+      "audioSha256": "0465bfaa1c37b28d7e68813194cf1019ec2e884ec440d801d0eacefe243570ba"
+    },
+    {
+      "utteranceId": "utterance_003_01",
+      "sceneId": "scene_003",
+      "text": "他没有炫耀最新的芯片技术，",
+      "startFrame": 0,
+      "endFrameExclusive": 68,
+      "globalStartFrame": 382,
+      "globalEndFrameExclusive": 450,
+      "audioSha256": "641ddc2caeaeddab9a7b5eaa38eeb6107390da2ff476dbf128cc739ce8f6d269"
+    },
+    {
+      "utteranceId": "utterance_003_02",
+      "sceneId": "scene_003",
+      "text": "也没有吹嘘英伟达的业绩，",
+      "startFrame": 68,
+      "endFrameExclusive": 124,
+      "globalStartFrame": 450,
+      "globalEndFrameExclusive": 506,
+      "audioSha256": "84bc166be141a2b24faed02496b8775adc6a21b92e96722fd382b31f1b8fcb05"
+    },
+    {
+      "utteranceId": "utterance_003_03",
+      "sceneId": "scene_003",
+      "text": "而是对着镜头发出了最严厉的警告：",
+      "startFrame": 124,
+      "endFrameExclusive": 217,
+      "globalStartFrame": 506,
+      "globalEndFrameExclusive": 599,
+      "audioSha256": "50e9d515a613499ff1c78891d6cd315f1307f563a9a416695eade08a2bd2eb90"
+    },
+    {
+      "utteranceId": "utterance_003_04",
+      "sceneId": "scene_003",
+      "text": "“美国正在亲手葬送自己的国运”。",
+      "startFrame": 217,
+      "endFrameExclusive": 302,
+      "globalStartFrame": 599,
+      "globalEndFrameExclusive": 684,
+      "audioSha256": "4c4a7a429311ccac4de925a675936718b393cfb11712d87e993ef7fc4055770b"
+    },
+    {
+      "utteranceId": "utterance_004_01",
+      "sceneId": "scene_004",
+      "text": "“技术领先根本不算赢，",
+      "startFrame": 0,
+      "endFrameExclusive": 68,
+      "globalStartFrame": 685,
+      "globalEndFrameExclusive": 753,
+      "audioSha256": "912a6b8e3fb1e65dac3217363c1243996cc7d23933f7446efc25b8dee7ff23d8"
+    },
+    {
+      "utteranceId": "utterance_004_02",
+      "sceneId": "scene_004",
+      "text": "谁能把AI真正用起来，",
+      "startFrame": 68,
+      "endFrameExclusive": 130,
+      "globalStartFrame": 753,
+      "globalEndFrameExclusive": 815,
+      "audioSha256": "678dda74bb839b14fbd4679cbcd04aff6d917d39044df5d4d87eb410405bc0d7"
+    },
+    {
+      "utteranceId": "utterance_004_03",
+      "sceneId": "scene_004",
+      "text": "谁才是最后的赢家。”",
+      "startFrame": 130,
+      "endFrameExclusive": 199,
+      "globalStartFrame": 815,
+      "globalEndFrameExclusive": 884,
+      "audioSha256": "d982c773f5ef3f4ba138b378e9ca00aee3da1df2335e3d0534288092a877ad1f"
+    },
+    {
+      "utteranceId": "utterance_005_01",
+      "sceneId": "scene_005",
+      "text": "黄仁勋戳破了华盛顿最大的幻觉。",
+      "startFrame": 0,
+      "endFrameExclusive": 92,
+      "globalStartFrame": 885,
+      "globalEndFrameExclusive": 977,
+      "audioSha256": "6346d23c04cbf1540e5dd8544cf7d6228d80285b730ae07f979864e84bd9e219"
+    }
+  ],
+  "goal": "建立警告，再提出技术领先不等于应用胜利。只在国运警告和赢家判断各强化一次。",
+  "chapter": {
+    "id": "chapter_01",
+    "label": "核心警报",
+    "title": "技术领先，不等于胜利",
+    "summary": "黄仁勋警告：应用落地决定AI竞赛终局。",
+    "from": 227,
+    "endFrameExclusive": 977,
+    "visualBlocks": [
+      {
+        "id": "c1-warning",
+        "kind": "quote",
+        "startFrame": 0,
+        "endFrameExclusive": 263,
+        "props": {
+          "label": "黄仁勋的警告",
+          "text": "美国正在亲手葬送自己的国运"
+        },
+        "slot": "full"
+      },
+      {
+        "id": "c1-fear",
+        "kind": "labels",
+        "startFrame": 263,
+        "endFrameExclusive": 512,
+        "props": {
+          "label": "争论焦点",
+          "items": [
+            "AI风险争论",
+            "监管优先",
+            "末日焦虑"
+          ],
+          "itemFrames": [
+            0,
+            44,
+            88
+          ]
+        },
+        "slot": "full"
+      },
+      {
+        "id": "c1-winner",
+        "kind": "quote",
+        "startFrame": 512,
+        "endFrameExclusive": 750,
+        "props": {
+          "label": "关键判断",
+          "text": "谁能把AI真正用起来，谁才是最后的赢家。"
+        },
+        "slot": "full"
+      }
+    ]
+  },
+  "deliverables": "先创建draft.json，包含视觉事件和布局。随后创建chapter.json，结构沿用chapter（id/label/title/summary/from/endFrameExclusive/visualBlocks），只改visualBlocks；事件必须锚定给定真实句段。result.json列出文件摘要及events/sceneIds/audioAnchors/previews，预览由主控统一渲染并审核。",
+  "constraints": [
+    "只能写分配workspace；不运行shell/浏览器/TTS",
+    "不改from/endFrameExclusive/确认文本/全局时间轴",
+    "只用现有quote/labels/flow/comparison/layers/trend组件，不新增事实",
+    "itemFrames和revealFrame必须从给定句段边界计算，不按字数猜测",
+    "视觉事件使用章节局部帧，全球偏移由主控核对"
+  ],
+  "mainReview": "退回第一稿：chapter_01的前372帧图解区为空，长达12.4秒，不能只等警告出现。请在局部0（utterance_002_01）起放采访背景metric或quote，概括“采访中的紧张神情”，局部155（utterance_003_01）换到“没有炫耀技术或业绩”，采用labels且第二项在utterance_003_02边界出现；局部372才进入国运警告，局部458进入赢家判断。避免卡片照抄带开合引号和逗号的长口播，简洁结论即可，底部字幕保留全文。以实际句段锚点入场，所有图解窗口覆盖本章且不重叠。其他章保留，不改音频与全局时长。结果须用新briefHash。",
+  "transitions": {
+    "entry": "保持原章节卡；不得新增开场口播",
+    "exit": "最后观点保持到章末，下一章统一切换"
+  },
+  "revision": 2
+}

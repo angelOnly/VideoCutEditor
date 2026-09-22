@@ -5,7 +5,7 @@
   "defaultExecutor": "host-app-server",
   "taskIsolation": "bubblewrap-systemd-user",
   "remotionVersion": "4.0.425",
-  "runtimeSourceSha256": "fcf49320f40dd9f76d911b03ac9fa0f63dd6d3bbd463bb8d125fb6844140bf22",
+  "runtimeSourceSha256": "6ecd7e40ccae6ac69938839228e93eee6e3484b668d253b188644c0ab0f0e63d",
   "files": {
     "claude-code-video-toolkit/.agents/skills/video-pipeline/SKILL.md": "653f7cd155e5e490b9941ec1742dd07b70cc908074727fffcc78b78c7ea77abb",
     "claude-code-video-toolkit/.agents/skills/video-pipeline/agents/openai.yaml": "8b31a00612837d7ca772138b38441ae244015f329c746ce34e2d622439bd646a",
@@ -14,7 +14,7 @@
     "claude-code-video-toolkit/.agents/skills/video-pipeline/references/task-contract.md": "e87f9331d483470cbd63ef092afd1106c63f2b0543149dc5089e24c5228523d4",
     "claude-code-video-toolkit/.agents/skills/video-pipeline/references/technical-routing.md": "66fc257ae45c57b07530a47ebeb67282425ae013ec3b69344a2807625e6dedd8",
     "claude-code-video-toolkit/.agents/skills/video-pipeline/references/text-storyboard.md": "498e90bf8cc86381a7ec041af35eb7e3aa455ae93fde184e4236257c30a25002",
-    "claude-code-video-toolkit/.agents/skills/video-pipeline/references/two-stage-contract.md": "caae32a8fafbc7ba3870ae1e7fe1366e44137e003409dda84c662e493c736deb",
+    "claude-code-video-toolkit/.agents/skills/video-pipeline/references/two-stage-contract.md": "588a89ae48d2137fbb2c3a0dc40c7c4523faae411d54cbbace3355d488895699",
     "claude-code-video-toolkit/.agents/skills/video-pipeline/references/two-stage.schema.json": "4b6e615328bf9dfb13ab89b591a20c9f4df7b0f2a983e9f50f7591d9bd4cbb73",
     "claude-code-video-toolkit/.agents/skills/video-pipeline/references/worker-contract.md": "c85223fe35d787cc6cc20a2c97cb0c6403cc0741991c3b10fbd2786f5e38ccb0",
     "claude-code-video-toolkit/.agents/skills/video-pipeline/scripts/validate_delivery.py": "2d9277fde6e6227b3b46b963e65a6fd2e65329ef2e3531500dd44e152f664a71",
@@ -88,6 +88,6 @@
     "video-worker/src/runner/codex-host.ts": "269f57dfcc4792be22c185e76a6d1ef56cf13bb7b25dafc901ee0c05795d462d",
     "video-worker/src/runner/media-slots.ts": "8f16ac7a3e02a5fdc698438d1485b876cece9cde33642cac9dc6d2e90d6f2c2e",
     "video-worker/src/runner/media-tool.ts": "10843219c2a513a30c9c7f0ef024382fcfc13ee483fb6a308159d6a43de2519c",
-    "video-worker/src/runner/prompts.ts": "fb7da4704b22f85d693436a2e3d8ef86e071e61c97b0bcd5bbf531b699a14e22"
+    "video-worker/src/runner/prompts.ts": "595e7a75a01ce3006714b0439b00afc93bacd7246f8a35dad373eb7d33903863"
   }
 }

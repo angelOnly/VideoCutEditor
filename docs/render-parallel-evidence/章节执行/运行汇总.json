@@ -1,0 +1,62 @@
+{
+  "codexVersion": "0.155.0-alpha.9.2",
+  "runs": [
+    {
+      "wallSeconds": 181.032,
+      "model": "gpt-6-astra",
+      "effort": "medium",
+      "chapters": [
+        {
+          "chapterId": "chapter_01",
+          "executionId": "6e5b4b8f-7a9d-49bb-b1c1-95e4427b3fa8",
+          "threadId": "01a0c9f7-2af1-7f03-9e8a-936d9e774ed8",
+          "startedAt": "2026-09-22T16:33:33.821Z",
+          "endedAt": "2026-09-22T16:35:32.745Z",
+          "status": "failed",
+          "error": "Error: 章节编排或 brief 已过期",
+          "workspace": "render/render_001/chapters/chapter_01/attempts/36953d23-9f09-4595-98c6-3a390ef69c99/workspace"
+        },
+        {
+          "chapterId": "chapter_02",
+          "executionId": "de190fdf-015c-4f7a-8042-5f2440dea1ec",
+          "threadId": "01a0c9f7-2d35-70e1-b6a7-75c14f325569",
+          "startedAt": "2026-09-22T16:33:34.433Z",
+          "endedAt": "2026-09-22T16:36:30.162Z",
+          "status": "candidate",
+          "error": null,
+          "workspace": "render/render_001/chapters/chapter_02/attempts/1c191a1e-6679-44c7-ab07-028a9264f64e/workspace"
+        },
+        {
+          "chapterId": "chapter_03",
+          "executionId": "2aa2790a-d9ac-49da-ac87-63b2e02141ab",
+          "threadId": "01a0c9f7-2e83-7a80-a557-494bd3dcd8df",
+          "startedAt": "2026-09-22T16:33:34.752Z",
+          "endedAt": "2026-09-22T16:35:17.108Z",
+          "status": "candidate",
+          "error": null,
+          "workspace": "render/render_001/chapters/chapter_03/attempts/b4fcd503-b5c1-46f8-9fad-16a16ce4dbf3/workspace"
+        }
+      ]
+    },
+    {
+      "wallSeconds": 90.472,
+      "model": "gpt-6-astra",
+      "effort": "medium",
+      "chapters": [
+        {
+          "chapterId": "chapter_01",
+          "executionId": "6bc394d5-d80b-4595-ae64-e1c0913f517c",
+          "threadId": "01a0c9fa-27cf-76f3-8641-2ab75cc462cc",
+          "startedAt": "2026-09-22T16:36:49.688Z",
+          "endedAt": "2026-09-22T16:38:15.492Z",
+          "status": "candidate",
+          "error": null,
+          "workspace": "render/render_001/chapters/chapter_01/attempts/c4af9859-9d0d-4630-bd10-cac7c6e4872f/workspace"
+        }
+      ]
+    }
+  ],
+  "creativeWallSeconds": 271.504,
+  "humanListeningPerformed": false,
+  "dynamicReviewCompleted": false
+}

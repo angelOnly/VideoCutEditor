@@ -1,0 +1,79 @@
+✔ callback retries preserve payload/event ID and require HTTP + business success (17222.104539ms)
+✔ nonretryable callback failures enter dead letter; tenant-scoped manual resend (9115.262447ms)
+✔ 章节真实文件代理限制写入、符号链接、未注册工具；会话没有 shell 和 TTS (485.692123ms)
+✔ 章节候选校验实际摘要、确认范围及编排版本，主控预览仍是必需 (355.970867ms)
+✔ 父取消中断全部章节，租约过期拒绝继续读写 (240.910506ms)
+✔ 宿主槽整批分配、FIFO 和排队取消不漏槽 (13.860396ms)
+✔ 批次媒体参数是白名单且渲染槽严格校验 (2.471217ms)
+✔ 章节约定绑定确认稿、互斥分章及实际音频摘要，重启不接管旧执行 (488.345752ms)
+✔ one root env configures Worker without tenants.json; injected values and explicit tenants override it (8244.721216ms)
+✔ 省略与空 plan、增删重排均形成服务端确认版本，元数据不能锁定旧场景 (17598.484505ms)
+✔ 旧待执行版本明确拒绝，迁移按顺序且可重复运行 (9083.532384ms)
+✔ 真实接口客户端：准备白名单、重复提交同一 requestId、外部确认及结果查询 (4245.169913ms)
+✔ authorized roots reject traversal, cross-tenant links and container-only paths (73.993236ms)
+✔ recovered run reads frozen input, a new run detects changed source bytes (24685.560724ms)
+﹣ Ubuntu native cgroup: readonly input, hidden sibling/credentials, no detached children and confirmed cancellation (6.424048ms) # SKIP
+✔ 动态工具保留执行宿主，同时关闭内置命令和外部工具 (4.569534ms)
+✔ host namespace hides shared roots, login and env; trusted tools alone may use network (36.962822ms)
+✔ 两阶段渲染只授权当前 run 的 render 目录写入 (0.796296ms)
+✔ native process completion is checked with systemd and stop failures propagate (103.738822ms)
+✔ four native Codex tasks route by thread/turn, persist identity, resume, and cancellation releases only after cleanup (35084.209959ms)
+✔ 阶段工具耗尽预算后中断当前 turn 并清理执行进程 (8863.79046ms)
+✔ app-server stdio initializes once, checks ChatGPT login and rejects in-flight requests when server exits (301.85692ms)
+✔ generated systemd unit preserves literal WorkingDirectory and quotes command/environment separately (712.927305ms)
+✔ AppArmor installer preserves existing policy and only installs after a matching failed probe (948.159551ms)
+﹣ 本机控制器真实子进程：模型提前返回后自动续轮并保留人工等待账本 (24.847078ms) # SKIP
+﹣ 五句独立 MP4、私有工程持久保存、明确成功版本续编且旧产物不变 (9.062515ms) # SKIP
+✔ 制作调整继续、共享问题接管，连续无进展有界停止 (9.747658ms)
+✔ 媒体只接受白名单参数，制作shell不可写控制目录 (23.537982ms)
+✔ 人工等待释放槽、不回调、不自动恢复、阻止冲突提交并允许取消 (13909.825728ms)
+✔ 实测制作产物的新摘要算进展，旧摘要来回切换不能无限续轮 (20.378524ms)
+✔ 混音进展独立于成片数量，失效文件和旧时间轴不计完成 (170.661311ms)
+✔ 文本分镜按 Unicode 与顺序映射重复句，空白显式保存，估时仅用于展示 (612.491053ms)
+✔ 文本遗漏、改数字、换顺序、空列表与错误外壳直接失败 (11.475965ms)
+✔ 长稿每句规范化；不要求模型计算摘要、源位置或时长 (51.762555ms)
+✔ 确认支持最小字段、完整重排、增删与不带区间的明确素材 (21.234551ms)
+✔ 确认仍拒绝重复身份、无效时长、非绝对素材路径和数字人 (10.048625ms)
+✔ 业务制作要求可扩展，命令与工具元数据不扩大权限 (3.272528ms)
+✔ 接口保留原稿首尾空白，拒绝全空白稿件 (9.769481ms)
+✔ six tasks share four persistent slots; releases admit FIFO successors (12099.367784ms)
+✔ request idempotency, tenant ownership, active-run exclusion and stale versions (5571.133696ms)
+✔ expired lease cannot publish; unconfirmed container stop retains occupied slot (4981.686238ms)
+✔ cancelling prevents success, repair budget survives recovery (5004.079642ms)
+{"level":30,"time":1790095441985,"pid":79307,"hostname":"192.168.3.145","reqId":"req-1","req":{"method":"POST","url":"/narrate/ai_video_director/getAiVideoEditingAnalysisData","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1790095442016,"pid":79307,"hostname":"192.168.3.145","reqId":"req-1","res":{"statusCode":400},"responseTime":27.457925000002433,"msg":"request completed"}
+{"level":30,"time":1790095442019,"pid":79307,"hostname":"192.168.3.145","reqId":"req-2","req":{"method":"POST","url":"/narrate/ai_video_director/getAiVideoEditingAnalysisData","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1790095442051,"pid":79307,"hostname":"192.168.3.145","reqId":"req-2","res":{"statusCode":202},"responseTime":32.30575200000021,"msg":"request completed"}
+{"level":30,"time":1790095442053,"pid":79307,"hostname":"192.168.3.145","reqId":"req-3","req":{"method":"POST","url":"/ai_video_director/getAiVideoEditingAnalysisData","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1790095442056,"pid":79307,"hostname":"192.168.3.145","reqId":"req-3","msg":"Route POST:/ai_video_director/getAiVideoEditingAnalysisData not found"}
+{"level":30,"time":1790095442057,"pid":79307,"hostname":"192.168.3.145","reqId":"req-3","res":{"statusCode":404},"responseTime":3.3728070000070147,"msg":"request completed"}
+{"level":30,"time":1790095442058,"pid":79307,"hostname":"192.168.3.145","reqId":"req-4","req":{"method":"POST","url":"/narrate/ai_video_director/getAiVideoEditingData","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1790095442063,"pid":79307,"hostname":"192.168.3.145","reqId":"req-4","res":{"statusCode":400},"responseTime":5.461830000000191,"msg":"request completed"}
+{"level":30,"time":1790095442064,"pid":79307,"hostname":"192.168.3.145","reqId":"req-5","req":{"method":"POST","url":"/ai_video_director/getAiVideoEditingData","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+✔ HTTP routes accept unauthenticated requests and reject malformed contracts (5389.412462ms)
+{"level":30,"time":1790095442065,"pid":79307,"hostname":"192.168.3.145","reqId":"req-5","msg":"Route POST:/ai_video_director/getAiVideoEditingData not found"}
+{"level":30,"time":1790095442065,"pid":79307,"hostname":"192.168.3.145","reqId":"req-5","res":{"statusCode":404},"responseTime":1.2519910000046366,"msg":"request completed"}
+{"level":30,"time":1790095442066,"pid":79307,"hostname":"192.168.3.145","reqId":"req-6","req":{"method":"GET","url":"/ai_video_director/tasks/task1","host":"localhost:80","remoteAddress":"127.0.0.1"},"msg":"incoming request"}
+{"level":30,"time":1790095442085,"pid":79307,"hostname":"192.168.3.145","reqId":"req-6","res":{"statusCode":200},"responseTime":18.912196999997832,"msg":"request completed"}
+✔ 可信 TTS 层使用服务器音色，不透传模型角色标签 (9.376885ms)
+✔ 双主持按明确授权保留不同声音，缺少角色映射不静默替换 (4.742523ms)
+﹣ 人工恢复校验版本、幂等请求和预算，保留同一 run (3.506282ms) # SKIP
+✔ 两阶段请求、完整确认、模板冻结、数据库版本和估算回调往返 (15704.754033ms)
+✔ 只读终检拒绝乱序与伪造输入；analysis 不生成配音文件 (8550.585744ms)
+✔ 定制化模板详情下载 ZIP，冻结目录在 render 阶段原样复用 (6296.059558ms)
+✔ 本机财经 ZIP 作为显式测试模板时保留入口和相对资源目录 (5686.349091ms)
+﹣ 真实短媒体经过可信终检、N 分镜发布、生成资源扩展名及完整回调 (2.133966ms) # SKIP
+✔ 替换素材保持冻结模板和原稿，允许新素材并重新绑定可信摘要 (5925.753591ms)
+✔ 旧模板正文配置被拒绝，不回退 README (1.797225ms)
+✔ 缺少能力不重开模型 turn，等待人工并释放名额，不发送终态回调 (6503.539663ms)
+{"runId":"bb02f705-942f-4a90-abb9-9a8e5c625261","validationError":"测试恢复"}
+✔ 提前返回制作进度会自动续轮，未知公共错误转人工 (7236.501124ms)
+✔ 执行失败保留原因，身份不符仍拒绝 (95.079386ms)
+ℹ tests 56
+ℹ suites 0
+ℹ pass 51
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 5
+ℹ todo 0
+ℹ duration_ms 77332.711496

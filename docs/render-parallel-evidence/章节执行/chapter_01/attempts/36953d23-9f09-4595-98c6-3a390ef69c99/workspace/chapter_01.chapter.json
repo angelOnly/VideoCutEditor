@@ -1,0 +1,41 @@
+{
+  "id": "chapter_01",
+  "label": "核心警报",
+  "title": "技术领先，不等于胜利",
+  "summary": "黄仁勋警告：应用落地决定AI竞赛终局。",
+  "from": 227,
+  "endFrameExclusive": 977,
+  "visualBlocks": [
+    {
+      "id": "chapter_01-warning",
+      "kind": "quote",
+      "startFrame": 372,
+      "endFrameExclusive": 458,
+      "props": {
+        "label": "黄仁勋的警告",
+        "text": "“美国正在亲手葬送自己的国运”。"
+      },
+      "slot": "full"
+    },
+    {
+      "id": "chapter_01-winner",
+      "kind": "labels",
+      "startFrame": 458,
+      "endFrameExclusive": 750,
+      "props": {
+        "label": "关键判断",
+        "items": [
+          "“技术领先根本不算赢，",
+          "谁能把AI真正用起来，",
+          "谁才是最后的赢家。”"
+        ],
+        "itemFrames": [
+          0,
+          68,
+          130
+        ]
+      },
+      "slot": "full"
+    }
+  ]
+}
