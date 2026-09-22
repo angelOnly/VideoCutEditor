@@ -1,5 +1,7 @@
 /** 本机 Render 驱动：复用制作契约、动态媒体入口、恢复分类及独立终检，不调用客户端接口。 */
 import path from 'node:path';
+import { Chapters } from '../src/runner/chapters.js';
+import { MediaSlots } from '../src/runner/media-slots.js';
 import os from 'node:os';
 import { parseArgs } from 'node:util';
 import { mkdir, readFile, realpath, rename, rmdir } from 'node:fs/promises';
@@ -86,6 +88,8 @@ const lock = path.join(control, 'local-driver.lock');
 await mkdir(lock); // 不抢占旧控制器；异常退出遗留锁须由人核查进程后处理。
 const rpc = new AppServer(),
   abort = new AbortController();
+let chapters: Chapters | undefined;
+const mediaSlots = new MediaSlots(Number(process.env.HOST_RENDER_SLOTS ?? 1));
 let state: any,
   started = 0,
   pendingTool: Promise<any> | undefined,
@@ -317,6 +321,21 @@ try {
         throw e;
       }
       await rpc.start(config);
+      chapters = new Chapters(rpc, config, {
+        root,
+        runId: request.runId,
+        token: state.revision,
+        signal: abort.signal,
+        check: async () => {
+          abort.signal.throwIfAborted();
+          if (
+            state.elapsedSeconds + (Date.now() - started) / 1000 >=
+            request.limits.executionSeconds
+          )
+            throw Error('父任务预算耗尽');
+          await verifyRequest();
+        },
+      });
       rpc.on('fatal', (e: Error) => rejectTurn(e));
       rpc.on('notification', (method: string, p: any) => {
         if (p.threadId !== currentThread) return;
@@ -336,6 +355,7 @@ try {
         }
       });
       rpc.handleRequest = async (method, p) => {
+        if (chapters?.owns(p?.threadId)) return chapters.handleRequest(method, p);
         if (
           method !== 'item/tool/call' ||
           p.threadId !== currentThread ||
@@ -348,17 +368,28 @@ try {
         pendingTool = (async () => {
           try {
             let value: any;
-            if (p.tool === 'video_media') {
+            if (p.tool === 'video_chapters') {
+              value = await chapters!.operate(p.arguments);
+            } else if (p.tool === 'video_media') {
               const argv = mediaArguments(config, workspace, p.arguments),
                 index = argv.indexOf('--modules');
               if (index >= 0) argv[index + 1] = modules;
-              value = JSON.parse(await execute(argv, true));
+              value = JSON.parse(
+                await mediaSlots.run(
+                  p.arguments.command === 'render-batch' ? (p.arguments.slots ?? 1) : 1,
+                  abort.signal,
+                  () => execute(argv, true),
+                ),
+              );
               assertStage(toolkit, 'mediaResult', value);
               issue = value.error
                 ? { ...value.error, scope: value.scope, evidence: value.diagnostics }
                 : null;
               if (p.arguments.command === 'render')
                 await recordMediaProgress(root, request.runId, p.arguments.scene, value);
+              if (p.arguments.command === 'render-batch')
+                for (const result of value.results ?? [])
+                  await recordMediaProgress(root, request.runId, result.sceneId, result);
             } else if (p.tool === 'video_exec' && typeof p.arguments.command === 'string') {
               value = {
                 status: 'ok',
@@ -602,8 +633,12 @@ try {
   }
 } finally {
   abort.abort();
-  await rpc.close();
-  await cleanup();
+  try {
+    await chapters?.close();
+  } finally {
+    await rpc.close();
+    await cleanup();
+  }
   if (state) {
     if (state.status === 'running') {
       state.status = 'waiting_human';

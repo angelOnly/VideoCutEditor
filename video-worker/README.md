@@ -164,3 +164,13 @@ pnpm test:stages
 ```
 
 本地合成素材测试不代表真实 Codex、付费 TTS、Ubuntu 隔离和客户端回调已验收。服务器步骤以 [部署手册](../docs/Ubuntu部署与联调手册.md) 为准：停止接收并排空任务、备份、按顺序执行 001/002 迁移、更新运行清单与服务、停 Worker 做 host-check 后恢复。不能删库或删除任务目录升级。
+
+### Render 章节会话与媒体批次
+
+`video_chapters` 是 Render 内部工具：`dispatch` 指定 `chapterId` 和当前 run 下的 `chapters/<chapterId>/brief.json`；`status`、`cancel` 指定返回的 `executionId`。派发前主 Render 必须写 `direction.json`，brief 的 `directionVersion`、`chapterId`、有序 `sceneIds` 和真实 `audioAnchors` 固定本章范围。最多同时创作三章，单章不重复派发。候选绑定 attempt、brief 摘要、编排版本和实际文件摘要；主 Render 收取时再次校验，旧回复不能覆盖新编排。
+
+宿主和 `scripts/local-render.ts` 共用 `runner/chapters.ts`。每章创建独立 app-server 线程，仅开放 `video_chapter_files` 的文本读取、目录列举和本章 workspace 写入；关闭原生命令、网络、收费配音和交付工具。写入由可信文件代理检查路径和链接，模型权限配置也只允许只读文件。章节不拥有 shell 或 Chrome，生成的组件和预览要求先交主 Render；主 Render 经统一媒体入口实际渲染预览、反馈修复并决定合并。章节返回 `candidate` 只说明版本和文件可核验，不代表动态预览或节奏验收通过。
+
+父预算、取消和租约覆盖全部章节。内部记录位于 `.control/chapters/`，含真实线程、turn、父令牌、时间与运行时提供的 token 使用信息。重启不把旧运行记录恢复为成功；重新派发新 attempt，并由主 Render 决定是否采用经核验的旧候选。收到明确额度耗尽错误后该管理器拒绝新章节派发，不消费重置信用。
+
+`video_media` 增加 `freeze-batch`（`batch`、`project`、`entry`、`scenes`）和 `render-batch`（`manifest`、可选 `slots`）。scenes 是任务相对 JSON 文件，批次结果逐镜返回，宿主在重新核对租约后串行登记进度。所有任务的受控媒体调用共享宿主 FIFO 槽，整批申请避免资源互等；每镜帧并发仍由媒体层固定为 1。`HOST_RENDER_SLOTS` 可设 1 至 3，默认保守为 1；目标机测得稳定收益后再显式设为 2，3 路只用于验证后启用。章节创作三路和渲染槽是独立限制。Linux 进程控制组验收仍需在专用 Ubuntu 环境执行，普通单元测试不代表已验证该外部环境。

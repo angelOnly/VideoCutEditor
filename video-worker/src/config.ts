@@ -24,6 +24,7 @@ export interface Config {
   hostBrowser: string;
   hostMemory: string;
   hostCpus: number;
+  hostRenderSlots?: number;
   hostTasksMax: number;
   databaseUrl: string;
   port: number;
@@ -122,6 +123,12 @@ export function loadConfig(envFile = path.resolve(serviceRoot, '../.env')): Conf
       .string()
       .regex(/^\d+[MG]$/)
       .parse(process.env.HOST_TASK_MEMORY ?? '4G'),
+    hostRenderSlots: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(3)
+      .parse(process.env.HOST_RENDER_SLOTS ?? 1),
     hostCpus: z.coerce
       .number()
       .positive()

@@ -16,12 +16,16 @@ import { randomUUID } from 'node:crypto';
 import { prompt, loadPipeline } from './prompts.js';
 import { mediaArguments, recordMediaProgress } from './media-tool.js';
 
+import { Chapters, chapterTool } from './chapters.js';
+import { MediaSlots } from './media-slots.js';
+
 export const dynamicTools = [
+  chapterTool,
   {
     type: 'function',
     name: 'video_media',
     description:
-      '受控媒体工具。以下参数均不含必传的 command：preflight 不传其他参数；extend-timeline 必传 timeline、output，不传 scene 或 frames，自动读取待补帧记录；derive-timeline 仅适配财经模板，必传 timeline、project，时间轴明确 withBgm；assemble 必传 manifest；render 必传 scene、entry、composition、frames，可选 project、props、fixedMix。参数错误按提示改正后重试。检查返回状态；需要调整不等于已完成。',
+      '受控媒体工具。freeze-batch 必传 batch、project、entry、scenes（任务相对 JSON）；render-batch 必传 manifest，可选 slots（1 至 3，默认 1）。以下参数均不含必传的 command：preflight 不传其他参数；extend-timeline 必传 timeline、output，不传 scene 或 frames，自动读取待补帧记录；derive-timeline 仅适配财经模板，必传 timeline、project，时间轴明确 withBgm；assemble 必传 manifest；render 必传 scene、entry、composition、frames，可选 project、props、fixedMix。参数错误按提示改正后重试。检查返回状态；需要调整不等于已完成。',
     inputSchema: {
       type: 'object',
       additionalProperties: false,
@@ -29,8 +33,19 @@ export const dynamicTools = [
       properties: {
         command: {
           type: 'string',
-          enum: ['render', 'extend-timeline', 'derive-timeline', 'assemble', 'preflight'],
+          enum: [
+            'render',
+            'freeze-batch',
+            'render-batch',
+            'extend-timeline',
+            'derive-timeline',
+            'assemble',
+            'preflight',
+          ],
         },
+        batch: { type: 'string' },
+        scenes: { type: 'string' },
+        slots: { type: 'integer', minimum: 1, maximum: 3 },
         scene: { type: 'string' },
         project: { type: 'string' },
         entry: { type: 'string' },
@@ -165,12 +180,15 @@ interface Active {
 }
 export class HostCodex {
   private active = new Map<string, Active>();
+  private chapters = new Map<string, Chapters>();
+  private mediaSlots: MediaSlots;
   constructor(
     private config: Config,
     private rpc: Rpc,
     private queue: Queue,
     private processes: HostProcesses,
   ) {
+    this.mediaSlots = new MediaSlots(config.hostRenderSlots ?? 1);
     rpc.on('notification', this.notification);
     rpc.on('fatal', this.fatal);
     rpc.handleRequest = this.handleRequest;
@@ -224,6 +242,8 @@ export class HostCodex {
     ).catch(() => {});
   };
   private handleRequest = async (method: string, params: any) => {
+    for (const chapters of this.chapters.values())
+      if (chapters.owns(params?.threadId)) return chapters.handleRequest(method, params);
     if (method !== 'item/tool/call' || params.namespace != null)
       throw new Error('Interactive approval and unrelated tools are disabled');
     const state = this.active.get(params.threadId);
@@ -255,16 +275,25 @@ export class HostCodex {
         }) + '\n',
       );
       let text: string;
+      if (params.tool === 'video_chapters') {
+        const manager = this.chapters.get(state.lease.run.id);
+        if (!manager) throw Error('章节管理器不可用');
+        const value = await manager.operate(params.arguments);
+        toolStatus = 'succeeded';
+        return {
+          success: true,
+          contentItems: [{ type: 'inputText', text: JSON.stringify(value) }],
+        };
+      }
       if (params.tool === 'video_media') {
         const argv = mediaArguments(this.config, state.workspace, params.arguments);
         let out: string;
         try {
-          out = await this.processes.run(
-            state.lease.run.id,
-            state.workspace,
-            argv,
+          out = await this.mediaSlots.run(
+            params.arguments.command === 'render-batch' ? (params.arguments.slots ?? 1) : 1,
             state.signal,
-            'tool',
+            () =>
+              this.processes.run(state.lease.run.id, state.workspace, argv, state.signal, 'tool'),
           );
         } catch (e: any) {
           // 非零退出由执行工具报告，保留原始错误；不伪装成功。
@@ -281,6 +310,8 @@ export class HostCodex {
           });
           throw e;
         }
+        await this.queue.withLease(state.lease, async () => {});
+        state.signal.throwIfAborted();
         const value = JSON.parse(out.trim());
         assertStage(this.config.toolkitRoot, 'mediaResult', value);
         await writeJson(
@@ -302,6 +333,14 @@ export class HostCodex {
             params.arguments.scene,
             value,
           );
+        if (params.arguments.command === 'render-batch')
+          for (const result of value.results ?? [])
+            await recordMediaProgress(
+              state.workspace.root,
+              state.lease.run.id,
+              result.sceneId,
+              result,
+            );
         return {
           success: toolStatus === 'succeeded',
           contentItems: [{ type: 'inputText', text: JSON.stringify(value) }],
@@ -551,6 +590,21 @@ export class HostCodex {
       done,
     };
     this.active.set(threadId, state);
+    if (lease.run.stage === 'render')
+      this.chapters.set(
+        lease.run.id,
+        new Chapters(this.rpc, this.config, {
+          root: w.root,
+          runId: lease.run.id,
+          token: lease.token,
+          signal: state.signal,
+          check: async () => {
+            await this.queue.withLease(lease, async () => {});
+            if (lease.run.deadline && Date.now() >= new Date(lease.run.deadline).getTime())
+              throw Error('父任务预算耗尽');
+          },
+        }),
+      );
     const abort = () => reject(new AppError('CANCELLED', 'Codex 执行已中断'));
     signal.addEventListener('abort', abort, { once: true });
     const quiet = setInterval(() => {
@@ -651,7 +705,18 @@ export class HostCodex {
   }
   async stop(runId: string) {
     const state = [...this.active.values()].find((s) => s.lease.run.id === runId);
-    let error: unknown;
+    state?.commandAbort.abort();
+    const chapters = this.chapters.get(runId);
+    let chapterError: unknown;
+    if (chapters) {
+      try {
+        await chapters.close();
+        this.chapters.delete(runId);
+      } catch (e) {
+        chapterError = e;
+      }
+    }
+    let error: unknown = chapterError;
     if (state && !state.ended) {
       state.ended = true;
       state.commandAbort.abort();

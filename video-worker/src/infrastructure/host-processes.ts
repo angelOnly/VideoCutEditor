@@ -29,6 +29,7 @@ export const admittedToolkit = [
     'cached_tts.py',
     'worker_stage.py',
     'render_scene.cjs',
+    'render_batch.py',
     'config.py',
     'voiceover.py',
     'doubao_tts.py',

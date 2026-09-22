@@ -10,6 +10,8 @@ export function mediaArguments(config: Config, w: Workspace, input: any): string
   const command = input?.command;
   const fields: Record<string, string[]> = {
     render: ['scene', 'project', 'entry', 'composition', 'props', 'frames', 'fixedMix'],
+    'freeze-batch': ['batch', 'project', 'entry', 'scenes'],
+    'render-batch': ['manifest', 'slots'],
     'extend-timeline': ['timeline', 'output'],
     'derive-timeline': ['timeline', 'project'],
     assemble: ['manifest'],
@@ -25,6 +27,8 @@ export function mediaArguments(config: Config, w: Workspace, input: any): string
     );
   const required: Record<string, string[]> = {
     render: ['scene', 'entry', 'composition', 'frames'],
+    'freeze-batch': ['batch', 'project', 'entry', 'scenes'],
+    'render-batch': ['manifest'],
     'extend-timeline': ['timeline', 'output'],
     'derive-timeline': ['timeline', 'project'],
     assemble: ['manifest'],
@@ -47,14 +51,14 @@ export function mediaArguments(config: Config, w: Workspace, input: any): string
       continue;
     }
     if (
-      key === 'frames'
-        ? !Number.isSafeInteger(value) || value <= 0
+      key === 'frames' || key === 'slots'
+        ? !Number.isSafeInteger(value) || value <= 0 || (key === 'slots' && value > 3)
         : typeof value !== 'string' || !value || value.startsWith('-')
     )
       throw new AppError('INVALID_CONTRACT', `媒体参数无效：${key}`);
     argv.push('--' + key, String(value));
   }
-  if (command === 'render' || command === 'preflight')
+  if (['render', 'preflight', 'freeze-batch', 'render-batch'].includes(command))
     argv.push(
       '--node',
       process.execPath,
@@ -85,7 +89,12 @@ export async function recordMediaProgress(root: string, runId: string, scene: st
       : null);
   if (mix?.path && mix.sha256 && (await hashFile(await safeFile(root, mix.path))) === mix.sha256)
     progress['mix:' + scene] = { ...mix, kind: 'mix' };
-  if (!value.error && value.path && value.sha256) {
+  if (
+    !value.error &&
+    value.path &&
+    value.sha256 &&
+    (await hashFile(await safeFile(root, value.path))) === value.sha256
+  ) {
     progress[scene] = {
       path: value.path,
       sha256: value.sha256,
