@@ -21,5 +21,11 @@
     ],
     "reason": "按整片节奏减少重点后的频繁切换，不改字幕或音频",
     "dynamicPreview": "pending"
+  },
+  "wholeRhythm": {
+    "decision": "main_revised",
+    "found": "旧工程scene_018整镜被outro分支覆盖，章节收束事件实际不可见。",
+    "fix": "本任务工程增加outro.fromFrame；收束结论先显示299帧，最后67帧进入原品牌动画，末尾保留1帧。保持总4112帧、57段配音和全部字幕。",
+    "limitation": "实际混音边界待渲染核验，未据静态代码宣称通过。"
   }
 }

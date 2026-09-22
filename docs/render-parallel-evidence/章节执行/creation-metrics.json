@@ -1,0 +1,42 @@
+{
+  "wallSeconds": 271.504,
+  "runs": [
+    181.032,
+    90.472
+  ],
+  "perExecution": [
+    {
+      "chapterId": "chapter_01",
+      "executionId": "6e5b4b8f-7a9d-49bb-b1c1-95e4427b3fa8",
+      "seconds": 118.924,
+      "status": "failed"
+    },
+    {
+      "chapterId": "chapter_02",
+      "executionId": "de190fdf-015c-4f7a-8042-5f2440dea1ec",
+      "seconds": 175.729,
+      "status": "candidate"
+    },
+    {
+      "chapterId": "chapter_03",
+      "executionId": "2aa2790a-d9ac-49da-ac87-63b2e02141ab",
+      "seconds": 102.356,
+      "status": "candidate"
+    },
+    {
+      "chapterId": "chapter_01",
+      "executionId": "6bc394d5-d80b-4595-ae64-e1c0913f517c",
+      "seconds": 85.804,
+      "status": "candidate"
+    }
+  ],
+  "tokenUsage": {
+    "totalTokens": 696527,
+    "inputTokens": 683656,
+    "cachedInputTokens": 539648,
+    "cacheWriteInputTokens": 0,
+    "outputTokens": 12871,
+    "reasoningOutputTokens": 1054
+  },
+  "comparison": "没有相同创作的串行模型对照，不能把并行执行重叠换算成整体创作加速；主控审核/修订另记。"
+}

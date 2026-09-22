@@ -5,7 +5,7 @@
   "defaultExecutor": "host-app-server",
   "taskIsolation": "bubblewrap-systemd-user",
   "remotionVersion": "4.0.425",
-  "runtimeSourceSha256": "451f5ba72088d4df2f85af24d2d68afe6db96f11802e522a087e05a862c15778",
+  "runtimeSourceSha256": "b3ec1e80713bdeae47ebe3171a3cbb1a7c838f6a0ea99dfa623525c459ca57c2",
   "files": {
     "claude-code-video-toolkit/.agents/skills/video-pipeline/SKILL.md": "653f7cd155e5e490b9941ec1742dd07b70cc908074727fffcc78b78c7ea77abb",
     "claude-code-video-toolkit/.agents/skills/video-pipeline/agents/openai.yaml": "8b31a00612837d7ca772138b38441ae244015f329c746ce34e2d622439bd646a",
@@ -37,7 +37,7 @@
     "claude-code-video-toolkit/tools/generate_dialogue_audio.py": "2af11064f2067b9b51aa580af4e438e45932d53de08ffda70fe0b59fd749cc5b",
     "claude-code-video-toolkit/tools/render_batch.py": "0a601f90d04213e1adc2cb43aa6c25fa7427326c2785f6d4be3276fcf1d7cfcf",
     "claude-code-video-toolkit/tools/render_scene.cjs": "36b3b4d138cc46757fc44783ce5ec3a89b13b10723f0741569eed113ce8280c0",
-    "claude-code-video-toolkit/tools/stage_media.py": "a5ab1197e88dbd8c4823174e435343fe7e61fb5b793d55d98546f754b0ccc032",
+    "claude-code-video-toolkit/tools/stage_media.py": "b1bf6727b997826c6dd240607c9a4e529e7b0d67106b465bbe8d06b47cfb8849",
     "claude-code-video-toolkit/tools/stage_tts.py": "46ac3af5b04470bb27008f73f85fc4a3415512c8f9d402f9edac85029b6262ce",
     "claude-code-video-toolkit/tools/two_stage.py": "d75026e1e4db17c5b9ded371a34578bb56b8caf10d1ddc6ee3701ec6842cf34b",
     "claude-code-video-toolkit/tools/voiceover.py": "8aa120b0099e7b4bf757e93f1f9250990d910ac67e79fae97302c0587a4d4c9d",

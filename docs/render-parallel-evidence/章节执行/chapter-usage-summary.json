@@ -1,0 +1,85 @@
+{
+  "parentRunId": "render_001",
+  "source": "app-server tokenUsage.total",
+  "updatedAt": "2026-09-22T16:58:18.289Z",
+  "executionCount": 4,
+  "complete": true,
+  "knownTotals": {
+    "totalTokens": 696527,
+    "inputTokens": 683656,
+    "cachedInputTokens": 539648,
+    "cacheWriteInputTokens": 0,
+    "outputTokens": 12871,
+    "reasoningOutputTokens": 1054
+  },
+  "missingByField": {
+    "totalTokens": [],
+    "inputTokens": [],
+    "cachedInputTokens": [],
+    "cacheWriteInputTokens": [],
+    "outputTokens": [],
+    "reasoningOutputTokens": []
+  },
+  "executions": {
+    "2aa2790a-d9ac-49da-ac87-63b2e02141ab": {
+      "chapterId": "chapter_03",
+      "attemptId": "b4fcd503-b5c1-46f8-9fad-16a16ce4dbf3",
+      "status": "candidate",
+      "threadId": "01a0c9f7-2e83-7a80-a557-494bd3dcd8df",
+      "turnId": "01a0c9f7-2f43-7750-a22d-30d53cdd1ff7",
+      "total": {
+        "totalTokens": 201913,
+        "inputTokens": 199393,
+        "cachedInputTokens": 150400,
+        "cacheWriteInputTokens": 0,
+        "outputTokens": 2520,
+        "reasoningOutputTokens": 169
+      }
+    },
+    "6bc394d5-d80b-4595-ae64-e1c0913f517c": {
+      "chapterId": "chapter_01",
+      "attemptId": "c4af9859-9d0d-4630-bd10-cac7c6e4872f",
+      "status": "candidate",
+      "threadId": "01a0c9fa-27cf-76f3-8641-2ab75cc462cc",
+      "turnId": "01a0c9fa-28ac-7c80-a7ee-08bdeb206e73",
+      "total": {
+        "totalTokens": 130687,
+        "inputTokens": 128448,
+        "cachedInputTokens": 105856,
+        "cacheWriteInputTokens": 0,
+        "outputTokens": 2239,
+        "reasoningOutputTokens": 144
+      }
+    },
+    "6e5b4b8f-7a9d-49bb-b1c1-95e4427b3fa8": {
+      "chapterId": "chapter_01",
+      "attemptId": "36953d23-9f09-4595-98c6-3a390ef69c99",
+      "status": "failed",
+      "threadId": "01a0c9f7-2af1-7f03-9e8a-936d9e774ed8",
+      "turnId": "01a0c9f7-2cb2-7282-b62f-8a934c7e26eb",
+      "total": {
+        "totalTokens": 151816,
+        "inputTokens": 148617,
+        "cachedInputTokens": 104448,
+        "cacheWriteInputTokens": 0,
+        "outputTokens": 3199,
+        "reasoningOutputTokens": 246
+      }
+    },
+    "de190fdf-015c-4f7a-8042-5f2440dea1ec": {
+      "chapterId": "chapter_02",
+      "attemptId": "1c191a1e-6679-44c7-ab07-028a9264f64e",
+      "status": "candidate",
+      "threadId": "01a0c9f7-2d35-70e1-b6a7-75c14f325569",
+      "turnId": "01a0c9f7-2ded-76a3-929e-990cdf780af1",
+      "total": {
+        "totalTokens": 212111,
+        "inputTokens": 207198,
+        "cachedInputTokens": 178944,
+        "cacheWriteInputTokens": 0,
+        "outputTokens": 4913,
+        "reasoningOutputTokens": 495
+      }
+    }
+  }
+}

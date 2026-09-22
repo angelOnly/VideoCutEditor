@@ -1,0 +1,70 @@
+{
+  "scope": "renderStill关键静帧；不替代MP4逐镜及动态审查",
+  "timelineSha256": "de75fd5dc178124a6eb47f5446943b07100f0b25c08924108e1d094fdd8f2db5",
+  "passed": true,
+  "findings": [
+    "10张图未见文字裁切与重叠；份额图跨镜保持；五层模型全显示；片尾保留字幕。"
+  ],
+  "images": [
+    {
+      "sceneId": "scene_002",
+      "frame": 80,
+      "path": "cache/preview/scene-2-80.png",
+      "sha256": "40d6492d0be2c625d941260626883984659fbb8f9d92089e7e5407c6634a3fcf"
+    },
+    {
+      "sceneId": "scene_004",
+      "frame": 170,
+      "path": "cache/preview/scene-4-170.png",
+      "sha256": "a7b0ec3ba0efdad317922a82e1aba208dde79bab806ae56f428e328f0c43e5fe"
+    },
+    {
+      "sceneId": "scene_006",
+      "frame": 280,
+      "path": "cache/preview/scene-6-280.png",
+      "sha256": "ae50447c568d2997ed71092bb87f3ddf2139acede404ebff157c1200e6482c8b"
+    },
+    {
+      "sceneId": "scene_008",
+      "frame": 300,
+      "path": "cache/preview/scene-8-300.png",
+      "sha256": "0403c859ce37fbb597e6c1e491fe3b66f49f396c1e24bd015b2929d5c45b69e1"
+    },
+    {
+      "sceneId": "scene_010",
+      "frame": 390,
+      "path": "cache/preview/scene-10-390.png",
+      "sha256": "a2f6d45cd99778a54cd030129210b87e86614439217edfd70cf86aebbfe168fc"
+    },
+    {
+      "sceneId": "scene_012",
+      "frame": 290,
+      "path": "cache/preview/scene-12-290.png",
+      "sha256": "71186d3ded7762f33a74c14247d139fee918e951977d0250a4cb643725e38185"
+    },
+    {
+      "sceneId": "scene_013",
+      "frame": 100,
+      "path": "cache/preview/scene-13-100.png",
+      "sha256": "c559020ac1e854a4bc585b86ee4e1ac1c92117952141bd5aacc9fd683e245649"
+    },
+    {
+      "sceneId": "scene_016",
+      "frame": 190,
+      "path": "cache/preview/scene-16-190.png",
+      "sha256": "2d58cc4ba16f5ae2b4c14d3afb4f7bdd16df1862fa034c04dcb3fc9d46e6c9aa"
+    },
+    {
+      "sceneId": "scene_017",
+      "frame": 230,
+      "path": "cache/preview/scene-17-230.png",
+      "sha256": "4153e5d33704ac3d881d544ab8069a6e8594d005fc8ea758c502e4a0f7e7f85c"
+    },
+    {
+      "sceneId": "scene_018",
+      "frame": 340,
+      "path": "cache/preview/scene-18-340.png",
+      "sha256": "daa05945ab102f59dc921a53c0ea7dc1fd294588f7be98e03075f364ac55013b"
+    }
+  ]
+}
