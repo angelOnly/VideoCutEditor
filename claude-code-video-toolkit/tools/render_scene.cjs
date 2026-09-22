@@ -6,8 +6,13 @@ const c = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
 const {bundle} = require(path.join(c.modules, '@remotion/bundler'));
 const {selectComposition, renderMedia, openBrowser} = require(path.join(c.modules, '@remotion/renderer'));
 (async () => {
-  const serveUrl = await bundle({entryPoint: c.entry, outDir: c.bundle, enableCaching: false,
+  const started = Date.now();
+  const serveUrl = c.serveUrl || await bundle({entryPoint: c.entry, outDir: c.bundle, enableCaching: false,
     publicDir: path.join(c.project, 'public'), webpackOverride: config => ({...config, cache: false})});
+  if (c.bundleOnly) {
+    fs.writeFileSync(c.done, JSON.stringify({bundle: serveUrl, bundleSeconds: (Date.now() - started) / 1000}));
+    return;
+  }
   const browser = await openBrowser('chrome', {browserExecutable: c.browser, logLevel: 'error'});
   try {
     const recommendations = new Map();

@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import argparse
+from contextlib import nullcontext
+import threading
+import uuid
 from array import array
 import errno
 from fractions import Fraction
@@ -23,13 +26,39 @@ from finance_timeline import derive_timeline
 from actual_timeline import sample_frames, extend_timeline
 
 
+_BATCH_CONTEXT = threading.local()
+
+def check_batch():
+    check = getattr(_BATCH_CONTEXT, "check", None)
+    if check: check()
+
 def command(argv, timeout=120):
+    check_batch()
+    started = time.monotonic()
+    child = subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True)
+    process_dir = getattr(_BATCH_CONTEXT, 'process_dir', None)
+    process_record = Path(process_dir) / ('batch-media-' + uuid.uuid4().hex + '.process.json') if process_dir else None
+    record = {'state': 'running', 'pid': child.pid, 'signature': process_signature(child.pid), 'startedAt': time.time()}
+    if process_record: write(process_record, record)
     try:
-        p = subprocess.run(argv, capture_output=True, timeout=timeout)
-    except subprocess.TimeoutExpired as exc:
-        raise StageError('TOOL_TIMEOUT', '媒体工具超时', True) from exc
-    require(p.returncode == 0, p.stderr.decode(errors='replace')[-3000:], 'MEDIA_INVALID')
-    return p.stdout
+        while True:
+            check_batch()
+            try:
+                output, error = child.communicate(timeout=min(.2, max(.01, timeout)))
+                break
+            except subprocess.TimeoutExpired:
+                if time.monotonic() - started >= timeout:
+                    raise StageError('TOOL_TIMEOUT', '媒体工具超时', True)
+        require(child.returncode == 0, error.decode(errors='replace')[-3000:], 'MEDIA_INVALID')
+        return output
+    finally:
+        try: os.killpg(child.pid, signal.SIGKILL)
+        except ProcessLookupError: pass
+        child.wait()
+        if child.stdout: child.stdout.close()
+        if child.stderr: child.stderr.close()
+        if process_record: write(process_record, {**record, 'state': 'ended', 'endedAt': time.time()})
+
 
 
 def probe(path):
@@ -251,6 +280,7 @@ def supervise(argv, cwd, log, done_file, timeout, close_timeout=10):
         write(process_record, record)
         try:
             while child.poll() is None:
+                check_batch()
                 now = time.monotonic()
                 if Path(done_file).exists() and closing is None: closing = now
                 if closing is not None and now - closing > close_timeout:
@@ -366,9 +396,12 @@ def check_speech_coverage(project, props, frames, fps):
                 f'音效 {cue["src"]} 超出声音窗口；依据实测时长延长或明确剪辑', 'CONTENT_TIMELINE_REQUIRED')
 
 
-def render_scene(request_path, scene_id, project_name, entry_name, composition, props_name, frames, node, modules, browser, fixed_mix=False):
+def render_scene(request_path, scene_id, project_name, entry_name, composition, props_name, frames, node, modules, browser, fixed_mix=False, *, batch_context=None):
+    scene_started = time.monotonic()
+    timings = {}
     identifier(scene_id)
-    with execution(request_path, 'render:' + scene_id) as (root, request, budget):
+    context = nullcontext(batch_context["execution"]) if batch_context else execution(request_path, "render:" + scene_id)
+    with context as (root, request, budget):
         plan = read(local(root, request['confirmation']['planFile']))
         require(scene_id in [s['id'] for s in plan['scenes']], '未确认的分镜')
         require(type(frames) is int and frames > 0, '需要实际总帧数')
@@ -398,7 +431,8 @@ def render_scene(request_path, scene_id, project_name, entry_name, composition, 
                                    'props': props, 'spec': request['outputSpec'], 'frames': frames, 'packages': packages,
                                    'confirmedPlanSha256': request['confirmation']['planSha256'],
                                    'fixedMix': fixed, 'mediaTool': digest(Path(__file__)),
-                                   'renderer': digest(Path(__file__).with_name('render_scene.cjs'))})
+                                   'renderer': digest(Path(__file__).with_name('render_scene.cjs')),
+                                   'batchVersion': batch_context['version'] if batch_context else None})
         if marker.exists() and out.exists():
             old = read(marker)
             if old['fingerprint'] == fingerprint and old['sha256'] == digest(out):
@@ -423,19 +457,24 @@ def render_scene(request_path, scene_id, project_name, entry_name, composition, 
                 config = {'entry': str(entry), 'project': str(project), 'composition': composition, 'props': props, 'modules': str(modules),
                           'browser': browser, 'output': str(video), 'audio': str(mix), 'done': str(done), 'bundle': str(temp/'bundle'),
                           'spec': request['outputSpec'], 'frames': frames, 'fixedAudio': bool(fixed)}
+                if batch_context: config['serveUrl'] = batch_context['bundle']
                 write(temp / 'config.json', config)
                 scratch = temp/'runtime'; scratch.mkdir(exist_ok=True)
                 render_command = ['/usr/bin/env', 'TMPDIR='+str(scratch), 'HOME='+str(scratch), node,
                                   str(Path(__file__).with_name('render_scene.cjs')), str(temp/'config.json')]
-                if os.environ.get('VIDEOCUT_RENDER_SANDBOX') == 'bwrap':
+                sandbox = os.environ.get('VIDEOCUT_RENDER_SANDBOX')
+                if batch_context and not sandbox: sandbox = 'seatbelt' if sys.platform == 'darwin' else 'bwrap'
+                if sandbox == 'bwrap':
                     # 工程 JS 只可写本次渲染临时目录；不能继承可信工具的预算写权限。
                     render_command = ['bwrap', '--die-with-parent', '--unshare-pid', '--ro-bind', '/', '/',
                                       '--bind', str(temp), str(temp),
                                       '--dev-bind', '/dev', '/dev', '--proc', '/proc', '--', *render_command]
-                elif os.environ.get('VIDEOCUT_RENDER_SANDBOX') == 'seatbelt':
+                elif sandbox == 'seatbelt':
                     render_command = ['/usr/bin/sandbox-exec', '-p', render_seatbelt_profile(temp), *render_command]
+                phase_started = time.monotonic()
                 recovery = supervise(render_command,
                                      project, work / (scene_id+'.log'), done, budget)
+                timings['renderSeconds'] = time.monotonic() - phase_started
                 write(raw_marker, {'fingerprint': fingerprint, 'video': str(video.relative_to(root)),
                                    'mix': str(mix.relative_to(root)), 'videoSha256': digest(video),
                                    'mixSha256': digest(mix), 'recovery': recovery})
@@ -446,7 +485,9 @@ def render_scene(request_path, scene_id, project_name, entry_name, composition, 
                 ffmpeg('-y', '-i', mix, '-af', f'aresample=48000,apad,atrim=end_sample={samples}', '-c:a', 'pcm_s16le', padded)
                 mix = padded
             try:
+                phase_started = time.monotonic()
                 info = mux_scene(video, mix, target, request['outputSpec'], frames, budget)
+                timings['mixAndValidationSeconds'] = time.monotonic() - phase_started
             except StageError as exc:
                 if exc.code == 'TIMELINE_EXTEND_REQUIRED':
                     details = {**exc.details, 'sceneId': scene_id, 'mixPath': str(mix.relative_to(root)),
@@ -454,6 +495,8 @@ def render_scene(request_path, scene_id, project_name, entry_name, composition, 
                     write(adjustment_path, details)
                     raise StageError(exc.code, str(exc), details=details) from exc
                 raise
+            check_batch()
+            if batch_context: batch_context['validate']()
             load_request(request_path, 'render')
             publish_file(target, out)
             mixed = {'path': str(mix.relative_to(root)), 'sha256': digest(mix)}
@@ -464,9 +507,12 @@ def render_scene(request_path, scene_id, project_name, entry_name, composition, 
         else:
             # 保留画面和混音用于封装修复，体积较大的临时网页可删除。
             if (temp / 'bundle').exists(): shutil.rmtree(temp / 'bundle')
+        phase_started = time.monotonic()
         evidence = extract_frames(root, request, scene_id, out, frames)
+        timings['evidenceSeconds'] = time.monotonic() - phase_started
+        timings['wallSeconds'] = time.monotonic() - scene_started
         return {**receipt, **info, 'path': str(out.relative_to(root)), 'mix': mixed, 'evidence': evidence,
-                'reused': False, 'renderReused': raw_reused, 'recommendations': recovery.get('recommendations', [])}
+                'reused': False, 'timings': timings, 'renderReused': raw_reused, 'recommendations': recovery.get('recommendations', [])}
 
 
 def extract_frames(root, request, scene_id, path, frames):
@@ -555,6 +601,14 @@ def preflight(node, modules, browser):
 
 def main():
     p = argparse.ArgumentParser(description=__doc__); s = p.add_subparsers(dest='command', required=True)
+    for name in ('freeze-batch', 'render-batch'):
+        a = s.add_parser(name)
+        a.add_argument('--request', type=Path, required=True)
+        a.add_argument('--node', default='node'); a.add_argument('--modules', required=True); a.add_argument('--browser', required=True)
+        if name == 'freeze-batch':
+            a.add_argument('--batch', required=True); a.add_argument('--project', required=True); a.add_argument('--entry', required=True); a.add_argument('--scenes', required=True)
+        else:
+            a.add_argument('--manifest', required=True); a.add_argument('--slots', type=int, choices=(1, 2, 3), default=1)
     for name in ('preflight', 'render'):
         a = s.add_parser(name); a.add_argument('--node', default='node'); a.add_argument('--modules', required=True); a.add_argument('--browser', required=True)
         if name == 'render':
@@ -571,7 +625,10 @@ def main():
     assemble_parser = s.add_parser('assemble'); assemble_parser.add_argument('--request', type=Path, required=True); assemble_parser.add_argument('--manifest', type=Path, required=True)
     a = p.parse_args()
     try:
-        if a.command == 'preflight': result = preflight(a.node, a.modules, a.browser)
+        if a.command in ('freeze-batch', 'render-batch'):
+            from render_batch import freeze_batch, render_batch
+            result = freeze_batch(a) if a.command == 'freeze-batch' else render_batch(a)
+        elif a.command == 'preflight': result = preflight(a.node, a.modules, a.browser)
         elif a.command == 'assemble': result = assemble(a.request, a.manifest)
         elif a.command == 'derive-timeline':
             with execution(a.request, a.command) as (root, request, budget):
