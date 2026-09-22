@@ -178,3 +178,5 @@ pnpm test:stages
 章节入口另外独立核对 `request.confirmation.planSha256`、`direction.confirmationSha256`、`direction.sceneOrder` 与确认稿；`direction.chapters` 必须按确认顺序完整且互不交叉。brief 的分镜与对应章完全一致，`audioAnchors` 保留 `utteranceId`、`sceneId`、`text`、局部/全局起止帧及实际音频 `audioSha256`，与正式 timeline 逐项复核。主控审查状态 `reviews` 可以更新；编排正文即使未提升版本也会使旧候选失效。
 
 不调用模型的文件代理负测可运行 `pnpm exec tsx scripts/check-chapter-permissions.ts --output /专属测试目录/chapter-permissions.json`。此测试实际尝试越界与链接写入并保存报告，RPC 输送使用明确测试桩，不能替代真实模型会话或 Linux 控制组验收。
+
+章节模型用量汇总写入可信 `.control/chapter-usage.json`，按父 run 读取保留的全部 execution 记录。每个 execution 只采用运行时 `tokenUsage.total` 累计值，不再叠加 `last`，重复通知幂等；新控制器、新 attempt 仍保留旧失败或取消执行的消耗。`knownTotals` 表示已知部分，缺失字段为 `null` 并列于 `missingByField`，不能当作零；`complete` 仅表示全部执行都报告了总 token 数。该记录不估算价格，也不新增用户未授权的 token 上限。

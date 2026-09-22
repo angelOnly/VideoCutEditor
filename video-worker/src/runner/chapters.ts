@@ -8,6 +8,7 @@ import { codexOverrides } from '../infrastructure/app-server.js';
 import { hashFile, readJson, safeFile, within, writeJson } from '../infrastructure/files.js';
 import type { Config } from '../config.js';
 import { validateChapterBrief } from './chapter-contract.js';
+import { chapterUsageSummary } from './chapter-usage.js';
 
 export const chapterTool = {
   type: 'function',
@@ -121,9 +122,17 @@ export class Chapters {
   private persist(c: Chapter) {
     const { terminal, finish, busy, ...record } = c;
     const value = { ...record, parentRunId: this.parent.runId, fencingToken: this.parent.token };
-    this.writes = this.writes.then(() =>
-      writeJson(path.join(this.parent.root, '.control/chapters', c.executionId + '.json'), value),
-    );
+    this.writes = this.writes.then(async () => {
+      await writeJson(
+        path.join(this.parent.root, '.control/chapters', c.executionId + '.json'),
+        value,
+      );
+      // 按执行身份重建累计值，保留旧 attempt 的失败/取消与真实用量。
+      await writeJson(
+        path.join(this.parent.root, '.control/chapter-usage.json'),
+        await chapterUsageSummary(this.parent.root, this.parent.runId),
+      );
+    });
     return this.writes;
   }
   owns(threadId: string) {

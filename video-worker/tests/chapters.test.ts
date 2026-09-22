@@ -7,6 +7,7 @@ import path from 'node:path';
 import { Chapters } from '../src/runner/chapters.js';
 import { MediaSlots } from '../src/runner/media-slots.js';
 import { writeJson, hashFile } from '../src/infrastructure/files.js';
+import { chapterUsageSummary } from '../src/runner/chapter-usage.js';
 import { validateChapterBrief } from '../src/runner/chapter-contract.js';
 import { mediaArguments } from '../src/runner/media-tool.js';
 import type { Config } from '../src/config.js';
@@ -302,6 +303,67 @@ test('章节约定绑定确认稿、互斥分章及实际音频摘要，重启�
     }
     await writeJson(path.join(f.root, 'audio.json'), { actual: false });
     await assert.rejects(validateChapterBrief(f.root, 'r1', f.brief), /音频锚点/);
+  } finally {
+    await f.close();
+  }
+});
+
+test('章节累计 total 幂等汇总；新控制器保留取消 attempt 用量，缺失不计零', async () => {
+  const f = await fixture();
+  try {
+    const c = await f.dispatch();
+    const notification = {
+      threadId: c.threadId,
+      tokenUsage: {
+        total: { totalTokens: 150, inputTokens: 100, outputTokens: 50 },
+        last: { totalTokens: 99 },
+      },
+    };
+    f.rpc.emit('notification', 'thread/tokenUsage/updated', notification);
+    f.rpc.emit('notification', 'thread/tokenUsage/updated', notification);
+    await f.manager.close();
+    let summary = await chapterUsageSummary(f.root, 'r1');
+    assert.equal(summary.knownTotals.totalTokens, 150);
+    assert.equal(summary.executions[c.executionId].status, 'cancelled');
+    assert.equal(summary.knownTotals.cachedInputTokens, null);
+    const rpc = new TestRpc();
+    const next = new Chapters(rpc, {} as Config, {
+      root: f.root,
+      runId: 'r1',
+      token: 8,
+      signal: new AbortController().signal,
+      check: async () => {},
+    });
+    try {
+      const c2 = await next.operate({
+        operation: 'dispatch',
+        chapterId: 'c1',
+        brief: 'render/r1/chapters/c1/brief.json',
+      });
+      summary = await chapterUsageSummary(f.root, 'r1');
+      assert.equal(summary.knownTotals.totalTokens, 150);
+      assert.equal(summary.complete, false);
+      assert.deepEqual(summary.missingByField.totalTokens, [c2.executionId]);
+      rpc.emit('notification', 'thread/tokenUsage/updated', {
+        threadId: c2.threadId,
+        tokenUsage: {
+          total: { totalTokens: 25, inputTokens: 20, outputTokens: 5 },
+          last: { totalTokens: 20 },
+        },
+      });
+      await next.close();
+      summary = await chapterUsageSummary(f.root, 'r1');
+      assert.equal(summary.executionCount, 2);
+      assert.equal(summary.complete, true);
+      assert.equal(summary.knownTotals.totalTokens, 175);
+      const saved = JSON.parse(
+        await readFile(path.join(f.root, '.control/chapter-usage.json'), 'utf8'),
+      );
+      assert.equal(saved.knownTotals.totalTokens, 175);
+      assert.equal(saved.executions[c.executionId].status, 'cancelled');
+    } finally {
+      await next.close();
+    }
   } finally {
     await f.close();
   }

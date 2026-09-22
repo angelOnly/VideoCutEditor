@@ -5,7 +5,7 @@
   "defaultExecutor": "host-app-server",
   "taskIsolation": "bubblewrap-systemd-user",
   "remotionVersion": "4.0.425",
-  "runtimeSourceSha256": "6ecd7e40ccae6ac69938839228e93eee6e3484b668d253b188644c0ab0f0e63d",
+  "runtimeSourceSha256": "33f6665534a36986f877f4a7ab46f47a678426a93f355042c5104fbb603b7c32",
   "files": {
     "claude-code-video-toolkit/.agents/skills/video-pipeline/SKILL.md": "653f7cd155e5e490b9941ec1742dd07b70cc908074727fffcc78b78c7ea77abb",
     "claude-code-video-toolkit/.agents/skills/video-pipeline/agents/openai.yaml": "8b31a00612837d7ca772138b38441ae244015f329c746ce34e2d622439bd646a",
@@ -84,7 +84,8 @@
     "video-worker/src/infrastructure/workspace.ts": "6748054508c8c8e522a8231ee3185e5a6a9eaf2d43f18c014457aa02fd2e6ec7",
     "video-worker/src/integrations/ifeng/mapper.ts": "a2616bc53b10c0239884d59d347549fc6074a7752984eddfc5fdf80427e9de0c",
     "video-worker/src/runner/chapter-contract.ts": "17c954940e795d02422a6c4af73762e260e577f53df340c556e83eb41b53b982",
-    "video-worker/src/runner/chapters.ts": "f1c2577bdbbdc341d9292238896391308dcb1eacd5e0f39a1324e8c8616b92fa",
+    "video-worker/src/runner/chapter-usage.ts": "a9ea92f0bc854bfd1d5d43ae333c7835bb9913fa76ddd4d5afe18d986d2ce786",
+    "video-worker/src/runner/chapters.ts": "85c72b8e808baf4ef25630cee7cd621f0b89c18e37e9856fedea0fe46aaa894b",
     "video-worker/src/runner/codex-host.ts": "269f57dfcc4792be22c185e76a6d1ef56cf13bb7b25dafc901ee0c05795d462d",
     "video-worker/src/runner/media-slots.ts": "8f16ac7a3e02a5fdc698438d1485b876cece9cde33642cac9dc6d2e90d6f2c2e",
     "video-worker/src/runner/media-tool.ts": "10843219c2a513a30c9c7f0ef024382fcfc13ee483fb6a308159d6a43de2519c",
