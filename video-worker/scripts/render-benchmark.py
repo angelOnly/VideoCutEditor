@@ -112,6 +112,7 @@ def execute(argv, cwd, env, folder, protected_root, timeout, interval, max_rss_k
     last = start
     samples = []
     reason = None
+    blocking_processes = []
     known = {}
     with (folder / 'stdout.log').open('w') as out, (folder / 'stderr.log').open('w') as err:
         proc = subprocess.Popen(argv, cwd=cwd, env=env, stdout=out, stderr=err, start_new_session=True)
@@ -132,6 +133,9 @@ def execute(argv, cwd, env, folder, protected_root, timeout, interval, max_rss_k
                 busy = blockers(rows, protected_root, proc.pid, {p['pid'] for p in own}, idle_baseline)
                 if busy:
                     reason = 'external_media_contention'
+                    blocking_processes = [{k: p.get(k) for k in ('pid', 'ppid', 'pgid', 'started', 'cpu', 'rssKiB')}
+                                          | {'command': p['command'][:2048]} for p in busy]
+                    persist(folder / 'blocking-processes.json', {'observedAt': time.time(), 'processes': blocking_processes})
                 elif now-start > timeout:
                     reason = 'timeout'
                 elif rss > max_rss_kib:
@@ -147,7 +151,7 @@ def execute(argv, cwd, env, folder, protected_root, timeout, interval, max_rss_k
             # 包括 Ctrl-C、异常和正常父进程退出后留下的自有子进程。
             stop_group(proc, known)
     return {'argv': argv, 'exitCode': proc.returncode, 'reason': reason,
-            'wallSeconds': time.monotonic()-start, 'peakAggregateRssKiB': peak_rss,
+            'wallSeconds': time.monotonic()-start, 'blockingProcesses': blocking_processes, 'peakAggregateRssKiB': peak_rss,
             'peakCpuPercent': peak_cpu, 'externalIdleBaselinePeakRssKiB': external_peak_rss, 'sampledCpuSecondsEstimate': cpu_integral, 'samples': samples}
 
 
