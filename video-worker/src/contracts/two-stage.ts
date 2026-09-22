@@ -24,7 +24,10 @@ export const stageResponseSchema = {
     taskId: { type: 'string' },
     runId: { type: 'string' },
     stage: { type: 'string', enum: ['analysis', 'render'] },
-    status: { type: 'string', enum: ['candidate', 'failed'] },
+    status: {
+      type: 'string',
+      enum: ['candidate', 'failed', 'continue_required', 'human_required'],
+    },
     artifact: { type: ['string', 'null'] },
     error: {
       anyOf: [

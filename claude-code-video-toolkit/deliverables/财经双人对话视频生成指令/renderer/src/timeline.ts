@@ -7,5 +7,6 @@ export const timeline: FinanceTimeline = {
   height: 1080,
   totalFrames: 30,
   title: '待生成的财经双人对话',
+  chapters: [],
   scenes: [],
 };

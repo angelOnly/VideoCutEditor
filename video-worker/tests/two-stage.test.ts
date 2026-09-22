@@ -17,6 +17,8 @@ import { command } from '../src/infrastructure/process.js';
 import { bubblewrapArgs } from '../src/infrastructure/host-processes.js';
 import { validate } from '../src/infrastructure/validation.js';
 import { executeRun } from '../src/application/execute-run.js';
+import { resumeRun } from '../src/application/resume-run.js';
+import { pipelineRevision } from '../src/domain/storyboard.js';
 import yazl from 'yazl';
 
 async function zipFixture(files: Record<string, string>) {
@@ -73,6 +75,78 @@ async function setup() {
     },
   };
 }
+async function renderSetup(h: Awaited<ReturnType<typeof setup>>) {
+  await h.tasks.analysis(h.t, analysis());
+  const a = (await h.q.claim('worker'))!;
+  const w = await h.workspaces.prepare(a, h.t);
+  const p = plan(w);
+  await check(h, a, w, p);
+  const result = await publishResult(h.q, h.storage, a, w, h.t, p);
+  await h.tasks.render(h.t, {
+    schemaVersion: 2,
+    taskId: 'task1',
+    requestId: 'render-recovery',
+    basePlanVersion: 1,
+    field_5: '',
+    templateId: 'finance_vertical_v1',
+    dataList: result.dataList,
+  });
+  return { lease: (await h.q.claim('worker'))! };
+}
+test(
+  '人工恢复校验版本、幂等请求和预算，保留同一 run',
+  { skip: !process.env.STAGE_TEST_PYTHON },
+  async () => {
+    const h = await setup();
+    try {
+      h.c.python = process.env.STAGE_TEST_PYTHON!;
+      const { lease } = await renderSetup(h);
+      await h.workspaces.prepare(lease, h.t);
+      await h.q.waitHuman(lease, { code: 'SHARED_PIPELINE_ERROR', message: '已修复的测试问题' });
+      const paused = (await h.db.query('SELECT * FROM runs WHERE id=$1', [lease.run.id])).rows[0];
+      const input = {
+        runId: lease.run.id,
+        requestId: 'resume-1',
+        revision: paused.recovery.revision,
+        note: '回归检查通过',
+        actor: 'test-operator',
+        runtimeVersion: h.c.runtimeVersion,
+        pipelineRevision,
+      };
+      let stops = 0;
+      const stop = async () => {
+        stops++;
+      };
+      await assert.rejects(resumeRun(h.db, h.c, { ...input, pipelineRevision: 'old' }, stop), {
+        code: 'PIPELINE_REVISION_EXPIRED',
+      });
+      await assert.rejects(resumeRun(h.db, h.c, { ...input, revision: input.revision + 1 }, stop), {
+        code: 'STALE_RECOVERY',
+      });
+      assert.equal((await resumeRun(h.db, h.c, input, stop)).reused, false);
+      const stopped = stops;
+      assert.equal((await resumeRun(h.db, h.c, input, stop)).reused, true);
+      assert.equal(stops, stopped);
+      await assert.rejects(resumeRun(h.db, h.c, { ...input, note: '不同请求' }, stop), {
+        code: 'IDEMPOTENCY_CONFLICT',
+      });
+      const next = (await h.q.claim('resume-worker'))!;
+      assert.equal(next.run.id, lease.run.id);
+      assert.equal(next.run.repair_rounds, paused.repair_rounds);
+      assert.ok(
+        new Date(next.run.deadline!).getTime() - Date.now() <=
+          Number(paused.remaining_seconds) * 1000 + 1000,
+      );
+      assert.equal(
+        (await h.db.query('SELECT * FROM run_resumptions WHERE run_id=$1', [lease.run.id])).rows
+          .length,
+        1,
+      );
+    } finally {
+      await h.close();
+    }
+  },
+);
 function plan(w: any) {
   return {
     contractVersion: 'video-two-stage/1',
@@ -181,6 +255,15 @@ test('两阶段请求、完整确认、模板冻结、数据库版本和估算�
       rw = await h.workspaces.prepare(r, h.t);
     const confirmed = await readJson(path.join(rw.root, rw.task.confirmation.planFile));
     assert.equal(confirmed.scenes[0].production.layout.custom, '上下分区');
+    assert.equal(
+      await readFile(path.join(rw.root, rw.task.input.scriptFile), 'utf8'),
+      '第一句。第二句。',
+    );
+    assert.deepEqual(
+      await readJson(path.join(rw.root, rw.task.input.requirementsFile)),
+      await readJson(path.join(w.root, w.task.input.requirementsFile)),
+    );
+    assert.equal(rw.task.confirmation.planVersion, r.run.plan_version);
     assert.equal(
       await readFile(
         path.join(w.root, (await readJson(path.join(w.root, 'input/template.json'))).document),
@@ -477,6 +560,13 @@ test(
           ),
       };
       const candidate = await validate(sandbox, l, w, new AbortController().signal);
+      const timelineFile = path.join(w.root, 'render', l.run.id, 'timeline.json');
+      const timeline = await readJson(timelineFile);
+      await writeJson(timelineFile, { ...timeline, revision: 2 });
+      await assert.rejects(validate(sandbox, l, w, new AbortController().signal), {
+        code: 'TIMELINE_STALE',
+      });
+      await writeJson(timelineFile, timeline);
       const result = await publishResult(h.q, h.storage, l, w, h.t, candidate);
       assert.equal(result.dataList.length, 2);
       for (const s of result.dataList) {
@@ -551,11 +641,10 @@ test('旧模板正文配置被拒绝，不回退 README', async () => {
   await assert.rejects(provider.read('old'), { code: 'TEMPLATE_UNAVAILABLE' });
 });
 
-test('缺少能力不重开模型 turn，保存失败回调并释放名额', async () => {
+test('缺少能力不重开模型 turn，等待人工并释放名额，不发送终态回调', async () => {
   const h = await setup();
   try {
-    await h.tasks.analysis(h.t, analysis());
-    const lease = (await h.q.claim('worker'))!;
+    const { lease } = await renderSetup(h);
     let calls = 0;
     const sandbox: any = {
       run: async (l: any, w: any) => {
@@ -575,7 +664,7 @@ test('缺少能力不重开模型 turn，保存失败回调并释放名额', asy
     await executeRun(h.c, h.q, sandbox, lease);
     const status = await h.repo.query(h.t.id, 'task1');
     assert.equal(calls, 1);
-    assert.equal(status.taskState, 'failed');
+    assert.equal(status.taskState, 'waiting_human');
     assert.equal(status.latestRun.error.code, 'CAPABILITY_MISSING');
     assert.equal(status.latestRun.error.retryable, false);
     assert.equal(
@@ -585,7 +674,48 @@ test('缺少能力不重开模型 turn，保存失败回调并释放名额', asy
     const event = (
       await h.db.query('SELECT payload FROM callback_events WHERE run_id=$1', [lease.run.id])
     ).rows[0];
-    assert.equal(event.payload.status, 1);
+    assert.equal(event, undefined);
+  } finally {
+    await h.close();
+  }
+});
+
+test('提前返回制作进度会自动续轮，未知公共错误转人工', async () => {
+  const h = await setup();
+  try {
+    const { lease } = await renderSetup(h);
+    let calls = 0;
+    const sandbox: any = {
+      stop: async () => {},
+      run: async (l: any, w: any) => {
+        calls++;
+        const feedback =
+          calls > 1 ? await readJson(path.join(w.root, '.control/feedback.json')) : null;
+        if (calls > 1) assert.equal(feedback.runId, l.run.id);
+        await writeJson(path.join(w.root, 'output/agent-response.json'), {
+          contractVersion: w.task.contractVersion,
+          taskId: l.run.task_id,
+          runId: l.run.id,
+          stage: 'render',
+          status: calls === 1 ? 'continue_required' : 'human_required',
+          artifact: null,
+          error: {
+            code: calls === 1 ? 'PRODUCTION_INCOMPLETE' : 'SHARED_PIPELINE_ERROR',
+            message: '测试恢复',
+            retryable: false,
+          },
+        });
+      },
+    };
+    await executeRun(h.c, h.q, sandbox, lease);
+    assert.equal(calls, 2);
+    const status = await h.repo.query(h.t.id, 'task1');
+    assert.equal(status.taskState, 'waiting_human');
+    assert.equal(
+      (await h.db.query('SELECT repair_rounds FROM runs WHERE id=$1', [lease.run.id])).rows[0]
+        .repair_rounds,
+      0,
+    );
   } finally {
     await h.close();
   }

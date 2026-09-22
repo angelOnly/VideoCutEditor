@@ -30,7 +30,7 @@ export class Queue {
       );
       const updated = (
         await q.query<Run>(
-          "UPDATE runs SET state='running',attempt=attempt+1,fencing_token=$2,started_at=coalesce(started_at,now()),deadline=coalesce(deadline,now()+($3 * interval '1 second')),progress_stage='preparing' WHERE id=$1 RETURNING *",
+          "UPDATE runs SET state='running',attempt=attempt+1,fencing_token=$2,started_at=coalesce(started_at,now()),deadline=coalesce(deadline,now()+(coalesce(remaining_seconds,$3) * interval '1 second')),progress_stage='preparing' WHERE id=$1 RETURNING *",
           [
             run.id,
             token,
@@ -97,6 +97,28 @@ export class Queue {
       'UPDATE execution_slots SET run_id=NULL,owner=NULL,lease_expires_at=NULL WHERE id=$1 AND fencing_token=$2',
       [l.slot, l.token],
     );
+  }
+  // 调用方必须先确认进程清理；暂停不产生最终失败回调。
+  async waitHuman(l: Lease, issue: any) {
+    return this.withLease(l, async (q, r) => {
+      const remaining = Math.max(0, (new Date(r.deadline!).getTime() - Date.now()) / 1000);
+      const recovery = {
+        ...r.recovery,
+        revision: (r.recovery?.revision ?? 0) + 1,
+        issue,
+        pausedAt: new Date().toISOString(),
+        attempt: r.attempt,
+      };
+      await q.query(
+        "UPDATE runs SET state='waiting_human',progress_stage='waiting_human',recovery=$2,remaining_seconds=$3,deadline=NULL,error=$4 WHERE id=$1",
+        [r.id, recovery, remaining, { code: issue.code, message: issue.message, retryable: false }],
+      );
+      await q.query("UPDATE tasks SET state='waiting_human',updated_at=now() WHERE id=$1", [
+        r.task_id,
+      ]);
+      await this.release(q, l);
+      return recovery;
+    });
   }
   async failed(l: Lease, error: any) {
     return this.withLease(

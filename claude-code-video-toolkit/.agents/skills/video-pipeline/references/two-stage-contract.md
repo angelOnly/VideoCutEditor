@@ -18,9 +18,13 @@ Render 返回：
 
 失败时 status=failed、artifact=null、error={code,message,retryable}。不得自行标记 ready、发布文件或调用客户端回调。manifest/review 的实际字段见 Schema；Worker 独立验证全部 N 句后统一发布并回调。
 
+Render 还可返回 continue_required 或 human_required，artifact=null，error 提供具体 code/message/retryable；前者表示当前工程待制作或修复，后者表示请求人工核查公共链路、输入或收费风险。它们不是候选完成，也不直接决定数据库状态。Worker 按工具证据和完成检查续轮或进入 waiting_human，Analysis 输出不变。内部制作规则版本为 text-storyboard/3-render-production，旧任务须由受控入口核验版本后恢复。
+
 ## 工具适配
 
-Worker 仅 Render 注册 video_exec、video_view_image、video_tts。命令与文件操作通过 video_exec，看图通过 video_view_image，收费配音通过 video_tts。收费工具保管供应商凭据与任务缓存，模型不得直接调用收费 CLI、读取 .env 或改账本。
+Worker 仅 Render 注册 video_exec、video_view_image、video_tts、video_media。工程命令与文件操作通过 video_exec，看图通过 video_view_image，收费配音通过 video_tts，受控制作步骤通过 video_media。收费工具保管供应商凭据与任务缓存，模型不得直接调用收费 CLI、读取 .env 或改账本。
+
+Render 另注册 video_media，接受受控的 render、extend-timeline、derive-timeline、assemble、preflight。媒体步骤写控制记录须走该入口，.control 对制作 shell 只读；正常调整返回 adjustment_required，不能只根据退出码零认为 MP4 已发布。Worker 的本轮反馈是可信执行上下文，模型不能改写它来扩大权限。
 
 request、input、confirmation、history、tool-audio 只读；仅本次 render/<runId> 的制作文件及 project/output/cache 可写。通用依赖在 toolkit/templates/ifeng-scenes/node_modules，浏览器使用注入的 REMOTION_BROWSER_EXECUTABLE；不得在线安装或搜索其他任务依赖。工具返回前进程结束，不启动后台任务。
 

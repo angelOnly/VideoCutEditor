@@ -27,7 +27,7 @@ export async function database() {
   const adapt = (q: any): Sql => ({
     query: async <T = any>(sql: string, args?: any[]) => (await q.query(sql, args)) as any,
   });
-  for (const name of ['001_initial.sql', '002_pipeline_liveness.sql'])
+  for (const name of ['001_initial.sql', '002_pipeline_liveness.sql', '003_render_recovery.sql'])
     await pg.exec(await readFile(new URL('../migrations/' + name, import.meta.url), 'utf8'));
   const db: Database = {
     ...adapt(pg),
@@ -69,7 +69,10 @@ export function config(overrides: Partial<Config> = {}): Config {
     ttsResourceId: 'seed-tts-2.0',
     python: process.env.PYTHON ?? 'python3',
     templates: {
-      finance_vertical_v1: { archivePath: 'deliverables/财经双人对话视频生成指令.zip' },
+      finance_vertical_v1: {
+        archivePath: 'deliverables/财经双人对话视频生成指令.zip',
+        document: '财经双人对话视频生成指令/财经双人对话视频生成指令.md',
+      },
     },
     runtimeVersion: 'test',
     ...overrides,

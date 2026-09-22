@@ -1,4 +1,4 @@
 interface:
   display_name: "无人值守视频流水线"
   short_description: "编排输入、配音、模板、字幕、渲染和本地成片校验，输出结构化结果"
-  default_prompt: "使用 $video-pipeline 按任务目录中的 task.json 持续执行到完整 MP4 和校验报告，失败时返回结构化原因。"
+  default_prompt: "使用 $video-pipeline 读取可信阶段请求：Analysis 只输出保真文字分镜并停止；Render 从原稿、确认文本和冻结模板进入唯一制作主干，提交逐镜 MP4 与校验证据。"

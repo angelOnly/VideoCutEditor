@@ -78,6 +78,13 @@ def identifier(value):
     return value
 
 
+def execution_path(root, request_path):
+    # Worker 的控制目录只向可信媒体工具开放，制作 shell 不能清除预算。
+    if (Path(root) / '.control/policy.json').is_file():
+        return Path(root) / '.control/execution.json'
+    return Path(request_path).resolve().parent / 'execution.json'
+
+
 def schema(value, kind):
     import jsonschema
     document = read(SCHEMA)
@@ -128,13 +135,18 @@ def failure(request_path, step, exc):
                'message': str(exc), 'retryable': getattr(exc, 'retryable', False)}}
     if getattr(exc, 'details', None):
         payload['diagnostics'] = exc.details
+    adjustment = getattr(exc, 'code', '') in ('TIMELINE_EXTEND_REQUIRED', 'CONTENT_TIMELINE_REQUIRED', 'MIX_REBUILD_REQUIRED')
+    if adjustment:
+        payload['status'] = 'adjustment_required'
+        payload['nextAction'] = {'TIMELINE_EXTEND_REQUIRED':'adjust_project_coverage',
+                                'CONTENT_TIMELINE_REQUIRED':'adjust_project_timing', 'MIX_REBUILD_REQUIRED':'render_new_mix'}[exc.code]
     if request_path:
         try:
             request = read(request_path); schema(request, 'request')
             payload.update(result_base(request))
             # 只有已注册输入才允许写本任务失败记录；保留此前 candidate。
             root, _ = load_request(request_path)
-            write(Path(request_path).resolve().parent/'failure.json', payload)
+            write(Path(request_path).resolve().parent/('timeline-adjustment.json' if adjustment else 'failure.json'), payload)
         except (OSError, ValueError, KeyError, ImportError):
             pass
     return payload
@@ -263,7 +275,7 @@ def save_request(root, job, request, name):
     write(root / 'job.json', job)
     prompt = (f'使用 $video-pipeline，读取阶段输入 {root / name}。本轮只执行 {request["stage"]}。'
               '先阅读 video-pipeline 的 two-stage-contract.md。'
-              '只使用输入快照列出的业务资料和必要通用工具；禁止参考历史任务、样片或日志。'
+              '只使用输入快照列出的业务资料和必要通用工具；可查看冻结模板内获准参考片，不读取其他任务或未授权历史资料。'
               '按阶段协议保存结果后结束；不得从 analysis 自动进入 render。\n')
     (root / name).with_suffix('.prompt.md').write_text(prompt, encoding='utf-8')
     return {'request': str(root / name), 'prompt': str((root / name).with_suffix('.prompt.md'))}
@@ -292,7 +304,21 @@ def init_job(root, spec):
         destinations[role] = name; snapshot[name] = digest(target)
     assets = [{**a, 'sourcePath': a['path'], 'path': destinations['asset:' + a['id']], 'sha256': snapshot[destinations['asset:' + a['id']]]} for a in spec['assets']]
     write(root / 'input/assets.json', {'assets': assets})
-    write(root / 'input/template.json', {'sourcePath': spec['templateFile'], 'document': destinations['templateFile'], 'sha256': snapshot[destinations['templateFile']], 'attachments': [a['id'] for a in assets if a['kind'] == 'reference']})
+    template = {'sourcePath': spec['templateFile'], 'document': destinations['templateFile'], 'sha256': snapshot[destinations['templateFile']], 'attachments': [a['id'] for a in assets if a['kind'] == 'reference']}
+    template_dir = Path(spec['templateFile']).expanduser().resolve().parent
+    if (template_dir / 'renderer/renderer-manifest.json').is_file():
+        # 与 Worker 一样冻结选定模板的完整依赖，不能只保存正文路径。
+        for file in sorted(template_dir.rglob('*')):
+            relative = file.relative_to(template_dir)
+            if any(part in ('node_modules', '.git', '__pycache__') for part in relative.parts): continue
+            require(not file.is_symlink(), '模板快照不能包含符号链接')
+            if not file.is_file(): continue
+            require(not file.name.startswith('.env'), '模板不能包含凭据文件')
+            name = 'input/template/' + relative.as_posix()
+            target = local(root, name, exists=False); target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(file, target); snapshot[name] = digest(target)
+        template.update(root='input/template', document='input/template/' + Path(spec['templateFile']).name)
+    write(root / 'input/template.json', template)
     for name in ('input/assets.json', 'input/template.json'):
         snapshot[name] = digest(root / name)
     job = {'contractVersion': VERSION, 'taskId': spec['taskId'], 'requests': {}, 'createdAt': time.time()}
@@ -370,7 +396,8 @@ def execution(request_path, action):
     with lock(root / '.execution.lock'):
         root, request = load_request(request_path, 'render')
         require(not active_processes(root), '本任务仍有活跃制作进程，请先检查已有进程', 'TASK_BUSY')
-        path = Path(request_path).resolve().parent / 'execution.json'
+        path = execution_path(root, request_path)
+        managed = (Path(root) / '.control/policy.json').is_file()
         state = read(path) if path.exists() else {'elapsedSeconds': 0, 'repairRounds': 0, 'operations': []}
         require(not state.get('stopReason'), state.get('stopReason', ''), 'REPAIR_BUDGET_EXHAUSTED')
         require(state['repairRounds'] == 0 or state['repairRounds'] < request['limits']['repairRounds'],
@@ -385,6 +412,18 @@ def execution(request_path, action):
         try:
             yield root, request, remaining
         except Exception as exc:
+            if getattr(exc, 'code', '') in ('TIMELINE_EXTEND_REQUIRED', 'CONTENT_TIMELINE_REQUIRED', 'MIX_REBUILD_REQUIRED'):
+                # 正常时间轴协商不扣修复次数；同一混音、同一帧数不得无进展重试。
+                key = json_digest({'action': action, 'details': exc.details})
+                adjustments = state.setdefault('timelineAdjustments', [])
+                if not managed and any(item['key'] == key for item in adjustments):
+                    state['stopReason'] = '相同混音与帧数重复请求补帧，必须先修正时间轴，禁止原样重试'
+                    raise StageError('TIMELINE_ADJUSTMENT_STALLED', state['stopReason'], details=exc.details) from exc
+                adjustments.append({'key': key, 'action': action, 'details': exc.details, 'at': time.time()})
+                raise
+            if managed:
+                state.setdefault('events', []).append({'action': action, 'code': getattr(exc, 'code', 'EXECUTION_FAILED'), 'message': str(exc)})
+                raise
             # 工具内部失败也计数，不依赖模型主动调用 repair 或结束 turn。
             code = getattr(exc, 'code', 'EXECUTION_FAILED')
             previous = state.setdefault('failures', {}).get(action, {})
@@ -406,6 +445,7 @@ def execution(request_path, action):
 
 def repair(request_path, reason):
     root, request = load_request(request_path, 'render')
+    require(not (root / '.control/policy.json').is_file(), 'Worker 修复预算由外层管理', 'STAGE_FORBIDDEN')
     with lock(root / '.execution.lock'):
         path = Path(request_path).resolve().parent / 'execution.json'
         state = read(path) if path.exists() else {'elapsedSeconds': 0, 'repairRounds': 0, 'operations': []}

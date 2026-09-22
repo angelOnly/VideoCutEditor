@@ -23,6 +23,8 @@ export const admittedToolkit = [
     'generate_dialogue_audio.py',
     'two_stage.py',
     'stage_media.py',
+    'actual_timeline.py',
+    'finance_timeline.py',
     'stage_tts.py',
     'cached_tts.py',
     'worker_stage.py',
@@ -68,6 +70,10 @@ export function bubblewrapArgs(
   args.push('--ro-bind', pythonRoot, pythonRoot);
   args.push('--ro-bind', process.execPath, process.execPath);
   args.push('--ro-bind', w.root, w.root);
+  if (mode === 'tool' && w.task?.stage === 'render') {
+    const control = path.join(w.root, '.control');
+    args.push('--bind', control, control);
+  }
   if (mode !== 'validate') {
     for (const directory of ['project', 'output', 'cache']) {
       const p = path.join(w.root, directory);
@@ -114,6 +120,7 @@ export function bubblewrapArgs(
     config.hostBrowser,
   );
   // Values are inherited by bwrap from systemd; never include secrets in its argv.
+  if (mode === 'tool' && !tts) args.push('--setenv', 'VIDEOCUT_RENDER_SANDBOX', 'bwrap');
   if (tts) {
     // --clearenv removed them: the trusted Python launcher copies just these before exec.
     args.splice(args.indexOf('--clearenv'), 1);

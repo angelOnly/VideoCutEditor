@@ -3,8 +3,8 @@ import sys
 import subprocess
 from pathlib import Path
 sys.path.insert(0,sys.argv[1])
-from two_stage import load_request, read, local, digest, write
-from stage_media import ffmpeg, extract_frames
+from two_stage import load_request, read, local, digest, json_digest, write
+from stage_media import ffmpeg, extract_frames, project_fingerprint
 request_path=Path(sys.argv[2]);root,r=load_request(request_path,'render');plan=read(local(root,r['confirmation']['planFile']))
 m={k:r[k] for k in ('contractVersion','taskId','runId','stage')}
 m.update(confirmedPlanSha256=r['confirmation']['planSha256'],planVersion=r['confirmation']['planVersion'],scenes=[],wholeVideo=None,quality=f'render/{r["runId"]}/review.json')
@@ -14,7 +14,7 @@ encoder='libx264' if 'libx264' in subprocess.check_output(['ffmpeg','-hide_banne
 for i,s in enumerate(plan['scenes']):
  wav=folder/(s['id']+'.wav');video=folder/(s['id']+'.mp4')
  ffmpeg('-f','lavfi','-i',f'sine=frequency={440+i*220}:sample_rate=48000','-t','1',wav)
- ffmpeg('-f','lavfi','-i',f'color=c={"blue" if i==0 else "red"}:s=320x240:r=10','-i',wav,'-t','1','-c:v',encoder,*(['-allow_sw','1'] if encoder == 'h264_videotoolbox' else []),'-pix_fmt','yuv420p','-c:a','aac',video)
+ ffmpeg('-f','lavfi','-i',f'color=c={"blue" if i==0 else "red"}:s=320x240:r=10','-i',wav,'-t','1','-c:v',encoder,*(['-allow_sw','1'] if encoder == 'h264_videotoolbox' else []),'-pix_fmt','yuv420p','-colorspace','bt709','-color_primaries','bt709','-color_trc','bt709','-color_range','tv','-c:a','aac',video)
  evidence=extract_frames(root,r,s['id'],video,10)
  m['scenes'].append({'id':s['id'],'text':s['text'],'path':str(video.relative_to(root)),'sha256':digest(video),'frames':10,'durationSeconds':1,
  'usedResources':[{'id':'voice','kind':'generated','path':str(wav.relative_to(root)),'sha256':digest(wav)}],
@@ -31,3 +31,7 @@ for index,scene in enumerate(m['scenes']):
 write(root/'render'/r['runId']/'timeline.json',timeline)
 (root/'project').mkdir(exist_ok=True)
 (root/'project/fixture.ts').write_text('// 合成媒体测试工程；不代表真实模板效果。\n')
+# 测试夹具模拟可信执行层登记，不让模型自行写验收凭证。
+write(root/'.control/progress.json', {scene['id']:{'path':scene['path'],'sha256':scene['sha256'],
+ 'timelineHash':digest(root/'render'/r['runId']/'timeline.json'), 'project':'project',
+ 'projectHash':json_digest(project_fingerprint(root/'project'))} for scene in m['scenes']})

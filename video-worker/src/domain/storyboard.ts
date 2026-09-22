@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { AppError } from './task.js';
 import { protocol } from '../contracts/two-stage.js';
 
-export const pipelineRevision = 'text-storyboard/1';
+export const pipelineRevision = 'text-storyboard/5-render-adaptive-zero-padding';
 const error = z.object({ code: z.string(), message: z.string(), retryable: z.boolean() }).strict();
 export const analysisResult = z
   .object({

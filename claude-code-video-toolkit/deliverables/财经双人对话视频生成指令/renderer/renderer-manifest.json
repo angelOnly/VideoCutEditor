@@ -1,21 +1,33 @@
 {
   "schemaVersion": 1,
+  "templateVersion": "1.2.0",
+  "motionGuide": "../动效组件与内容适配说明.md",
   "entry": "src/index.ts",
   "timelineModule": "src/timeline.ts",
   "sentenceAudioValidator": "scripts/verify-sentence-audio.mjs",
   "wholeComposition": "FinanceEpisode",
-  "sceneCompositionPrefix": "FinanceScene_",
+  "sceneCompositionPrefix": "FinanceScene-",
+  "sceneCompositionIdRule": "FinanceScene- 加 timeline.scenes 中从 1 开始的序号；外部 sceneId 保持原值，不用于 Composition 名称。",
   "publicAssetRoot": "template-assets",
   "requiredComponents": [
     "FinancialDialogue.tsx",
     "FinancialIntros.tsx",
     "SpeakerStage.tsx",
     "SubtitleLayer.tsx",
-    "VisualBlocks.tsx"
+    "VisualBlocks.tsx",
+    "ChapterNav.tsx",
+    "ChapterTransition.tsx",
+    "validateTimeline.ts",
+    "LayoutGuard.tsx",
+    "visualExtensions.tsx",
+    "motion.ts"
   ],
   "rules": [
     "复制到任务 project/renderer 后使用已部署的 Remotion 依赖；不安装依赖。只允许执行 sentenceAudioValidator 指向的只读校验脚本。",
-    "必须复用人物舞台、句级字幕、章节、音频和图解组件；本期图解参数与场景由 Codex 创作。",
-    "timeline.ts 和 render/<runId>/timeline.json 是本期任务文件，必须由每句独立 TTS 的实际时长生成，不得复用历史节目时间轴或按比例切字幕。"
+    "必须复用小圆头像、观点卡、中央面板、章节导航、全片进度条、字幕和动效组件；优先填本期内容与配音时间，必要时在任务副本扩展图解，不重写视觉骨架。",
+    "timeline.ts 和 render/<runId>/timeline.json 是本期任务文件，必须由每条独立短句 TTS 的实际时长生成；默认每条建议不超过 28 字；可靠时间记录允许复用音频分页，拼接保持确认原文，不得按比例切字幕。",
+    "chapters 定义跨分镜逻辑章节；默认使用章节 visualBlocks，scene.visualBlocks 留空。单镜与全片均传入完整 timeline，不能重置全片进度。",
+    "Root 渲染入口自动执行 validateTimeline；超出推荐范围返回提示，实际质量不合格或非法时序必须在任务内修正，不得删除校验。技术通过后仍须检查参考对照静帧和动效片段。",
+    "允许在任务副本 visualExtensions.tsx 注册真实图解组件及参数检查；栏目风格和必需组件不取消。推荐提示不直接结束制作，LayoutGuard 实际问题返回 Render 修复并审片。"
   ]
 }

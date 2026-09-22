@@ -36,7 +36,7 @@ export class Postgres implements Database {
 }
 export async function migrate(db: Database) {
   // 明确顺序；每份迁移幂等，可在升级与首次安装时共用。
-  for (const name of ['001_initial.sql', '002_pipeline_liveness.sql']) {
+  for (const name of ['001_initial.sql', '002_pipeline_liveness.sql', '003_render_recovery.sql']) {
     const sql = await readFile(
       fileURLToPath(new URL('../../migrations/' + name, import.meta.url)),
       'utf8',

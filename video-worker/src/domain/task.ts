@@ -1,5 +1,6 @@
 export type Stage = 'analysis' | 'render';
-export type RunState = 'queued' | 'running' | 'cancelling' | 'succeeded' | 'failed' | 'cancelled';
+export type RunState =
+  'queued' | 'running' | 'cancelling' | 'waiting_human' | 'succeeded' | 'failed' | 'cancelled';
 export class AppError extends Error {
   constructor(
     public code: string,
@@ -27,6 +28,8 @@ export interface Run {
   fencing_token: number;
   deadline: Date | string | null;
   progress_stage: string;
+  recovery?: any;
+  remaining_seconds?: number | null;
 }
 export interface Lease {
   slot: number;

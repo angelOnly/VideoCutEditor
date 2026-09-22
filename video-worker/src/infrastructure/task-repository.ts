@@ -37,7 +37,7 @@ export class TaskRepository {
       if (task) {
         const active = (
           await q.query(
-            "SELECT id FROM runs WHERE task_id=$1 AND state IN ('queued','running','cancelling')",
+            "SELECT id FROM runs WHERE task_id=$1 AND state IN ('queued','running','cancelling','waiting_human')",
             [task.id],
           )
         ).rows[0];
@@ -170,6 +170,13 @@ export class TaskRepository {
         progressStage: latest.progress_stage,
         attempt: latest.attempt,
         error: latest.error,
+        recovery:
+          latest.state === 'waiting_human'
+            ? {
+                revision: latest.recovery?.revision,
+                message: latest.error?.message,
+              }
+            : null,
       },
       queuePosition: ahead,
       callbackState: event?.state ?? null,
@@ -185,7 +192,7 @@ export class TaskRepository {
         await q.query<Run>('SELECT * FROM runs WHERE tenant=$1 AND id=$2', [tenant, runId])
       ).rows[0];
       if (!run) fail('RUN_NOT_FOUND', '执行不存在', 404);
-      if (run.state === 'queued') {
+      if (run.state === 'queued' || run.state === 'waiting_human') {
         await this.failure(
           q,
           run,

@@ -57,6 +57,21 @@ class ContractTests(Fixture):
             write(result_path, {'status':'candidate','scenes':[{'text':t} for t in texts],'error':None})
             with self.assertRaises(StageError): storyboard(self.request,result_path)
 
+    def test_local_template_freezes_renderer_and_assets(self):
+        folder=self.base/'complete-template'
+        (folder/'renderer').mkdir(parents=True);(folder/'assets').mkdir()
+        (folder/'template.md').write_text('完整模板')
+        write(folder/'renderer/renderer-manifest.json',{'templateVersion':'1.1.0','sentenceAudioValidator':'scripts/check.mjs'})
+        (folder/'assets/voice.mp3').write_bytes(b'authorized-fixture')
+        spec={**self.spec,'templateFile':str(folder/'template.md')}
+        request=Path(init_job(self.base/'full-job',spec)['request'])
+        root,value=load_request(request)
+        template=read(root/value['input']['templateSnapshot'])
+        self.assertEqual(template['root'],'input/template')
+        self.assertIn('input/template/assets/voice.mp3',value['snapshot'])
+        (folder/'assets/voice.mp3').write_bytes(b'changed-source')
+        self.assertEqual((root/'input/template/assets/voice.mp3').read_bytes(),b'authorized-fixture')
+
     def test_analysis_ends_without_render_request(self):
         result=validate(self.request,self.plan_path)
         self.assertEqual(result['stage'],'analysis'); self.assertEqual(result['sceneCount'],2)
@@ -319,7 +334,7 @@ class MediaTests(Fixture):
             wav=folder/(scene['id']+'.wav');video=folder/(scene['id']+'.mp4')
             ffmpeg('-f','lavfi','-i',f'sine=frequency={440+i*220}:sample_rate=48000','-t','1',wav)
             ffmpeg('-f','lavfi','-i',f'color=c={"blue" if i==0 else "red"}:s=320x240:r=10','-i',wav,'-t','1',
-                   '-c:v',ENCODER,*(['-allow_sw','1'] if ENCODER == 'h264_videotoolbox' else []),'-pix_fmt','yuv420p','-c:a','aac',video)
+                   '-c:v',ENCODER,*(['-allow_sw','1'] if ENCODER == 'h264_videotoolbox' else []),'-pix_fmt','yuv420p','-colorspace','bt709','-color_primaries','bt709','-color_trc','bt709','-color_range','tv','-c:a','aac',video)
             evidence=extract_frames(self.job,self.req,scene['id'],video,10)
             self.manifest['scenes'].append({'id':scene['id'],'text':scene['text'],'path':str(video.relative_to(self.job)),
                 'sha256':digest(video),'frames':10,'durationSeconds':1,'usedResources':[],
@@ -396,11 +411,11 @@ class MediaTests(Fixture):
         self.assertEqual(error.exception.details['step'],'mix')
         self.assertFalse(target.exists())
 
-    def test_mux_normalizes_only_submillisecond_silent_padding(self):
+    def test_mux_normalizes_exact_zero_padding_but_preserves_quiet_tail(self):
         import wave
         video=self.job/self.manifest['scenes'][0]['path']
         for delta,tail,allowed in [(16,b'\x00\x00',True),(-16,b'',True),
-                                    (16,b'\x01\x00',False),(96,b'\x00\x00',False)]:
+                                    (16,b'\x01\x00',False),(96,b'\x00\x00',True)]:
             with self.subTest(delta=delta,tail=tail):
                 mix=video.with_name('boundary.wav');target=video.with_name('boundary.mp4')
                 with wave.open(str(mix),'wb') as audio:
@@ -411,7 +426,32 @@ class MediaTests(Fixture):
                     self.assertEqual(report['mixBoundaryAdjustmentSamples'],delta)
                 else:
                     with self.assertRaises(StageError) as error:mux_scene(video,mix,target,self.req['outputSpec'],10)
-                    self.assertEqual(error.exception.code,'AUDIO_MISMATCH')
+                    self.assertEqual(error.exception.code,'TIMELINE_EXTEND_REQUIRED')
+
+    def test_antiphase_tail_is_not_silence(self):
+        import wave
+        video=self.job/self.manifest['scenes'][0]['path']
+        mix=video.with_name('antiphase.wav');target=video.with_name('antiphase.mp4')
+        with wave.open(str(mix),'wb') as audio:
+            audio.setparams((2,2,48000,0,'NONE','not compressed'))
+            audio.writeframes(bytes(48000*4)+b'\x01\x00\xff\xff'*16)
+        with self.assertRaises(StageError) as error:mux_scene(video,mix,target,self.req['outputSpec'],10)
+        self.assertEqual(error.exception.code,'TIMELINE_EXTEND_REQUIRED')
+
+    def test_reported_327_frame_boundary_preserves_all_samples(self):
+        import wave
+        video=self.job/self.manifest['scenes'][0]['path']
+        mix=video.with_name('reported.wav');target=video.with_name('reported.mp4')
+        with wave.open(str(mix),'wb') as audio:
+            audio.setparams((1,2,48000,0,'NONE','not compressed'))
+            audio.writeframes(b'\x00\x00'*523200+b'\x01\x00'*16)
+        before=digest(mix)
+        spec={**self.req['outputSpec'],'fps':30}
+        with self.assertRaises(StageError) as error:mux_scene(video,mix,target,spec,327)
+        self.assertEqual(error.exception.code,'TIMELINE_EXTEND_REQUIRED')
+        self.assertEqual(error.exception.details['requiredFrames'],328)
+        self.assertEqual(error.exception.details['mixSamples'],523216)
+        self.assertFalse(target.exists());self.assertEqual(digest(mix),before)
 
 
 @unittest.skipUnless(os.environ.get('VIDEOCUT_TEST_MODULES') and os.environ.get('VIDEOCUT_TEST_BROWSER'), '指定本机 Remotion 依赖与浏览器才运行真实渲染')
@@ -448,7 +488,7 @@ registerRoot(()=> <Composition id="SceneOne" component={Frame} durationInFrames=
         modules=Path(os.environ['VIDEOCUT_TEST_MODULES']).resolve()
         (project/'node_modules').symlink_to(modules,target_is_directory=True)
         write(project/'package.json',{'name':'media-sync-test','private':True})
-        ffmpeg('-f','lavfi','-i','sine=frequency=431:sample_rate=48000','-t','5.8',project/'public/voice.wav')
+        ffmpeg('-f','lavfi','-i','sine=frequency=431:sample_rate=48000','-t','5.5',project/'public/voice.wav')
         ffmpeg('-f','lavfi','-i','sine=frequency=723:sample_rate=48000','-t','0.3',project/'public/effect.wav')
         (project/'src/index.tsx').write_text("""
 import React from 'react';
@@ -463,10 +503,22 @@ registerRoot(()=> <Composition id="Sync" component={Frame} durationInFrames={170
             if frames==170:
                 with patch('stage_media.mux_scene',side_effect=StageError('AUDIO_MISMATCH','模拟封装失败')):
                     with self.assertRaises(StageError):render_scene(*options)
-                with patch('stage_media.supervise',side_effect=AssertionError('不能重渲染')):
-                    result=render_scene(*options)
-                self.assertTrue(result['renderReused'])
-            else:result=render_scene(*options)
+            try:
+                if frames==170:
+                    with patch('stage_media.supervise',side_effect=AssertionError('不能重渲染')):
+                        result=render_scene(*options)
+                    self.assertTrue(result['renderReused'])
+                else:result=render_scene(*options)
+            except StageError as exc:
+                self.assertEqual(exc.code,'TIMELINE_EXTEND_REQUIRED')
+                adjustment=read(render.parent/'work/scene_1.adjustment.json')
+                original_mix=self.job/adjustment['mixPath'];original_hash=digest(original_mix)
+                frames=exc.details['requiredFrames']
+                write(project/'props.json',{'frames':frames})
+                options=(*options[:6],frames,*options[7:])
+                result=render_scene(*options,fixed_mix=True)
+                self.assertEqual(digest(original_mix),original_hash)
+                self.assertEqual(result['mix']['sha256'],original_hash)
             self.assertGreater(result['audioCheck']['correlation'],.90)
             self.assertEqual(result['frames'],frames)
             mixed=self.job/result['mix']['path']

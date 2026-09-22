@@ -3,6 +3,40 @@
   "$id": "urn:videocut:two-stage:1",
   "title": "Codex 本地两阶段协议 v1",
   "$defs": {
+    "mediaResult": {
+      "description": "媒体步骤结果；成功和正常调整不能混同于候选已通过最终验收。",
+      "type": "object",
+      "required": ["status"],
+      "properties": {
+        "status": {"enum": ["ok", "adjustment_required", "repair_required", "human_required"]},
+        "scope": {"enum": ["task_project", "shared_pipeline", "external"]},
+        "error": {"type": "object", "required": ["code", "message"], "properties": {"code": {"type": "string"}, "message": {"type": "string"}}},
+        "nextAction": {"enum": ["adjust_project_coverage", "adjust_project_timing", "render_new_mix"]}
+      }
+    },
+    "modelResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "contractVersion": {"const": "video-two-stage/1"},
+        "taskId": {"type": "string"},
+        "runId": {"type": "string"},
+        "stage": {"enum": ["analysis", "render"]},
+        "status": {"enum": ["candidate", "failed", "continue_required", "human_required"]},
+        "artifact": {"type": ["string", "null"]},
+        "error": {"anyOf": [
+          {"type": "null"},
+          {"type": "object", "additionalProperties": false,
+           "properties": {"code": {"type": "string"}, "message": {"type": "string"}, "retryable": {"type": "boolean"}},
+           "required": ["code", "message", "retryable"]}
+        ]}
+      },
+      "required": ["contractVersion", "taskId", "runId", "stage", "status", "artifact", "error"],
+      "allOf": [
+        {"if": {"properties": {"stage": {"const": "analysis"}}}, "then": {"properties": {"status": {"enum": ["candidate", "failed"]}}}},
+        {"if": {"properties": {"status": {"const": "candidate"}}}, "then": {"properties": {"artifact": {"type": "string"}, "error": {"type": "null"}}}, "else": {"properties": {"artifact": {"type": "null"}, "error": {"type": "object"}}}}
+      ]
+    },
     "request": {
       "type": "object",
       "properties": {

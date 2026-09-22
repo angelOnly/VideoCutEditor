@@ -14,6 +14,8 @@
     "worker": "node dist/entrypoints/worker.js",
     "callbacks": "node dist/entrypoints/callbacks.js",
     "migrate": "node dist/entrypoints/migrate.js",
+    "recovery": "tsx scripts/manage-recovery.ts",
+    "render:local": "tsx scripts/local-render.ts",
     "runtime-manifest": "node scripts/runtime-manifest.mjs",
     "test:media": "RUN_MEDIA_TESTS=1 tsx --test tests/media.test.ts",
     "format": "prettier --write src tests scripts config deploy/*.json deploy/*.mjs ../docker-compose.yml",

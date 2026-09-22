@@ -2,45 +2,76 @@
   "fps": 30,
   "width": 1920,
   "height": 1080,
-  "totalFrames": 330,
-  "title": "本期标题",
-  "bgm": {"src": "audio/bgm/immersed.mp3", "volume": 0.11},
+  "totalFrames": 180,
+  "title": "字段示例：实际制作需替换音频及时间",
+  "chapters": [
+    {
+      "id": "chapter_01",
+      "label": "核心观点",
+      "title": "本期面板标题",
+      "summary": "章节摘要，不代替逐句字幕",
+      "from": 0,
+      "endFrameExclusive": 180,
+      "visualBlocks": [
+        {
+          "id": "viewpoints",
+          "kind": "comparison",
+          "startFrame": 0,
+          "endFrameExclusive": 180,
+          "slot": "full",
+          "props": {
+            "items": [
+              "第一方观点",
+              "第二方观点"
+            ],
+            "itemFrames": [
+              0,
+              90
+            ]
+          }
+        }
+      ]
+    }
+  ],
   "scenes": [
     {
       "id": "scene_001",
       "from": 0,
-      "frames": 330,
+      "frames": 180,
       "speaker": "female-host",
       "summary": "一句关键结论",
       "utterances": [
         {
-          "id": "scene_001_sentence_01",
-          "text": "示例口播。",
-          "src": "audio/本期句级配音.mp3",
+          "id": "scene_001_phrase_01",
+          "text": "第一段示例，",
+          "src": "audio/本期短句01.wav",
           "startFrame": 0,
+          "endFrameExclusive": 90
+        },
+        {
+          "id": "scene_001_phrase_02",
+          "text": "第二段示例。",
+          "src": "audio/本期短句02.wav",
+          "startFrame": 90,
           "endFrameExclusive": 180
         }
       ],
       "captions": [
         {
-          "utteranceId": "scene_001_sentence_01",
-          "text": "示例口播。",
+          "utteranceId": "scene_001_phrase_01",
+          "text": "第一段示例，",
           "startFrame": 0,
+          "endFrameExclusive": 90
+        },
+        {
+          "utteranceId": "scene_001_phrase_02",
+          "text": "第二段示例。",
+          "startFrame": 90,
           "endFrameExclusive": 180
         }
       ],
-      "visualBlocks": [
-        {
-          "id": "key_metric",
-          "kind": "metric",
-          "startFrame": 30,
-          "endFrameExclusive": 260,
-          "props": {"label": "重点指标", "value": "90%", "detail": "随本期稿件替换"}
-        }
-      ],
-      "sfx": [
-        {"src": "audio/sfx/data-tick-soft.wav", "frame": 30, "volume": 0.2}
-      ]
+      "visualBlocks": [],
+      "sfx": []
     }
   ]
 }

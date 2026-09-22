@@ -10,17 +10,45 @@ import type { Queue } from '../infrastructure/queue.js';
 import type { Rpc } from '../infrastructure/app-server.js';
 import { codexOverrides } from '../infrastructure/app-server.js';
 import type { HostProcesses } from '../infrastructure/host-processes.js';
-import { readJson, writeJson } from '../infrastructure/files.js';
-import { stagePath, stageResponseSchema } from '../contracts/two-stage.js';
+import { readJson, writeJson, hashFile } from '../infrastructure/files.js';
+import { stagePath, stageResponseSchema, assertStage } from '../contracts/two-stage.js';
 import { randomUUID } from 'node:crypto';
 import { prompt, loadPipeline } from './prompts.js';
+import { mediaArguments, recordMediaProgress } from './media-tool.js';
 
 export const dynamicTools = [
   {
     type: 'function',
+    name: 'video_media',
+    description:
+      '受控媒体工具。以下参数均不含必传的 command：preflight 不传其他参数；extend-timeline 必传 timeline、output，不传 scene 或 frames，自动读取待补帧记录；derive-timeline 仅适配财经模板，必传 timeline、project，时间轴明确 withBgm；assemble 必传 manifest；render 必传 scene、entry、composition、frames，可选 project、props、fixedMix。参数错误按提示改正后重试。检查返回状态；需要调整不等于已完成。',
+    inputSchema: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['command'],
+      properties: {
+        command: {
+          type: 'string',
+          enum: ['render', 'extend-timeline', 'derive-timeline', 'assemble', 'preflight'],
+        },
+        scene: { type: 'string' },
+        project: { type: 'string' },
+        entry: { type: 'string' },
+        composition: { type: 'string' },
+        props: { type: 'string' },
+        frames: { type: 'integer' },
+        fixedMix: { type: 'boolean' },
+        timeline: { type: 'string' },
+        output: { type: 'string' },
+        manifest: { type: 'string' },
+      },
+    },
+  },
+  {
+    type: 'function',
     name: 'video_tts',
     description:
-      '按确认分镜生成配音。只在 render 使用；每镜文本必须完整。speaker 仅表示栏目角色，Worker 会替换为服务器已获准的实际音色，外部保存收费凭证。',
+      '按确认分镜生成配音。只在 render 使用；每镜文本必须完整。speaker 为获准实际音色或显式配置的角色映射，缺少映射时报告，不能合并双主持音色，外部保存收费凭证。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -71,14 +99,24 @@ export const dynamicTools = [
 ];
 
 // 模型可选择栏目角色，但不能把任意字符串作为供应商音色 ID 透传。
-export function authorizeTtsItems(value: unknown, approvedSpeaker: string) {
+export function authorizeTtsItems(
+  value: unknown,
+  approvedSpeaker: string,
+  voices: Record<string, string> = {},
+) {
   if (!Array.isArray(value) || !approvedSpeaker)
     throw new AppError('INVALID_TTS_REQUEST', '配音清单或服务器音色配置无效');
   return value.map((item) => {
     if (!item || typeof item !== 'object')
       throw new AppError('INVALID_TTS_REQUEST', '配音条目无效');
-    const { id, sceneId, text } = item as Record<string, unknown>;
-    return { id, sceneId, text, speaker: approvedSpeaker };
+    const { id, sceneId, text, speaker } = item as Record<string, unknown>;
+    const approved = new Set([approvedSpeaker, ...Object.values(voices)]);
+    const resolved =
+      typeof speaker === 'string' && Object.hasOwn(voices, speaker) ? voices[speaker] : speaker;
+    // 角色必须有明确授权，不能把双主持静默替换成默认单音色。
+    if (typeof resolved !== 'string' || !approved.has(resolved))
+      throw new AppError('CAPABILITY_MISSING', '角色音色未获准或缺少 TTS_VOICES 映射');
+    return { id, sceneId, text, speaker: resolved };
   });
 }
 export function threadConfig(config: Config, w: Workspace) {
@@ -217,6 +255,58 @@ export class HostCodex {
         }) + '\n',
       );
       let text: string;
+      if (params.tool === 'video_media') {
+        const argv = mediaArguments(this.config, state.workspace, params.arguments);
+        let out: string;
+        try {
+          out = await this.processes.run(
+            state.lease.run.id,
+            state.workspace,
+            argv,
+            state.signal,
+            'tool',
+          );
+        } catch (e: any) {
+          // 非零退出由执行工具报告，保留原始错误；不伪装成功。
+          let failure: any;
+          try {
+            failure = JSON.parse(e.stdout?.trim());
+          } catch {}
+          await writeJson(path.join(state.workspace.root, '.control/last-issue.json'), {
+            code: failure?.error?.code ?? 'SHARED_PIPELINE_ERROR',
+            message: failure?.error?.message ?? String(e),
+            evidence: failure?.diagnostics,
+            scope: failure?.scope,
+            source: 'video_media',
+          });
+          throw e;
+        }
+        const value = JSON.parse(out.trim());
+        assertStage(this.config.toolkitRoot, 'mediaResult', value);
+        await writeJson(
+          path.join(state.workspace.root, '.control/last-issue.json'),
+          value.error
+            ? {
+                ...value.error,
+                scope: value.scope,
+                evidence: value.diagnostics,
+                source: 'video_media',
+              }
+            : null,
+        );
+        toolStatus = value.error && value.status !== 'adjustment_required' ? 'failed' : 'succeeded';
+        if (params.arguments.command === 'render')
+          await recordMediaProgress(
+            state.workspace.root,
+            state.lease.run.id,
+            params.arguments.scene,
+            value,
+          );
+        return {
+          success: toolStatus === 'succeeded',
+          contentItems: [{ type: 'inputText', text: JSON.stringify(value) }],
+        };
+      }
       if (params.tool === 'video_tts') {
         if (
           state.workspace.task.contractVersion !== 'video-two-stage/1' ||
@@ -225,7 +315,11 @@ export class HostCodex {
           throw new AppError('STAGE_FORBIDDEN', '当前阶段禁止配音');
         const cache = path.join(this.config.dataRoot, state.lease.run.task_id, 'tool-cache');
         await mkdir(cache, { recursive: true, mode: 0o700 });
-        const items = authorizeTtsItems(params.arguments?.items, this.config.ttsVoice);
+        const items = authorizeTtsItems(
+          params.arguments?.items,
+          this.config.ttsVoice,
+          this.config.ttsVoices,
+        );
         const script = path.join(cache, randomUUID() + '.json');
         await writeJson(script, {
           taskId: state.lease.run.task_id,
@@ -257,6 +351,10 @@ export class HostCodex {
         );
         await this.queue.withLease(state.lease, async () => {});
         const value = JSON.parse(out.trim());
+        await writeJson(
+          path.join(state.workspace.root, '.control/last-issue.json'),
+          value.error ? { ...value.error, source: 'video_tts' } : null,
+        );
         if (Array.isArray(value.clips)) {
           const registry = path.join(state.workspace.root, 'tool-audio', 'tts-request.json');
           let previous: any[] = [];
@@ -313,6 +411,20 @@ export class HostCodex {
       }
       throw new Error('Unsupported task tool');
     } catch (e) {
+      if (params.tool === 'video_tts') {
+        // 可信收费入口异常退出时不能猜测没有扣费，更不能交给下一轮重复发送。
+        await writeJson(path.join(state.workspace.root, '.control/last-issue.json'), {
+          code: e instanceof AppError ? e.code : 'EXTERNAL_RESULT_UNKNOWN',
+          message: e instanceof Error ? e.message : '收费调用结果未知',
+          source: 'video_tts',
+        });
+      } else if (params.tool === 'video_media' && e instanceof AppError) {
+        await writeJson(path.join(state.workspace.root, '.control/last-issue.json'), {
+          code: e.code,
+          message: e.message,
+          source: 'video_media',
+        });
+      }
       return {
         success: false,
         contentItems: [{ type: 'inputText', text: e instanceof Error ? e.message : 'Tool failed' }],
@@ -341,9 +453,7 @@ export class HostCodex {
       ) {
         try {
           // 同一个 turn 中的工具失败也受预算约束；不等模型自行结束才停止任务。
-          const budget = await readJson(
-            path.join(state.workspace.root, 'render', state.lease.run.id, 'execution.json'),
-          );
+          const budget = await readJson(path.join(state.workspace.root, '.control/execution.json'));
           if (typeof budget.stopReason === 'string' && budget.stopReason)
             state.reject(new AppError('REPAIR_BUDGET_EXHAUSTED', budget.stopReason));
         } catch (e) {
@@ -356,7 +466,20 @@ export class HostCodex {
   async run(lease: Lease, w: Workspace, signal: AbortSignal) {
     signal.throwIfAborted();
     const rules = loadPipeline(w.task, this.config.toolkitRoot);
-    const inputPrompt = prompt(w.task, w.root, this.config.toolkitRoot, rules);
+    let feedback: any = null;
+    try {
+      feedback = await readJson(path.join(w.root, '.control/feedback.json'));
+    } catch (e: any) {
+      if (e.code !== 'ENOENT') throw e;
+    }
+    const inputPrompt =
+      prompt(w.task, w.root, this.config.toolkitRoot, rules) +
+      (w.task.stage === 'render'
+        ? `\n获准默认音色：${this.config.ttsVoice}；角色映射：${JSON.stringify(this.config.ttsVoices ?? {})}。`
+        : '') +
+      (feedback
+        ? `\n本轮可信续跑反馈：${JSON.stringify(feedback)}\n继续当前任务，不重新 Analysis，不修改公共链路。`
+        : '');
     await writeJson(
       path.join(w.root, 'output/pipeline-files.json'),
       rules.map(({ source, sha256 }) => ({ source, sha256 })),
@@ -371,10 +494,28 @@ export class HostCodex {
       developerInstructions:
         'All shell commands and file operations must use video_exec. All visual inspection must use video_view_image. These tools execute in an isolated per-task Ubuntu namespace. Never use other execution tools or launch background work.',
     };
-    const response = await this.rpc.request('thread/start', {
-      ...args,
-      dynamicTools: lease.run.stage === 'render' ? dynamicTools : [],
-    });
+    const previous = (
+      await this.queue.db.query('SELECT thread_id,workspace FROM host_executions WHERE run_id=$1', [
+        lease.run.id,
+      ])
+    ).rows[0];
+    let response: any;
+    if (feedback && previous?.thread_id && previous.workspace === w.root) {
+      try {
+        response = await this.rpc.request('thread/resume', {
+          ...args,
+          threadId: previous.thread_id,
+        });
+      } catch {
+        // 上下文不可恢复时只换模型上下文，不换业务 run 或清空制作现场。
+        signal.throwIfAborted();
+      }
+    }
+    if (!response)
+      response = await this.rpc.request('thread/start', {
+        ...args,
+        dynamicTools: lease.run.stage === 'render' ? dynamicTools : [],
+      });
     if (response.activePermissionProfile?.id !== 'videocut')
       throw new AppError('SANDBOX_POLICY_UNSUPPORTED', 'Codex 未应用任务权限配置，拒绝执行');
     const threadId = response.thread.id;
@@ -494,6 +635,7 @@ export class HostCodex {
           error: null,
         };
       }
+      assertStage(this.config.toolkitRoot, 'modelResponse', result);
       await writeJson(path.join(w.root, 'output/agent-response.json'), result);
     } finally {
       clearInterval(quiet);

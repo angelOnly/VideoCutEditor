@@ -2,10 +2,10 @@ import {AbsoluteFill, Easing, interpolate, useCurrentFrame} from 'remotion';
 
 export const ChapterTransition: React.FC<{title: string; duration: number}> = ({title, duration}) => {
   const frame = useCurrentFrame();
-  const progress = interpolate(frame, [0, 10, Math.max(12, duration - 12), duration], [0, 1, 1, 0], {
-    extrapolateLeft: 'clamp',
-    extrapolateRight: 'clamp',
-    easing: Easing.out(Easing.cubic),
+  // 短转场按自身区间压缩进退场，避免固定插值点倒序。
+  const last = Math.max(1, duration - 1);
+  const progress = duration <= 2 ? 1 : interpolate(frame / last, [0, .3, .7, 1], [0, 1, 1, 0], {
+    extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: Easing.out(Easing.cubic),
   });
   return (
     <AbsoluteFill
@@ -30,7 +30,7 @@ export const ChapterTransition: React.FC<{title: string; duration: number}> = ({
         <div style={{fontSize: 22, color: '#74e9f3', letterSpacing: 6, marginBottom: 18}}>
           FINANCE INSIGHT / CHAPTER
         </div>
-        <div style={{fontSize: 58, fontWeight: 800}}>{title}</div>
+        <div data-fit style={{fontSize: 58, fontWeight: 800, maxWidth: 1480, maxHeight: 240, overflowWrap: 'anywhere'}}>{title}</div>
       </div>
     </AbsoluteFill>
   );

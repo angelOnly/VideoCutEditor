@@ -22,6 +22,8 @@ for (const f of [
   'generate_dialogue_audio.py',
   'two_stage.py',
   'stage_media.py',
+  'actual_timeline.py',
+  'finance_timeline.py',
   'stage_tts.py',
   'cached_tts.py',
   'worker_stage.py',

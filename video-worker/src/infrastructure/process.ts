@@ -31,11 +31,22 @@ export async function command(
       stderr = (stderr + b).slice(-32000);
     });
     p.on('error', reject);
-    p.on('close', (code) => {
+    p.on('close', (code, exitSignal) => {
       clearTimeout(timer);
       opts.signal?.removeEventListener('abort', kill);
       if (code === 0 && !opts.signal?.aborted) resolve(stdout);
-      else reject(new Error(`${file} exited ${code}: ${(stderr || stdout).slice(-4000)}`));
+      else
+        reject(
+          Object.assign(
+            new Error(`${file} exited ${code ?? exitSignal}: ${(stderr || stdout).slice(-4000)}`),
+            {
+              stdout,
+              stderr,
+              exitCode: code,
+              exitSignal,
+            },
+          ),
+        );
     });
   });
 }

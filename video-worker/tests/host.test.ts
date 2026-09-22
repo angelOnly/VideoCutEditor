@@ -92,6 +92,8 @@ test('host namespace hides shared roots, login and env; trusted tools alone may 
   assert.ok(!args.includes(c.mediaRoot));
   assert.ok(!args.includes('/var/run/docker.sock'));
   assert.ok(!args.includes(path.dirname(c.toolkitRoot)));
+  assert.ok(args.includes(path.join(c.toolkitRoot, 'tools/finance_timeline.py')));
+  assert.ok(args.includes(path.join(c.toolkitRoot, 'tools/actual_timeline.py')));
   assert.equal(args[args.indexOf(w.root) - 1], '--ro-bind');
   assert.ok(args.includes(path.join(w.root, 'output')));
   const readonly = bubblewrapArgs(c, w, ['python3'], 'validate');
@@ -125,6 +127,14 @@ test('host namespace hides shared roots, login and env; trusted tools alone may 
     ),
     /REMOTION_BROWSER_EXECUTABLE/,
   );
+  const renderPrompt = prompt(
+    { contractVersion: 'video-two-stage/1', stage: 'render', runId: 'run-a' },
+    w.root,
+    c.toolkitRoot,
+  );
+  assert.match(renderPrompt, /估时仅供展示/);
+  assert.match(renderPrompt, /TIMELINE_EXTEND_REQUIRED/);
+  assert.match(renderPrompt, /fixedMix=true/);
 });
 
 test('两阶段渲染只授权当前 run 的 render 目录写入', () => {
@@ -312,7 +322,7 @@ test('阶段工具耗尽预算后中断当前 turn 并清理执行进程', async
     };
     const processes: any = {
       run: async () => {
-        const folder = path.join(w.root, 'render', lease.run.id);
+        const folder = path.join(w.root, '.control');
         await mkdir(folder, { recursive: true });
         await writeFile(
           path.join(folder, 'execution.json'),

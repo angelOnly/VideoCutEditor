@@ -41,6 +41,7 @@ export interface Config {
     'minimal' | 'low' | 'medium' | 'high' | 'xhigh' | 'max' | 'ultra' | 'persistent';
   codexBaseUrl?: string;
   ttsVoice: string;
+  ttsVoices?: Record<string, string>;
   ttsResourceId: string;
   python: string;
   templates: Record<
@@ -151,6 +152,9 @@ export function loadConfig(envFile = path.resolve(serviceRoot, '../.env')): Conf
     codexBaseUrl: process.env.CODEX_BASE_URL || undefined,
     ttsVoice:
       process.env.TTS_VOICE || process.env.DOUBAO_TTS_SPEAKER || 'zh_female_xiaohe_uranus_bigtts',
+    ttsVoices: process.env.TTS_VOICES
+      ? z.record(z.string().min(1), z.string().min(1)).parse(JSON.parse(process.env.TTS_VOICES))
+      : undefined,
     ttsResourceId: process.env.DOUBAO_TTS_RESOURCE_ID ?? 'seed-tts-2.0',
     python: process.env.PYTHON || path.join(serviceRoot, '.venv/bin/python3'),
     templates,

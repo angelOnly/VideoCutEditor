@@ -19,6 +19,10 @@ export async function validate(sandbox: Sandbox, l: Lease, w: Workspace, signal:
     // 缺少执行能力需外部补齐环境；重新启动同一模型 turn 不会恢复能力。
     if (response.status === 'failed' && response.error?.code === 'CAPABILITY_MISSING')
       throw new AppError('CAPABILITY_MISSING', response.error?.message ?? '执行环境缺少必需能力');
+    if (response.status === 'human_required')
+      throw new AppError('HUMAN_REVIEW_REQUESTED', response.error?.message ?? '模型请求人工检查');
+    if (response.status === 'continue_required')
+      throw new AppError('PRODUCTION_INCOMPLETE', response.error?.message ?? '制作尚未完成');
     if (response.status === 'failed')
       throw new AppError(
         'VALIDATION_FAILED',
@@ -28,7 +32,10 @@ export async function validate(sandbox: Sandbox, l: Lease, w: Workspace, signal:
     const file = await safeFile(w.root, response.artifact);
     const report = await sandbox.validate(l, w, signal);
     if (!report.passed)
-      throw new AppError('VALIDATION_FAILED', report.error?.message ?? '候选未通过终检');
+      throw new AppError(
+        report.error?.code ?? 'VALIDATION_FAILED',
+        report.error?.message ?? '候选未通过终检',
+      );
     if ((await hashFile(file)) !== report.artifactSha256)
       throw new AppError('VALIDATION_FAILED', '终检后候选发生变化');
     return readJson(file);

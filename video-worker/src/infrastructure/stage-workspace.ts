@@ -217,7 +217,15 @@ export async function prepareStage(
     l.run.attempt > 1 ? path.join(path.dirname(root), `attempt_${l.run.attempt - 1}`) : null;
   if (priorRoot && l.run.stage === 'render') {
     // 仅恢复本任务资料；进程记录留在只读历史目录，不作为新 namespace 的活跃 PID。
-    for (const directory of ['input', 'output', 'analysis', 'render', 'project', 'tool-audio']) {
+    for (const directory of [
+      'input',
+      'output',
+      'analysis',
+      'render',
+      'project',
+      'tool-audio',
+      '.control',
+    ]) {
       try {
         await copyTree(path.join(priorRoot, directory), path.join(root, 'history', directory));
       } catch (e: any) {
@@ -225,6 +233,28 @@ export async function prepareStage(
       }
     }
     await copyTree(path.join(priorRoot, 'project'), path.join(root, 'project'));
+    // 恢复同一业务 run 的制作资料；新请求和控制账本由可信准备层重建。
+    for (const directory of ['output', 'render', 'tool-audio', 'cache']) {
+      try {
+        await copyTree(path.join(priorRoot, directory), path.join(root, directory));
+      } catch (e: any) {
+        if (e.code !== 'ENOENT') throw e;
+      }
+    }
+    const work = path.join(root, 'render', l.run.id, 'work');
+    try {
+      for (const file of await readdir(work)) {
+        if (!file.endsWith('.process.json')) continue;
+        const record = await readJson(path.join(work, file));
+        await writeJson(path.join(work, file), {
+          ...record,
+          state: 'archived',
+          note: '旧进程已由恢复管理器确认停止，不作为新执行的活跃 PID',
+        });
+      }
+    } catch (e: any) {
+      if (e.code !== 'ENOENT') throw e;
+    }
     request.previousArtifacts = 'history/output/agent-response.json';
     try {
       await safeFile(root, request.previousArtifacts);
@@ -233,6 +263,17 @@ export async function prepareStage(
     }
   }
   await mkdir(path.join(root, 'tool-audio'), { recursive: true });
+  await mkdir(path.join(root, '.control'), { recursive: true, mode: 0o700 });
+  await writeJson(path.join(root, '.control/policy.json'), { budgetOwner: 'worker' });
+  if (l.run.recovery?.approvedVersion)
+    await writeJson(path.join(root, '.control/feedback.json'), {
+      runId: l.run.id,
+      action: 'resume_after_human',
+      previousIssue: l.run.recovery.issue,
+      approvedVersion: l.run.recovery.approvedVersion,
+      instruction:
+        '人工已批准恢复。核对当前工具和制作资料，保留有效配音，重验或重渲受影响产物；不要重跑 Analysis。',
+    });
   const relative = stagePath(request);
   await mkdir(path.dirname(path.join(root, relative)), { recursive: true });
   await mkdir(path.join(path.dirname(path.join(root, relative)), 'work'), { recursive: true });
