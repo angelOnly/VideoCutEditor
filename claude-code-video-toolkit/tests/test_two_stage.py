@@ -166,6 +166,38 @@ class ContractTests(Fixture):
         with self.assertRaises(StageError):
             with execution(render,'不能绕过修复预算'):pass
 
+    def test_explicit_cancellation_preserves_resume_and_accounts_wall_time(self):
+        render=self.render_request()
+        for _ in range(4):
+            with self.assertRaises(StageError) as error:
+                with execution(render,'render-batch'):
+                    raise StageError('TASK_CANCELLED','资源避让停止当前批次')
+            self.assertEqual(error.exception.code,'TASK_CANCELLED')
+        state=read(render.parent/'execution.json')
+        self.assertEqual(state['repairRounds'],0)
+        self.assertEqual(len(state['events']),4)
+        self.assertEqual(len(state['operations']),4)
+        self.assertGreater(state['elapsedSeconds'],0)
+        self.assertNotIn('activeSince',state);self.assertNotIn('stopReason',state)
+        self.assertNotIn('render-batch',state.get('failures',{}))
+        with execution(render,'render-batch'):pass
+        self.assertEqual(len(read(render.parent/'execution.json')['operations']),5)
+
+    def test_cancellation_does_not_clear_existing_real_failures(self):
+        render=self.render_request()
+        for _ in range(2):
+            with self.assertRaises(StageError):
+                with execution(render,'render-batch'):raise StageError('MEDIA_INVALID','实际渲染错误')
+        before=read(render.parent/'execution.json')
+        with self.assertRaises(StageError):
+            with execution(render,'render-batch'):raise StageError('TASK_CANCELLED','取消')
+        after=read(render.parent/'execution.json')
+        self.assertEqual(after['repairRounds'],before['repairRounds'])
+        self.assertEqual(after['failures'],before['failures'])
+        with self.assertRaises(StageError) as error:
+            with execution(render,'render-batch'):raise StageError('MEDIA_INVALID','第三次实际错误')
+        self.assertEqual(error.exception.code,'REPAIR_BUDGET_EXHAUSTED')
+
     def test_tool_failures_stop_same_turn_without_explicit_repair(self):
         render=self.render_request()
         for i in range(3):

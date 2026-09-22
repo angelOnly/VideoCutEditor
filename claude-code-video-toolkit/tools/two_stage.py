@@ -412,6 +412,11 @@ def execution(request_path, action):
         try:
             yield root, request, remaining
         except Exception as exc:
+            if getattr(exc, 'code', '') == 'TASK_CANCELLED':
+                # 主动取消或资源避让不是制作失败；仍由 finally 结算实际墙钟。
+                state.setdefault('events', []).append({'action': action, 'code': 'TASK_CANCELLED',
+                                                       'message': str(exc), 'at': time.time()})
+                raise
             if getattr(exc, 'code', '') in ('TIMELINE_EXTEND_REQUIRED', 'CONTENT_TIMELINE_REQUIRED', 'MIX_REBUILD_REQUIRED'):
                 # 正常时间轴协商不扣修复次数；同一混音、同一帧数不得无进展重试。
                 key = json_digest({'action': action, 'details': exc.details})

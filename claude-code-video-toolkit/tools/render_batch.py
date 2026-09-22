@@ -62,7 +62,7 @@ def inputs(root, request_path, request, project, entry, scenes, modules, browser
                          for s in scenes if s.get('fixedMix')},
             'planHash': request['confirmation']['planSha256'], 'spec': request['outputSpec'],
             'packages': packages, 'browser': digest(Path(browser)),
-            'tools': {name: digest(Path(__file__).with_name(name)) for name in ('render_batch.py', 'stage_media.py', 'render_scene.cjs')}}
+            'tools': {name: digest(Path(__file__).with_name(name)) for name in ('render_batch.py', 'stage_media.py', 'render_scene.cjs', 'two_stage.py')}}
 
 
 def freeze_batch(args):
