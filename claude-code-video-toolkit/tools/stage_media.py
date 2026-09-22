@@ -430,12 +430,18 @@ def render_scene(request_path, scene_id, project_name, entry_name, composition, 
         fingerprint = json_digest({'project': project_entries, 'entry': str(entry), 'composition': composition,
                                    'props': props, 'spec': request['outputSpec'], 'frames': frames, 'packages': packages,
                                    'confirmedPlanSha256': request['confirmation']['planSha256'],
-                                   'fixedMix': fixed, 'mediaTool': digest(Path(__file__)),
+                                   'fixedMix': fixed, 'timelineHash': timeline_hash, 'mediaTool': digest(Path(__file__)),
                                    'renderer': digest(Path(__file__).with_name('render_scene.cjs')),
                                    'batchVersion': batch_context['version'] if batch_context else None})
         if marker.exists() and out.exists():
             old = read(marker)
-            if old['fingerprint'] == fingerprint and old.get('timelineHash') == timeline_hash and old['sha256'] == digest(out):
+            mix_valid = False
+            try:
+                saved_mix = old['mix']
+                mix_valid = digest(local(root, saved_mix['path'])) == saved_mix['sha256']
+            except (OSError, ValueError, KeyError, TypeError):
+                pass
+            if mix_valid and old['fingerprint'] == fingerprint and old.get('timelineHash') == timeline_hash and old['sha256'] == digest(out):
                 return {**receipt, **validate_mp4(out, request['outputSpec'], frames), 'path': str(out.relative_to(root)),
                         'mix': old.get('mix'), 'evidence': extract_frames(root, request, scene_id, out, frames), 'reused': True}
         # 编码和封装分开缓存：只修封装时复用原画面及 PCM，不再次启动浏览器。

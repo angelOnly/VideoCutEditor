@@ -12,7 +12,7 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'tools'))
 from test_two_stage import Fixture
-from two_stage import StageError, read, write, json_digest, active_processes
+from two_stage import StageError, read, write, json_digest, active_processes, digest
 from render_batch import freeze_batch, render_batch
 import stage_media
 import render_batch as batch_module
@@ -161,6 +161,50 @@ class BatchTests(Fixture):
         with patch('stage_media.render_scene', side_effect=AssertionError('不允许派发旧版本')):
             with self.assertRaises(StageError) as error: render_batch(self.args)
         self.assertEqual(error.exception.code, 'TIMELINE_STALE')
+
+    def render_with_fake_media(self):
+        """只验证缓存决策，不启动 FFmpeg/Chrome，不作为媒体验收。"""
+        from contextlib import ExitStack
+        stack = ExitStack(); self.addCleanup(stack.close)
+        def supervise(argv, cwd, log, done, timeout):
+            config = read(Path(done).parent/'config.json')
+            Path(config['output']).write_bytes(b'raw-video')
+            Path(config['audio']).write_bytes(b'original-mix')
+            write(done, {'ok': True})
+            return {}
+        def mux(video, mix, target, *args):
+            Path(target).write_bytes(b'encoded-video')
+            return {'sha256': digest(target)}
+        supervisor = stack.enter_context(patch('stage_media.supervise', side_effect=supervise))
+        stack.enter_context(patch('stage_media.check_speech_coverage'))
+        stack.enter_context(patch('stage_media.scene_audio_contract', return_value={}))
+        stack.enter_context(patch('stage_media.audio_info', return_value={'durationSeconds': 1}))
+        stack.enter_context(patch('stage_media.mux_scene', side_effect=mux))
+        stack.enter_context(patch('stage_media.validate_mp4', side_effect=lambda path, *args: {'sha256': digest(path)}))
+        stack.enter_context(patch('stage_media.extract_frames', return_value=[]))
+        def render():
+            return stage_media.render_scene(self.args.request, 'scene_1', 'project', 'project/index.js',
+                'One', None, 10, self.args.node, self.args.modules, self.args.browser)
+        return render, supervisor
+
+    def test_single_scene_raw_cache_cannot_be_relabelled_to_new_timeline(self):
+        render, supervisor = self.render_with_fake_media()
+        first = render()
+        write(self.args.request.parent/'timeline.json', {'newGlobalTiming': True})
+        second = render()
+        self.assertNotEqual(first['timelineHash'], second['timelineHash'])
+        self.assertFalse(second['renderReused'])
+        self.assertEqual(supervisor.call_count, 2)
+
+    def test_single_scene_cached_delivery_rechecks_mix_bytes(self):
+        render, supervisor = self.render_with_fake_media()
+        first = render()
+        self.assertTrue(render()['reused'])
+        (self.job/first['mix']['path']).write_bytes(b'corrupted-mix')
+        repaired = render()
+        self.assertFalse(repaired['reused'])
+        self.assertEqual(supervisor.call_count, 2)
+        self.assertEqual(digest(self.job/repaired['mix']['path']), repaired['mix']['sha256'])
 
     def test_duplicate_scene_rejected(self):
         write(self.job/'scenes.json', [self.scenes[0], self.scenes[0]])
