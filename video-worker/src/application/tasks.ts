@@ -1,5 +1,10 @@
 import type { Config, Tenant } from '../config.js';
-import { normalizeAnalysisRequest, normalizeRenderRequest } from '../contracts/ifeng.js';
+import {
+  normalizeAnalysisRequest,
+  normalizeRenderRequest,
+  renderRequest,
+  webRenderRequest,
+} from '../contracts/ifeng.js';
 import { fail } from '../domain/task.js';
 import { TaskRepository } from '../infrastructure/task-repository.js';
 export class Tasks {
@@ -29,12 +34,13 @@ export class Tasks {
     });
   }
   async render(tenant: Tenant, body: unknown) {
-    const taskId =
-      typeof body === 'object' && body !== null && 'taskId' in body
-        ? String((body as { taskId: unknown }).taskId)
-        : '';
-    const current = await this.repo.currentConfig(tenant.id, taskId);
-    const { input } = normalizeRenderRequest(body, {
+    const canonical = renderRequest.safeParse(body);
+    if (canonical.success)
+      return this.repo.submit(tenant.id, 'render', structuredClone(canonical.data), null);
+
+    const web = webRenderRequest.parse(body);
+    const current = await this.repo.currentConfig(tenant.id, web.taskId);
+    const { input } = normalizeRenderRequest(web, {
       planVersion: current.planVersion,
       templateId: current.config.templateId,
       digitalHumanAccountId: current.config.digitalHumanAccountId,

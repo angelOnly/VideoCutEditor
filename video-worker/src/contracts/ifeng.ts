@@ -115,7 +115,7 @@ export const renderRequest = z
   })
   .strict();
 
-const webRenderRequest = z
+export const webRenderRequest = z
   .object({
     taskId: id,
     templateId: z.string().max(128).optional().default(''),
