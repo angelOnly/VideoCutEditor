@@ -58,7 +58,7 @@ const webAnalysisRequest = z
         digitalHumanId: z.string().max(128).optional().default(''),
         templateId: z.string().max(128).optional().default(''),
         customTemplateId: z.string().max(128).optional().default(''),
-    })
+      })
       .strict(),
     otherMaterial: z
       .object({
