@@ -87,7 +87,7 @@ export function normalizeAnalysisRequest(body: unknown) {
   return {
     input: analysisRequest.parse({
       schemaVersion: 2,
-      requestId: `web-${web.taskId}-analysis-${fingerprint}`,
+      requestId: `web-v2-${web.taskId}-analysis-${fingerprint}`,
       taskId: web.taskId,
       script: web.content,
       otherRequirements: web.otherRequirements,

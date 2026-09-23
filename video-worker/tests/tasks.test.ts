@@ -24,7 +24,7 @@ test('网页数据解读请求映射为定制模板的横版两阶段请求', ()
   assert.equal(input.plugin.templateId, '2');
   assert.deepEqual(input.outputSpec, { width: 1920, height: 1080, fps: 30 });
   assert.deepEqual(source, raw);
-  assert.match(input.requestId, /^web-web-task-1-analysis-[a-f0-9]{16}$/);
+  assert.match(input.requestId, /^web-v2-web-task-1-analysis-[a-f0-9]{16}$/);
 });
 
 test('six tasks share four persistent slots; releases admit FIFO successors', async () => {

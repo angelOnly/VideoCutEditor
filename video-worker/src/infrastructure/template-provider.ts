@@ -103,7 +103,20 @@ async function freezeTree(root: string, files: TemplateFile[]) {
   }
   await visit(root);
 }
-async function extractArchive(archive: string, target: string, expectedDocument?: string) {
+function documentStem(file: string) {
+  return path.posix.basename(file, '.md').normalize('NFC');
+}
+
+function packageStem(file: string) {
+  return path.posix.basename(file, path.posix.extname(file)).normalize('NFC');
+}
+
+async function extractArchive(
+  archive: string,
+  target: string,
+  expectedDocument?: string,
+  packageName?: string,
+) {
   const archiveStat = await stat(archive);
   if (archiveStat.size <= 0 || archiveStat.size > MAX_ARCHIVE_BYTES)
     throw templateError('TEMPLATE_UNAVAILABLE', '模板压缩包大小不合法');
@@ -199,12 +212,13 @@ async function extractArchive(archive: string, target: string, expectedDocument?
       throw templateError('TEMPLATE_INVALID', '模板归档必须包含一个根目录和文件');
     const markdown = files.filter((file) => file.path.toLowerCase().endsWith('.md'));
     // 部分历史 ZIP 的中文文件名未按 UTF-8 标记；仅有一个 Markdown 时可安全回退到该入口。
-    const document = expectedDocument
-      ? (files.find((file) => file.path === expectedDocument)?.path ??
-        (markdown.length === 1 ? markdown[0].path : undefined))
-      : markdown.length === 1
-        ? markdown[0].path
-        : undefined;
+    const packageDocument = packageName
+      ? markdown.find((file) => documentStem(file.path) === packageStem(packageName))?.path
+      : undefined;
+    const document =
+      (expectedDocument
+        ? files.find((file) => file.path === expectedDocument)?.path
+        : packageDocument) ?? (markdown.length === 1 ? markdown[0].path : undefined);
     if (!document) throw templateError('TEMPLATE_INVALID', '模板归档缺少唯一的 Markdown 入口文件');
     await freezeTree(staging, files);
     await rename(staging, target);
@@ -344,7 +358,7 @@ export class TemplateProvider {
     try {
       const packageUrl = this.packageUrl(detail.package_url);
       await downloadArchive(packageUrl, archive);
-      const extracted = await extractArchive(archive, frozenPath);
+      const extracted = await extractArchive(archive, frozenPath, undefined, detail.package_name);
       return {
         id,
         version: `sha256:${extracted.archiveSha256}`,
