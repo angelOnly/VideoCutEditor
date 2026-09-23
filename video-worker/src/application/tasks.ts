@@ -12,7 +12,7 @@ export class Tasks {
     const template = this.config.templates[input.plugin.templateId];
     if (!template && !this.config.customTemplateApiBaseUrl)
       fail('TEMPLATE_UNSUPPORTED', '未配置模板来源');
-    return this.repo.submit(tenant.id, 'analysis', structuredClone(body), {
+    return this.repo.submit(tenant.id, 'analysis', structuredClone(input), {
       executionProtocol: 'video-pipeline-io/1',
       requirements: input.otherRequirements,
       templateId: input.plugin.templateId,
