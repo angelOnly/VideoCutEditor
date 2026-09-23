@@ -7,6 +7,25 @@ import { Queue } from '../src/infrastructure/queue.js';
 import { publishResult } from '../src/application/results.js';
 import { Storage } from '../src/infrastructure/storage.js';
 import { createApi } from '../src/api/routes.js';
+import { normalizeAnalysisRequest } from '../src/contracts/ifeng.js';
+
+test('网页数据解读请求映射为定制模板的横版两阶段请求', () => {
+  const raw = {
+    taskId: 'web-task-1',
+    content: '首个全球90%的AI芯片',
+    otherRequirements: '',
+    plugin: { digitalHumanId: '', templateId: '', customTemplateId: '2' },
+    otherMaterial: { picInfoList: [], videoInfoList: [] },
+  };
+  const { input, source } = normalizeAnalysisRequest(raw);
+  assert.equal(input.schemaVersion, 2);
+  assert.equal(input.taskId, raw.taskId);
+  assert.equal(input.script, raw.content);
+  assert.equal(input.plugin.templateId, '2');
+  assert.deepEqual(input.outputSpec, { width: 1920, height: 1080, fps: 30 });
+  assert.deepEqual(source, raw);
+  assert.match(input.requestId, /^web-web-task-1-analysis-[a-f0-9]{16}$/);
+});
 
 test('six tasks share four persistent slots; releases admit FIFO successors', async () => {
   const db = await database();

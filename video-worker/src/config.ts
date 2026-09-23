@@ -18,6 +18,7 @@ export interface Config {
   executor: 'host';
   executionProtocol?: 'video-pipeline-io/1' | 'video-two-stage/1';
   customTemplateApiBaseUrl?: string;
+  customTemplateApiBearerToken?: string;
   customTemplatePackageOrigins: string[];
   codexPath: string;
   codexHome: string;
@@ -108,6 +109,7 @@ export function loadConfig(envFile = path.resolve(serviceRoot, '../.env')): Conf
       .transform(() => 'video-pipeline-io/1' as const)
       .parse(process.env.WORKER_PROTOCOL ?? 'video-pipeline-io/1'),
     customTemplateApiBaseUrl: process.env.CUSTOM_TEMPLATE_API_BASE_URL || undefined,
+    customTemplateApiBearerToken: process.env.CUSTOM_TEMPLATE_API_BEARER_TOKEN || undefined,
     customTemplatePackageOrigins: (process.env.CUSTOM_TEMPLATE_PACKAGE_ORIGINS ?? '')
       .split(',')
       .map((origin) => origin.trim())

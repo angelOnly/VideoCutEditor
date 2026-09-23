@@ -1,5 +1,5 @@
 import type { Config, Tenant } from '../config.js';
-import { analysisRequest, renderRequest } from '../contracts/ifeng.js';
+import { normalizeAnalysisRequest, renderRequest } from '../contracts/ifeng.js';
 import { fail } from '../domain/task.js';
 import { TaskRepository } from '../infrastructure/task-repository.js';
 export class Tasks {
@@ -8,7 +8,7 @@ export class Tasks {
     private config: Config,
   ) {}
   async analysis(tenant: Tenant, body: unknown) {
-    const input = analysisRequest.parse(body);
+    const { input, source } = normalizeAnalysisRequest(body);
     const template = this.config.templates[input.plugin.templateId];
     if (!template && !this.config.customTemplateApiBaseUrl)
       fail('TEMPLATE_UNSUPPORTED', '未配置模板来源');
@@ -24,6 +24,8 @@ export class Tasks {
       digitalHumanId: input.plugin.digitalHumanId,
       script: input.script,
       narration: input.narration,
+      // 保留平台原始请求，便于追查网页到 Worker 的字段映射。
+      sourceRequest: structuredClone(source),
     });
   }
   async render(tenant: Tenant, body: unknown) {

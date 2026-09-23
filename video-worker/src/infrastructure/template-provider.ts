@@ -314,7 +314,14 @@ export class TemplateProvider {
     );
     let response: Response;
     try {
-      response = await fetch(endpoint, { signal: AbortSignal.timeout(15000), redirect: 'error' });
+      response = await fetch(endpoint, {
+        signal: AbortSignal.timeout(15000),
+        redirect: 'error',
+        // 模板详情仍由平台鉴权；令牌只从受保护的部署配置读取。
+        headers: this.config.customTemplateApiBearerToken
+          ? { authorization: `Bearer ${this.config.customTemplateApiBearerToken}` }
+          : undefined,
+      });
     } catch {
       throw templateError('TEMPLATE_UNAVAILABLE', '定制化模板详情请求失败');
     }

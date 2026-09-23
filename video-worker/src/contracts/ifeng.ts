@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { createHash } from 'node:crypto';
+import { fail } from '../domain/task.js';
 const id = z.string().min(1).max(128);
 const file = z
   .string()
@@ -41,6 +43,61 @@ export const analysisRequest = z
     if (new Set(a.map((x) => x.assetId)).size !== a.length)
       c.addIssue({ code: 'custom', message: '素材 assetId 重复' });
   });
+
+/*
+ * 网页工作台的下游协议仍使用 content/customTemplateId，和 Worker 的 v2
+ * 请求字段不同。这里仅在入口处归一化，后续两阶段执行始终使用 v2 协议。
+ */
+const webAnalysisRequest = z
+  .object({
+    taskId: id,
+    content: z.string().min(1).max(50000),
+    otherRequirements: z.string().max(10000).optional().default(''),
+    plugin: z
+      .object({
+        digitalHumanId: z.string().max(128).optional().default(''),
+        templateId: z.string().max(128).optional().default(''),
+        customTemplateId: z.string().max(128).optional().default(''),
+      })
+      .strict(),
+    otherMaterial: z
+      .object({ picInfoList: z.array(z.object({ url: z.string() }).strict()).max(200), videoInfoList: z.array(z.object({ url: z.string() }).strict()).max(200) })
+      .strict(),
+  })
+  .strict();
+
+export function normalizeAnalysisRequest(body: unknown) {
+  const canonical = analysisRequest.safeParse(body);
+  if (canonical.success) return { input: canonical.data, source: body };
+
+  const web = webAnalysisRequest.parse(body);
+  if (web.otherMaterial.picInfoList.length || web.otherMaterial.videoInfoList.length)
+    fail('ASSET_MAPPING_REQUIRED', '网页补充素材尚未映射到 Worker 的受控文件目录');
+  const templateId = web.plugin.customTemplateId || web.plugin.templateId;
+  if (!templateId) fail('TEMPLATE_REQUIRED', '网页任务未选择模板');
+  const fingerprint = createHash('sha256')
+    .update(JSON.stringify({ content: web.content, requirements: web.otherRequirements, templateId }))
+    .digest('hex')
+    .slice(0, 16);
+  return {
+    input: analysisRequest.parse({
+      schemaVersion: 2,
+      requestId: `web-${web.taskId}-analysis-${fingerprint}`,
+      taskId: web.taskId,
+      script: web.content,
+      otherRequirements: web.otherRequirements,
+      digitalHumanAccounId: '',
+      plugin: { digitalHumanId: web.plugin.digitalHumanId, templateId },
+      narration: null,
+      // 定制模板的时间线固定为 1920×1080 / 30fps。
+      outputSpec: web.plugin.customTemplateId
+        ? { width: 1920, height: 1080, fps: 30 }
+        : { width: 1080, height: 1920, fps: 30 },
+      otherMaterial: { picInfoList: [], videoInfoList: [] },
+    }),
+    source: body,
+  };
+}
 export const renderRequest = z
   .object({
     ...base,
