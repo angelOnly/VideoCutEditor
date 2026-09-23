@@ -7,7 +7,7 @@ import { Queue } from '../src/infrastructure/queue.js';
 import { publishResult } from '../src/application/results.js';
 import { Storage } from '../src/infrastructure/storage.js';
 import { createApi } from '../src/api/routes.js';
-import { normalizeAnalysisRequest } from '../src/contracts/ifeng.js';
+import { normalizeAnalysisRequest, normalizeRenderRequest } from '../src/contracts/ifeng.js';
 
 test('网页数据解读请求映射为定制模板的横版两阶段请求', () => {
   const raw = {
@@ -25,6 +25,28 @@ test('网页数据解读请求映射为定制模板的横版两阶段请求', ()
   assert.deepEqual(input.outputSpec, { width: 1920, height: 1080, fps: 30 });
   assert.deepEqual(source, raw);
   assert.match(input.requestId, /^web-v2-web-task-1-analysis-[a-f0-9]{16}$/);
+});
+
+test('网页渲染请求复用已确认的模板和方案版本', () => {
+  const raw = {
+    taskId: 'web-task-1',
+    templateId: '',
+    introUrl: '',
+    introIndex: 0,
+    outroUrl: '',
+    outroIndex: 0,
+    dataList: [{ id: '1', content: '首个全球90%的AI芯片', dur: 7.2, extraData: {} }],
+  };
+  const { input } = normalizeRenderRequest(raw, {
+    planVersion: 1,
+    templateId: '2',
+    digitalHumanAccountId: '',
+  });
+  assert.equal(input.basePlanVersion, 1);
+  assert.equal(input.templateId, '2');
+  assert.equal(input.field_5, '');
+  assert.deepEqual(input.dataList, raw.dataList);
+  assert.match(input.requestId, /^web-v1-web-task-1-render-[a-f0-9]{16}$/);
 });
 
 test('six tasks share four persistent slots; releases admit FIFO successors', async () => {

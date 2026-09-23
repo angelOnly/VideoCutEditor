@@ -6,6 +6,16 @@ import { digest } from '../domain/scene.js';
 import { accepted, callback } from '../integrations/ifeng/mapper.js';
 export class TaskRepository {
   constructor(public db: Database) {}
+  async currentConfig(tenant: string, externalId: string) {
+    const task = (
+      await this.db.query(
+        'SELECT config,plan_version FROM tasks WHERE tenant=$1 AND external_id=$2',
+        [tenant, externalId],
+      )
+    ).rows[0];
+    if (!task) fail('TASK_NOT_FOUND', '请先提交分析任务', 404);
+    return { config: task.config, planVersion: task.plan_version };
+  }
   async submit(tenant: string, stage: Stage, input: any, config: any) {
     return this.db.tx(async (q) => {
       await lock(q);

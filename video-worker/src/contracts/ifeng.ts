@@ -114,5 +114,46 @@ export const renderRequest = z
     plan: z.record(z.string(), z.unknown()).optional(),
   })
   .strict();
+
+const webRenderRequest = z
+  .object({
+    taskId: id,
+    templateId: z.string().max(128).optional().default(''),
+    introUrl: z.string().max(4096).optional().default(''),
+    introIndex: z.number().int().nonnegative().optional().default(0),
+    outroUrl: z.string().max(4096).optional().default(''),
+    outroIndex: z.number().int().nonnegative().optional().default(0),
+    dataList: z.array(z.record(z.string(), z.unknown())).min(1).max(200),
+  })
+  .strict();
+
+export function normalizeRenderRequest(
+  body: unknown,
+  current: { planVersion: number; templateId: string; digitalHumanAccountId: string },
+) {
+  const canonical = renderRequest.safeParse(body);
+  if (canonical.success) return { input: canonical.data, source: body };
+
+  const web = webRenderRequest.parse(body);
+  if (web.templateId && web.templateId !== current.templateId)
+    fail('CONFIG_CONFLICT', '网页渲染模板与已确认分析模板不一致', 409);
+  const fingerprint = createHash('sha256')
+    .update(JSON.stringify({ dataList: web.dataList, templateId: current.templateId }))
+    .digest('hex')
+    .slice(0, 16);
+  return {
+    input: renderRequest.parse({
+      schemaVersion: 2,
+      requestId: `web-v1-${web.taskId}-render-${fingerprint}`,
+      taskId: web.taskId,
+      basePlanVersion: current.planVersion,
+      field_5: current.digitalHumanAccountId,
+      templateId: current.templateId,
+      dataList: web.dataList,
+      plan: { sourceRequest: body },
+    }),
+    source: body,
+  };
+}
 export type AnalysisRequest = z.infer<typeof analysisRequest>;
 export type RenderRequest = z.infer<typeof renderRequest>;
