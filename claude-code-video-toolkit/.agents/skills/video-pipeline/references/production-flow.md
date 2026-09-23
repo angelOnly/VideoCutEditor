@@ -20,7 +20,7 @@
 
 ### 配音
 
-Codex 决定角色与发言顺序，调用通用配音工具；Worker 必须调用 video_tts，并将角色标签映射为服务器当前获准的实际音色；独立本地任务使用下面的 stage_tts.py。按确认文本准备任务内清单：
+Codex 决定角色与发言顺序，按授权音色配置将角色标签映射为实际音色，直接调用下面的 stage_tts.py。按确认文本准备任务内清单：
 
 ```json
 [
@@ -34,7 +34,7 @@ Codex 决定角色与发言顺序，调用通用配音工具；Worker 必须调�
 python3 "$TOOLKIT_ROOT/tools/stage_tts.py" --request "$REQUEST" --script "$JOB_DIR/render/dialogue.json"
 ```
 
-可信底层工具加载项目根 `.env`，不复制凭据。缓存按精确文本、实际音色、资源模型及生成格式匹配，成功音频还需校验摘要和解码。请求状态保存在 `cache/tts/<key>/request.json`，结果未知会返回 `EXTERNAL_RESULT_UNKNOWN`；不得删账本或另换 ID 来盲目重发。普通任务恢复只读本任务缓存。已有供应商之外的能力，仍需按部署授权使用，不自动购买新服务。
+独立工具读取授权环境中的供应商配置；原生任务不加载仓库 `.env`，不复制凭据。缓存按精确文本、实际音色、资源模型及生成格式匹配，成功音频还需校验摘要和解码。请求状态保存在 `cache/tts/<key>/request.json`，结果未知会返回 `EXTERNAL_RESULT_UNKNOWN`；不得删账本或另换 ID 来盲目重发。普通任务恢复只读本任务缓存。已有供应商之外的能力，仍需按部署授权使用，不自动购买新服务。
 
 ### 时间轴、工程与渲染
 
@@ -42,9 +42,9 @@ python3 "$TOOLKIT_ROOT/tools/stage_tts.py" --request "$REQUEST" --script "$JOB_D
 
 正式 timeline.json 由 Render 根据实测配音、素材和制作意图编写，保留全局起止帧、音频来源及实际字幕数据。工具只检查或执行明确的编排，不重新决定章节、停顿或总时长。不得调用旧 resolve-timeline 覆盖工程时长。
 
-在 project 创建当前模板的任务副本，按其结构适配正式时间轴。财经模板可使用 video_media 的 derive-timeline 做纯格式转换：timeline.json 必须明确 withBgm 布尔值；转换保留原记录、不打开被关闭的 BGM、不改时长。其他模板在自己的任务工程中适配，不使用财经转换器。
+在 project 创建当前模板的任务副本，按其结构适配正式时间轴。财经模板可使用 stage_media.py 的 derive-timeline 做纯格式转换：timeline.json 必须明确 withBgm 布尔值；转换保留原记录、不打开被关闭的 BGM、不改时长。其他模板在自己的任务工程中适配，不使用财经转换器。
 
-Worker 的 render、assemble 和可选适配操作使用 video_media；video_exec 用于任务工程、时间轴编写以及只读媒体测量。request、运行时和依赖由 Worker 固定注入，本机受控驱动调用相同 CLI。
+Codex 使用原生命令工具调用 stage_media.py 的 render、assemble 和可选适配操作，并编写工程与时间轴。内部 request 由 toolkit 输入适配生成，运行时和依赖使用当前环境的配置。
 
 返回 adjustment_required 不是产物成功。TIMELINE_EXTEND_REQUIRED 给出完整混音所需最小帧数：Render 调整本任务画面覆盖、后续全局偏移和相关工程；需要单纯尾部延长时可选 extend-timeline，它只按实测下限平移坐标，保留更长的已定编排，不改变声音与字幕。声音编排未变且摘要有效时用 fixedMix=true 复用完整混音；Render 可安排额外无声画面，工具保留原混音并补足静音。CONTENT_TIMELINE_REQUIRED 表示源音频窗口不足，依据实测重新编排当前工程，不运行另一套重算策略。
 
@@ -75,7 +75,7 @@ MIX_REBUILD_REQUIRED 表示全局 BGM 起点或声音编排改变，旧混音不
 - 从确认文本和明确业务要求提取本任务的硬性要求，逐项记录对应镜头、实现位置和检查证据。用户明确指定的角色/音色、文本、素材、组件复用要求必须保留；Analysis 不提供必须沿用的视觉段落；模板只用于补齐确认方案未限定的制作细节。
 - 时间轴列出每镜实际总帧数、每段发言的音频来源和按实际时长计算的起止帧、模板要求的字幕分页及其起止帧、实际视觉段落的起止帧。区分口播长度与镜头总长度。财经双人模板在正式渲染前运行 `sentenceAudioValidator`，生成 `sentence-audio-audit.json`；该审计必须通过，且不以中文逐字或逐词对齐作为能力前提。要求“口播结束后出现”的段落应锚定口播结束，不能用“本镜倒数若干帧”覆盖尚未结束的口播。
 - 必须复用的源码应从获准快照导入或复制后实际调用，记录原素材 ID 与工程位置；仅列入素材清单或另写外观相似的组件不算复用。
-- 使用当前工程的 Remotion `renderStill` 等现有能力生成低成本关键帧，实际查看文字、人物、字幕和段落切换前后；在 `preflight-review.json` 记录看过的图片、帧号、检查结果及限制。技术依赖取 Worker 提供的 modules，不另找历史工程。静态图不能证明实际播放，音轨还须独立测量、解码并核对总时长。
+- 使用当前工程的 Remotion `renderStill` 等现有能力生成低成本关键帧，实际查看文字、人物、字幕和段落切换前后；在 `preflight-review.json` 记录看过的图片、帧号、检查结果及限制。技术依赖取 环境已安装的 modules，不另找历史工程。静态图不能证明实际播放，音轨还须独立测量、解码并核对总时长。
 - 正式渲染后还必须审查人物切换、章节进退、至少一组连续句级字幕、关键数据出现和片尾收束的动态片段；发现静态 PPT 式画面、字幕缺失或节奏不符时，修工程后重渲染受影响镜头。
 - 若检查不通过，先修工程或时间轴；不得以“后续再调整”为由批量正式渲染。字幕显示效果、音频解码或音画总时长校验不通过时明确报告。
 
@@ -124,25 +124,25 @@ python3 "$TOOLKIT_ROOT/tools/stage_media.py" assemble --request "$REQUEST" --man
 python3 "$TOOLKIT_ROOT/tools/two_stage.py" validate --request "$REQUEST" --artifact "$JOB_DIR/render/render_001/manifest.json"
 ```
 
-通过后输出该 run 的 `result.json`。这是本地候选，不是 `delivered`、回调成功或服务端发布成功。失败返回明确阶段/错误码，保留此前合格产物。技术工具不自动证明所有业务描述已满足；Codex 的视觉审查与固定技术验证都要完成。
+通过后输出该 run 的 `result.json`。这是内部工具检查结果；服务消息再用 task_io.py render 返回 completed，不代表上传或回调已成功。失败返回明确阶段/错误码，保留此前合格产物。技术工具不自动证明所有业务描述已满足；Codex 的视觉审查与固定技术验证都要完成。
 
 
 ## 逐句交付与制作资料保存
 
 一句确认口播对应一个 sceneId 和一个音画合成 MP4。N 句必须交付 N 个 MP4，不能让客户端再拼字幕、音频或多个视觉片段；句内可以切换多个图解与动画。统一设计整片工程，BGM 按全局偏移衔接，不能每句从头播放。片头归入首句、片尾归入末句，不新增无口播交付项。
 
-在 `render/<runId>/timeline.json` 保存 `fps` 与有序 `scenes`。每镜 `id/startFrame/endFrameExclusive` 是全局帧区间，首镜从 0 开始，后镜连续接上前镜；每镜区间长度等于实际 MP4 帧数。镜内 `utterances/captions` 使用局部帧，均不能超出该镜帧数。utterance 含 `id/text/src/audioPath/startFrame/endFrameExclusive`：`src` 是工程 public 目录内路径，`audioPath` 是同一音频相对任务根的路径。财经模板 caption 含 `utteranceId/text/startFrame/endFrameExclusive`，边界和文本必须与对应句级音频一致；其他模板按自身字幕结构记录实际文字与区间。模板审计接收工程 public 路径；Worker 根据 audioPath 独立检查音频。
+在 `render/<runId>/timeline.json` 保存 `fps` 与有序 `scenes`。每镜 `id/startFrame/endFrameExclusive` 是全局帧区间，首镜从 0 开始，后镜连续接上前镜；每镜区间长度等于实际 MP4 帧数。镜内 `utterances/captions` 使用局部帧，均不能超出该镜帧数。utterance 含 `id/text/src/audioPath/startFrame/endFrameExclusive`：`src` 是工程 public 目录内路径，`audioPath` 是同一音频相对任务根的路径。财经模板 caption 含 `utteranceId/text/startFrame/endFrameExclusive`，边界和文本必须与对应句级音频一致；其他模板按自身字幕结构记录实际文字与区间。模板审计接收工程 public 路径；Codex 调用 toolkit 根据 audioPath 检查音频。
 
 实际视觉、转场、BGM/SFX 的区间、工程入口、Composition、Props 及素材引用也记录到时间轴；它们描述本次效果，不禁止以后优化。manifest 的 captions 秒数必须等于局部字幕帧除以 fps。工程源码保存在 project，真实音频保存在 tool-audio 或任务内素材副本，保留全部相对依赖；node_modules 可链接可信锁定依赖，业务文件不能用外部符号链接代替。
 
-候选 manifest 保存为 `render/<runId>/manifest.json`。Worker 技术终检后记录工程、时间轴、模板、音频和素材摘要到服务端 productionRecord；回调只投影文字和最终 MP4，不能因此删除制作资料。
+候选 manifest 保存为 `render/<runId>/manifest.json`。Codex 在制作目录保留工程、时间轴、模板、音频和素材；Worker 仅交接指定文件；回调只投影文字和最终 MP4，不能因此删除制作资料。
 
 ## 失败、恢复与预算
 
 同一版本的同一检查项成功后不重复检查；修改后重验受影响范围，全片最终一致性检查不能跳过。Analysis 估时不决定成片长度，不引入 ASR、中文逐字或逐词声学对齐。素材不足、输出规格冲突或缺少必需能力须保存证据并请求人工处理，不能静音、占位或改稿求成功。
 
-制作工程故障先在任务内修复，按 Worker 可信反馈重验并继续。共享链路缺陷、收费结果未知、确认输入变化、缺少必需能力返回 human_required 并附具体证据；不能修改共享代码或自行重发收费请求。正常调整不扣普通修复次数，但计执行时间；预算耗尽、取消或连续无进展遵守可信执行层决定，不换 ID 或清账本绕过限制。正常恢复前确认旧进程已经停止；同 run 续跑只能恢复本任务资料。
+制作工程故障先在任务内修复，由 Codex 根据工具报告重验并继续。共享链路缺陷、收费结果未知、确认输入变化、缺少必需能力返回 needs_input 并附具体证据；不能修改共享代码或自行重发收费请求。正常调整不扣普通修复次数，但计执行时间；预算耗尽、取消或连续无进展遵守可信执行层决定，不换 ID 或清账本绕过限制。正常恢复前确认旧进程已经停止；同 run 续跑只能恢复本任务资料。
 
-本轮无法完成但仍有当前工程内可执行步骤时返回 continue_required，注明剩余步骤，不声称后台仍在渲染；需要人工的代码链路问题返回 human_required。candidate 必须对应全部镜头和必要整片的实际候选，Worker 会独立检查。人修复共享链路后，由管理入口批准版本并恢复，制作模型不得自行解除暂停。
+本轮仍有当前工程内可执行步骤时继续执行，长命令返回句柄时等待同一命令完成；需要人工处理时按 task-io 返回 needs_input。完成全部确认镜头和必要整片的制作检查后返回 completed，Worker 不再次决定制作是否合格。
 
-后续优化须明确成功 run/resultVersion；受控恢复器先核对确认版本、模板和工具版本、文件摘要，再复制到新 run。旧工程和旧成片不覆盖；未改口播且音色一致才复用验证过的 TTS，时长变化重算后续全局偏移、字幕、转场和音乐。资料缺失报告不能恢复，不伪称已经恢复，也不自动从任意历史 run 取工程。
+后续修改沿用同任务 thread、project、音频和工具记录。由 Codex 核对新确认要求并决定复用范围；未改口播且音色一致时可复用工具已验证的 TTS。时长变化重算后续全局偏移、字幕、转场和音乐；资料缺失明确报告，不读取其他任务工程。

@@ -1,4 +1,6 @@
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
+import path from 'node:path';
+import { jobUnit } from './host-processes.js';
 import { EventEmitter } from 'node:events';
 import { createInterface } from 'node:readline';
 import type { Config } from '../config.js';
@@ -11,48 +13,52 @@ export interface Rpc {
   healthy: boolean;
   invalidate?(error: Error): void;
 }
-// Only the controller sees OAuth credentials. Never inherit database/TTS/API secrets.
+// app-server 读取登录状态；制作工具仅继承获准供应商配置，不继承数据库或回调凭据。
 export function codexEnvironment(config: Config): NodeJS.ProcessEnv {
   return {
-    PATH: process.env.PATH,
+    PATH: `${path.dirname(config.python)}:${path.dirname(process.execPath)}:${process.env.PATH ?? '/usr/bin:/bin'}`,
     HOME: process.env.HOME,
     USER: process.env.USER,
     XDG_RUNTIME_DIR: process.env.XDG_RUNTIME_DIR,
     DBUS_SESSION_BUS_ADDRESS: process.env.DBUS_SESSION_BUS_ADDRESS,
     LANG: 'C.UTF-8',
     CODEX_HOME: config.codexHome,
+    TOOLKIT_ROOT: config.toolkitRoot,
+    REMOTION_BROWSER_EXECUTABLE: config.hostBrowser,
+    PYTHONDONTWRITEBYTECODE: '1',
+    VIDEOCUT_RENDER_SANDBOX: 'native',
+    DOUBAO_TTS_API_KEY: process.env.DOUBAO_TTS_API_KEY,
+    DOUBAO_TTS_RESOURCE_ID: config.ttsResourceId,
+    DOUBAO_TTS_SPEAKER: config.ttsVoice,
+    VIDEOCUT_TTS_VOICES: JSON.stringify(config.ttsVoices ?? {}),
   };
 }
-export const disabledFeatures = [
-  'shell_tool',
-  'unified_exec',
-  'view_image',
-  'multi_agent',
-  'multi_agent_v2',
-  'apps',
-  'plugins',
-  'hooks',
-  'browser_use',
-  'browser_use_external',
-  'computer_use',
-  'image_generation',
-  'code_mode',
-  'memories',
-  'shell_snapshot',
-  'workspace_dependencies',
-  'skill_mcp_dependency_install',
-  'skill_search',
-  'goals',
-];
 export const codexOverrides: Record<string, unknown> = {
-  // 动态工具也依赖执行宿主；具体文件和命令仍由 video_* 工具进入隔离环境。
+  // 原生工具负责制作；只传递制作所需环境，不继承数据库和回调凭据。
   features: {
-    ...Object.fromEntries(disabledFeatures.map((name) => [name, false])),
     code_mode_host: true,
+    shell_tool: true,
+    unified_exec: true,
+    view_image: true,
   },
-  mcp_servers: {},
-  web_search: 'disabled',
-  shell_environment_policy: { inherit: 'none' },
+  shell_environment_policy: {
+    inherit: 'all',
+    ignore_default_excludes: true,
+    include_only: [
+      'PATH',
+      'HOME',
+      'LANG',
+      'TOOLKIT_ROOT',
+      'REMOTION_BROWSER_EXECUTABLE',
+      'PYTHONDONTWRITEBYTECODE',
+      'TMPDIR',
+      'VIDEOCUT_RENDER_SANDBOX',
+      'DOUBAO_TTS_API_KEY',
+      'DOUBAO_TTS_RESOURCE_ID',
+      'DOUBAO_TTS_SPEAKER',
+      'VIDEOCUT_TTS_VOICES',
+    ],
+  },
 };
 function toml(value: any): string {
   if (value && typeof value === 'object' && !Array.isArray(value))
@@ -74,12 +80,41 @@ export class AppServer extends EventEmitter implements Rpc {
   private id = 0;
   healthy = false;
   handleRequest?: (method: string, params: any) => Promise<any>;
-  async start(config: Config) {
+  async start(config: Config, runId?: string, overrides: Record<string, unknown> = codexOverrides) {
     const args = ['app-server'];
-    for (const [key, value] of Object.entries(codexOverrides))
-      args.push('-c', `${key}=${toml(value)}`);
-    this.child = spawn(config.codexPath, args, {
-      env: codexEnvironment(config),
+    for (const [key, value] of Object.entries(overrides)) args.push('-c', `${key}=${toml(value)}`);
+    const env = codexEnvironment(config);
+    // code-mode 执行器也从服务进程继承临时目录，不能只设置 shell 子进程。
+    const temporary = (overrides.shell_environment_policy as any)?.set?.TMPDIR;
+    if (temporary) env.TMPDIR = temporary;
+    // 一条活动执行一个进程组，取消该执行不会杀死其他任务；原生沙箱由 Codex 建立。
+    const launch = runId
+      ? [
+          '--user',
+          '--wait',
+          '--pipe',
+          '--collect',
+          '--quiet',
+          '--service-type=exec',
+          `--unit=${jobUnit(runId)}`,
+          '--property=KillMode=control-group',
+          '--property=TimeoutStopSec=15s',
+          '--property=SendSIGKILL=yes',
+          '--property=UMask=0077',
+          '--property=NoNewPrivileges=yes',
+          `--property=MemoryMax=${config.hostMemory}`,
+          `--property=CPUQuota=${config.hostCpus * 100}%`,
+          `--property=TasksMax=${config.hostTasksMax}`,
+          '--property=PartOf=videocut-worker.service',
+          ...Object.keys(env)
+            .filter((k) => env[k] !== undefined)
+            .map((k) => `--setenv=${k}`),
+          config.codexPath,
+          ...args,
+        ]
+      : [];
+    this.child = spawn(runId ? 'systemd-run' : config.codexPath, runId ? launch : args, {
+      env,
       stdio: 'pipe',
       detached: true,
     });

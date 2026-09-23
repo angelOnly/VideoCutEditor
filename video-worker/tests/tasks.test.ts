@@ -1,4 +1,3 @@
-import { normalizeAnalysis } from '../src/domain/storyboard.js';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { database, config, tenant, analysis, scene } from './helpers.js';
@@ -45,9 +44,6 @@ test('request idempotency, tenant ownership, active-run exclusion and stale vers
     await assert.rejects(tasks.analysis(tenant, { ...input, script: 'changed' }), {
       code: 'IDEMPOTENCY_CONFLICT',
     });
-    await assert.rejects(tasks.analysis(tenant, { ...input, requestId: 'different' }), {
-      code: 'TASK_BUSY',
-    });
     await assert.rejects(repo.query('other', input.taskId), { code: 'TASK_NOT_FOUND' });
     const l = (await q.claim('worker'))!;
     await publishResult(
@@ -56,12 +52,7 @@ test('request idempotency, tenant ownership, active-run exclusion and stale vers
       l,
       { assets: [], taskConfig: {}, root: '', task: {}, hashes: {}, reuse: [], sceneHashes: {} },
       tenant,
-      normalizeAnalysis(
-        { status: 'candidate', scenes: [{ text: '第一句。' }, { text: '第二句。' }], error: null },
-        input.script,
-        l.run.task_id,
-        'a'.repeat(64),
-      ),
+      { outcome: { status: 'completed', result: { dataList: [scene()] }, error: null }, files: [] },
     );
     const view = await repo.query(tenant.id, input.taskId);
     assert.equal(view.taskState, 'awaiting_editor');
@@ -83,9 +74,12 @@ test('request idempotency, tenant ownership, active-run exclusion and stale vers
     const accepted = await tasks.render(tenant, render);
     assert.equal(accepted.data.planVersion, 2);
     await repo.cancel(tenant.id, accepted.data.runId);
-    await assert.rejects(tasks.render(tenant, { ...render, requestId: 'render2' }), {
-      code: 'STALE_PLAN',
-    });
+    await assert.rejects(
+      tasks.render(tenant, { ...render, requestId: 'render2', basePlanVersion: 999 }),
+      {
+        code: 'STALE_PLAN',
+      },
+    );
     assert.equal((await repo.query(tenant.id, input.taskId)).planVersion, 2);
   } finally {
     await db.close();
@@ -127,7 +121,7 @@ test('expired lease cannot publish; unconfirmed container stop retains occupied 
     await db.close();
   }
 });
-test('cancelling prevents success, repair budget survives recovery', async () => {
+test('取消后禁止继续发布，确认停止后释放任务', async () => {
   const db = await database();
   try {
     const repo = new TaskRepository(db),
@@ -135,8 +129,6 @@ test('cancelling prevents success, repair budget survives recovery', async () =>
       q = new Queue(db);
     await tasks.analysis(tenant, analysis());
     const l = (await q.claim('w'))!;
-    assert.equal((await q.consumeRepair(l, 1)).repair_rounds, 1);
-    await assert.rejects(q.consumeRepair(l, 1), { code: 'REPAIR_BUDGET_EXHAUSTED' });
     await repo.cancel(tenant.id, l.run.id);
     await assert.rejects(q.heartbeat(l), { code: 'CANCELLED' });
     await q.failed(l, { code: 'CANCELLED', message: 'cancelled', retryable: false });

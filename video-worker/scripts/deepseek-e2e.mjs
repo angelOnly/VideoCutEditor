@@ -67,14 +67,14 @@ render 严格使用已确认稿件和镜头，自己组织配音、测量时长�
 正文分镜、布局、图解、动效、时间线必须重新设计。只有下面白名单文件可作业务资料；模板内唯一参考成片和片头片尾可按模板说明使用。不得打开其他视频、旧项目 Episode.tsx、FinancialReportDialogueV3.tsx、plan/timeline、审计报告、日志或优化建议。禁止从历史成片提取音轨或画面；只复用本任务的已验证 TTS 缓存。
 允许读 video-pipeline 及必要通用技能/工具/依赖配置。FinancialIntros.tsx 只用于片头片尾，允许适配资源路径与实际时长，不参考其他历史源码。
 参考图只用于理解视觉布局，不作为正文贴图。头像、Logo、片头标题资产、音效按需引用，并在每镜 assetRefs 中列出实际使用的源文件 ID。
-明确素材不足时失败，不自行扩大参考范围。豆包凭据只由可信 video_tts 工具使用，不读取或打印 .env。
+明确素材不足时失败，不自行扩大参考范围。配音工具使用注入的豆包配置，不读取或打印 .env。
 白名单资产 ID 与原文件对应关系（实际文件以 input/assets.json 的 path 为准）：
 ${specs.map((a) => `${a.id}: ${a.file}`).join('\n')}`;
 }
 async function prepare(c) {
   requireValue(
-    process.env.WORKER_PROTOCOL === 'video-two-stage/1',
-    '根 .env 需要 WORKER_PROTOCOL=video-two-stage/1',
+    ['video-pipeline-io/1', 'video-two-stage/1'].includes(process.env.WORKER_PROTOCOL),
+    '根 .env 需要 WORKER_PROTOCOL=video-pipeline-io/1（兼容旧配置别名）',
   );
   requireValue(process.env.WORKER_EXECUTOR === 'host', '需要 WORKER_EXECUTOR=host');
   requireValue(

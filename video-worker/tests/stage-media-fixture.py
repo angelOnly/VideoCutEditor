@@ -31,7 +31,3 @@ for index,scene in enumerate(m['scenes']):
 write(root/'render'/r['runId']/'timeline.json',timeline)
 (root/'project').mkdir(exist_ok=True)
 (root/'project/fixture.ts').write_text('// 合成媒体测试工程；不代表真实模板效果。\n')
-# 测试夹具模拟可信执行层登记，不让模型自行写验收凭证。
-write(root/'.control/progress.json', {scene['id']:{'path':scene['path'],'sha256':scene['sha256'],
- 'timelineHash':digest(root/'render'/r['runId']/'timeline.json'), 'project':'project',
- 'projectHash':json_digest(project_fingerprint(root/'project'))} for scene in m['scenes']})

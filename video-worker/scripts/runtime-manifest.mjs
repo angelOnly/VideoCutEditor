@@ -21,6 +21,7 @@ for (const directory of [
 for (const f of [
   'generate_dialogue_audio.py',
   'two_stage.py',
+  'task_io.py',
   'stage_media.py',
   'actual_timeline.py',
   'finance_timeline.py',
@@ -54,7 +55,7 @@ await writeFile(
       sdkVersion: '0.154.0',
       codexCliVersion: '0.154.0',
       defaultExecutor: 'host-app-server',
-      taskIsolation: 'bubblewrap-systemd-user',
+      taskIsolation: 'codex-native-systemd-user',
       remotionVersion: '4.0.425',
       runtimeSourceSha256: version,
       files: hashes,

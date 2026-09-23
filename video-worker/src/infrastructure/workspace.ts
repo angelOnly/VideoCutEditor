@@ -1,4 +1,3 @@
-import { pipelineRevision } from '../domain/storyboard.js';
 import path from 'node:path';
 import { constants } from 'node:fs';
 import { mkdir, copyFile, chmod } from 'node:fs/promises';
@@ -7,7 +6,7 @@ import type { Database } from './postgres.js';
 import type { Lease } from '../domain/task.js';
 import { AppError } from '../domain/task.js';
 import { Storage } from './storage.js';
-import { hashFile, safeFile } from './files.js';
+import { hashFile, safeFile, readJson } from './files.js';
 import { Queue } from './queue.js';
 import { prepareStage } from './stage-workspace.js';
 import { TemplateProvider } from './template-provider.js';
@@ -28,24 +27,47 @@ export class Workspaces {
   ) {}
   async prepare(l: Lease, tenant: Tenant): Promise<Workspace> {
     const task = (await this.db.query('SELECT * FROM tasks WHERE id=$1', [l.run.task_id])).rows[0];
-    if (task.config.pipelineRevision !== pipelineRevision)
-      throw new AppError('PIPELINE_REVISION_EXPIRED', '旧任务需重新提交分析');
-    if (task.config.runtimeVersion !== this.config.runtimeVersion)
-      throw new AppError('PIPELINE_REVISION_EXPIRED', '制作工具版本已变化，请重新提交分析');
-    const root = path.join(
-      this.config.dataRoot,
-      task.id,
-      'runs',
-      l.run.id,
-      `attempt_${l.run.attempt}`,
-    );
+    task.config = l.run.prepared?.taskConfig ?? task.config;
+    if (task.config.executionProtocol !== 'video-pipeline-io/1')
+      throw new AppError('PIPELINE_REVISION_EXPIRED', '旧任务只保留记录，请重新提交任务');
+    const root = path.join(this.config.dataRoot, task.id, 'workspace');
     await mkdir(root, { recursive: true });
     await chmod(root, 0o700);
-    for (const d of ['input', 'output', 'project', 'cache']) {
+    for (const d of ['input', 'output', 'project', 'work', 'cache']) {
       await mkdir(path.join(root, d), { recursive: true });
       await chmod(path.join(root, d), 0o700);
     }
-    const isStage = task.config.executionProtocol === 'video-two-stage/1';
+    const entryFile = `input/message-${l.run.id}/task.json`;
+    let entry: any;
+    try {
+      entry = await readJson(await safeFile(root, entryFile));
+    } catch (error: any) {
+      if (error.code !== 'ENOENT') throw error;
+    }
+    if (entry) {
+      const request = await readJson(await safeFile(root, entry.requestFile));
+      if (
+        entry.taskId !== task.id ||
+        entry.requestId !== l.run.request_id ||
+        JSON.stringify(request) !== JSON.stringify(l.run.input)
+      )
+        throw new AppError('INPUT_SNAPSHOT_INVALID', '已登记的消息输入改变');
+      const attachments = await readJson(await safeFile(root, entry.attachmentsFile));
+      const assets = attachments.assets.map((a: any) => ({ ...a, assetId: a.id }));
+      for (const asset of assets)
+        if ((await hashFile(await safeFile(root, asset.path))) !== asset.sha256)
+          throw new AppError('INPUT_SNAPSHOT_INVALID', '已登记的素材损坏');
+      return {
+        root,
+        task: { ...entry, entryFile },
+        taskConfig: task.config,
+        assets,
+        hashes: Object.fromEntries(assets.map((a: any) => [a.id, a.sha256])),
+        reuse: [],
+        sceneHashes: {},
+      };
+    }
+    const isStage = task.config.executionProtocol === 'video-pipeline-io/1';
     let frozenTemplate: any;
     if (isStage && l.run.stage === 'analysis') {
       const existing = (await this.db.query('SELECT prepared FROM runs WHERE id=$1', [l.run.id]))
@@ -120,10 +142,16 @@ export class Workspaces {
       }
       const { file, relative } = resolved;
       // Copy first, then hash the exact bytes supplied to the task.
-      const local = `input/asset_${assets.length}${path
+      const local = `input/message-${l.run.id}/asset_${assets.length}${path
         .extname(file)
         .toLowerCase()
         .replace(/[^.a-z0-9]/g, '')}`;
+      await mkdir(path.dirname(path.join(root, local)), { recursive: true });
+      try {
+        await chmod(path.join(root, local), 0o600);
+      } catch (e: any) {
+        if (e.code !== 'ENOENT') throw e;
+      }
       await copyFile(file, path.join(root, local));
       const sha256 = await hashFile(path.join(root, local));
       await chmod(path.join(root, local), 0o444);

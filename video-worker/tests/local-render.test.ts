@@ -1,116 +1,80 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, writeFile, rm, copyFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, readFile, rm } from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import { command } from '../src/infrastructure/process.js';
-import { readJson } from '../src/infrastructure/files.js';
-
-test(
-  '本机控制器真实子进程：模型提前返回后自动续轮并保留人工等待账本',
-  { skip: process.platform !== 'darwin' || !process.env.STAGE_TEST_PYTHON },
-  async () => {
-    const temp = await mkdtemp(path.join(os.tmpdir(), 'local-render-loop-'));
-    try {
-      const toolkit = path.resolve('../claude-code-video-toolkit'),
-        python = process.env.STAGE_TEST_PYTHON!;
-      const request = (
-        await command(python, [
-          '-c',
-          [
-            'import sys;from pathlib import Path;sys.path.insert(0,sys.argv[1]);from two_stage import init_job,read,write,storyboard,confirm',
-            'p=Path(sys.argv[2])',
-            '[(p/n).write_text(t) for n,t in [("script.md","第一句。"),("req.md","保留原稿"),("template.md","测试模板")]]',
-            'a=Path(init_job(p/"job",{"taskId":"local_test","scriptFile":str(p/"script.md"),"requirementsFile":str(p/"req.md"),"templateFile":str(p/"template.md"),"assets":[],"limits":{"executionSeconds":14400,"repairRounds":0},"outputSpec":{"width":320,"height":240,"fps":30}})["request"])',
-            'write(p/"response.json",{"status":"candidate","scenes":[{"text":"第一句。"}],"error":None});storyboard(a,p/"response.json")',
-            'print(confirm(a,a.parent/"plan.json",0,"测试确认")["request"])',
-          ].join(';'),
-          path.join(toolkit, 'tools'),
-          temp,
-        ])
-      ).trim();
-      const r = await readJson(request),
-        fake = path.join(temp, 'fake-codex.mjs');
-      const job = path.resolve(request, '../../..');
-      await mkdir(path.join(job, 'project'), { recursive: true });
-      await writeFile(
-        fake,
-        `#!${process.execPath}
-import readline from 'node:readline';
-const request=${JSON.stringify(r)};let round=0,finish;
-for await(const line of readline.createInterface({input:process.stdin})){
- const m=JSON.parse(line);if(['write-test','preflight-test'].includes(m.id)){if(m.result?.success!==false)process.exit(7);finish();continue;}if(!m.id||!m.method)continue;let result={};
+import { writeJson, readJson } from '../src/infrastructure/files.js';
+test('独立入口不启动 Worker，两条消息复用会话并直接接收结果引用', async () => {
+  const temp = await mkdtemp(path.join(os.tmpdir(), 'native-local-'));
+  try {
+    const root = path.join(temp, 'task'),
+      entry = path.join(root, 'input/message-one/task.json');
+    const task = {
+      protocol: 'video-pipeline-io/1',
+      taskId: 'task',
+      requestId: 'one',
+      stage: 'analysis',
+      requestFile: 'input/message-one/request.json',
+      attachmentsFile: 'input/message-one/attachments.json',
+      resultFile: 'output/one/result.json',
+    };
+    await writeJson(entry, task);
+    await writeJson(path.join(root, task.requestFile), { script: '测试' });
+    await writeJson(path.join(root, task.attachmentsFile), {});
+    const fake = path.join(temp, 'codex'),
+      log = path.join(temp, 'calls.jsonl');
+    await writeFile(
+      fake,
+      `#!${process.execPath}
+const fs=require('fs'),path=require('path'),rl=require('readline');let root,turn=0;
+for(const name of ['DATABASE_URL','POSTGRES_PASSWORD'])if(process.env[name])throw Error('凭据泄漏');
+rl.createInterface({input:process.stdin}).on('line',line=>{
+ const m=JSON.parse(line);if(!m.id)return;
+ fs.appendFileSync(${JSON.stringify(log)},JSON.stringify(m)+'\\n');
+ let result={};
  if(m.method==='account/read')result={account:{type:'chatgpt'}};
- if(m.method.startsWith('thread/'))result={thread:{id:'fake-thread'},activePermissionProfile:{id:'videocut'}};
- if(m.method==='turn/start')result={turn:{id:'turn-'+(++round)}};
+ if(m.method.startsWith('thread/')){root=m.params.cwd;result={thread:{id:'same-thread'},activePermissionProfile:{id:'videocut'}};if(m.params.dynamicTools)throw Error('不能注册制作工具');}
+ if(m.method==='turn/start')result={turn:{id:'turn-'+(++turn)}};
  console.log(JSON.stringify({id:m.id,result}));
  if(m.method==='turn/start'){
-  const turnId=result.turn.id,threadId='fake-thread';
-  console.log(JSON.stringify({method:'turn/started',params:{threadId,turn:result.turn}}));
-  finish=()=>{const response={contractVersion:request.contractVersion,taskId:request.taskId,runId:request.runId,stage:'render',status:round===1?'continue_required':'human_required',artifact:null,error:{code:round===1?'PRODUCTION_INCOMPLETE':'SHARED_PIPELINE_ERROR',message:'测试反馈',retryable:false}};
-  console.log(JSON.stringify({method:'item/completed',params:{threadId,turnId,item:{type:'agentMessage',text:JSON.stringify(response)}}}));
+  const turnId=result.turn.id,threadId='same-thread',entry=JSON.parse(fs.readFileSync(path.join(root,'input/message-one/task.json')));
+  fs.mkdirSync(path.dirname(path.join(root,entry.resultFile)),{recursive:true});fs.writeFileSync(path.join(root,entry.resultFile),JSON.stringify({status:'needs_input'}));
+  const reference=Object.fromEntries(['protocol','taskId','requestId','stage','resultFile'].map(k=>[k,entry[k]]));
+  console.log(JSON.stringify({method:'turn/started',params:{threadId,turn:{id:turnId}}}));
+  console.log(JSON.stringify({method:'item/started',params:{threadId,turnId,item:{type:'commandExecution',id:'native'}}}));
+  console.log(JSON.stringify({method:'item/completed',params:{threadId,turnId,item:{type:'agentMessage',text:JSON.stringify(reference)}}}));
   console.log(JSON.stringify({method:'turn/completed',params:{threadId,turn:{id:turnId,status:'completed'}}}));
-  };
-  if(round===1)console.log(JSON.stringify({id:'write-test',method:'item/tool/call',params:{threadId,turnId,tool:'video_exec',arguments:{command:'echo ok > project/allowed.txt; echo bad > .control/policy.json'}}}));
-  else console.log(JSON.stringify({id:'preflight-test',method:'item/tool/call',params:{threadId,turnId,tool:'video_media',arguments:{command:'preflight',project:'project'}}}));
  }
-}
-`,
-        { mode: 0o700 },
-      );
-      const modules = path.join(temp, 'modules');
-      await mkdir(modules);
-      for (const name of ['remotion', '@remotion/renderer', '@remotion/bundler']) {
-        await mkdir(path.join(modules, name), { recursive: true });
-        await writeFile(
-          path.join(modules, name, 'package.json'),
-          JSON.stringify({ version: '4.0.425' }),
-        );
-      }
-      // 不能用 /bin/echo 作为浏览器路径：向上推导应用根会变成 /，掩盖读取权限缺失。
-      const browser = path.join(temp, 'Test.app/Contents/MacOS/browser');
-      await mkdir(path.dirname(browser), { recursive: true });
-      await copyFile('/bin/echo', browser);
-      let output = '';
-      try {
-        await command(
-          process.execPath,
-          [
-            '--import',
-            'tsx',
-            'scripts/local-render.ts',
-            '--request',
-            request,
-            '--python',
-            python,
-            '--modules',
-            modules,
-            '--browser',
-            browser,
-            '--codex',
-            fake,
-          ],
-          { timeout: 30000 },
-        );
-      } catch (e: any) {
-        assert.equal(e.exitCode, 2, e.message);
-        output = e.stdout;
-      }
-      const state = await readJson(path.resolve(request, '../../../.control/local-recovery.json'));
-      assert.equal(state.status, 'waiting_human');
-      assert.equal(state.loop.iteration, 2);
-      assert.equal(state.repairs, 0);
-      assert.equal(state.issue.code, 'HUMAN_REVIEW_REQUESTED');
-      assert.equal(state.issue.evidence.code, 'INVALID_CONTRACT');
-      assert.ok(state.elapsedSeconds > 0);
-      assert.match(output, /"action":"continue"/);
-      assert.equal(
-        (await readJson(path.join(job, '.control/policy.json'))).budgetOwner,
-        'local-driver',
-      );
-      assert.equal(await command('/bin/cat', [path.join(job, 'project/allowed.txt')]), 'ok\n');
-    } finally {
-      await rm(temp, { recursive: true, force: true });
-    }
-  },
-);
+});`,
+      { mode: 0o700 },
+    );
+    const args = [
+      '--import',
+      'tsx',
+      'scripts/local-render.ts',
+      '--request',
+      entry,
+      '--python',
+      path.resolve('.venv/bin/python3'),
+      '--browser',
+      '/usr/bin/true',
+      '--codex',
+      fake,
+    ];
+    const first = JSON.parse((await command(process.execPath, args, { timeout: 10000 })).trim());
+    assert.equal(first.requestId, 'one');
+    await writeJson(entry, { ...task, requestId: 'two', resultFile: 'output/two/result.json' });
+    const second = JSON.parse((await command(process.execPath, args, { timeout: 10000 })).trim());
+    assert.equal(second.requestId, 'two');
+    const calls = (await readFile(log, 'utf8')).trim().split('\n').map(JSON.parse);
+    assert.equal(calls.filter((c) => c.method === 'thread/start').length, 1);
+    assert.equal(calls.filter((c) => c.method === 'thread/resume').length, 1);
+    assert.equal(
+      (await readJson(path.join(root, 'work/local-session.json'))).threadId,
+      'same-thread',
+    );
+  } finally {
+    await rm(temp, { recursive: true, force: true });
+  }
+});

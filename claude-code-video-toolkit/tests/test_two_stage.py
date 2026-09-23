@@ -241,9 +241,10 @@ class ContractTests(Fixture):
             with self.assertRaises(StageError):generate(self.request,self.job/'missing.json')
             paid.assert_not_called()
 
-    def test_analysis_rejects_tts_ledger(self):
+    def test_analysis_preserves_prior_tts_ledger(self):
         write(self.job/'cache/tts/whatever/request.json',{'state':'pending'})
-        with self.assertRaises(StageError):validate(self.request,self.plan_path)
+        validate(self.request,self.plan_path)
+        self.assertEqual(read(self.job/'cache/tts/whatever/request.json')['state'], 'pending')
 
 
 class TTSCacheTests(unittest.TestCase):

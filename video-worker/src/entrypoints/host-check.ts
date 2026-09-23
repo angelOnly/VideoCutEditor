@@ -3,11 +3,11 @@ import { mkdir, mkdtemp, rm } from 'node:fs/promises';
 import { loadConfig } from '../config.js';
 import { HostProcesses } from '../infrastructure/host-processes.js';
 import { AppServer } from '../infrastructure/app-server.js';
-import { threadConfig, dynamicTools } from '../runner/codex-host.js';
+import { threadConfig } from '../runner/codex-host.js';
 import { Postgres } from '../infrastructure/postgres.js';
 import type { Workspace } from '../infrastructure/workspace.js';
 import { command } from '../infrastructure/process.js';
-import { checkHostIsolation } from '../infrastructure/host-preflight.js';
+import { checkNativeIsolation } from '../infrastructure/native-preflight.js';
 if (process.env.VIDEOCUT_SUPERVISOR_LOCKED !== '1')
   throw new Error('Run pnpm host:check to hold the supervisor lock');
 const c = loadConfig();
@@ -25,7 +25,8 @@ try {
   await db.query(
     'SELECT run_id,last_event_at,last_progress_at,current_tool_id,cleanup_state FROM host_executions LIMIT 0',
   );
-  await checkHostIsolation(c, processes);
+
+  await checkNativeIsolation(c, processes);
   const root = dir;
   for (const d of ['project', 'output', 'cache'])
     await mkdir(path.join(root, d), { recursive: true });
@@ -38,13 +39,12 @@ try {
     permissions: 'videocut',
     config: threadConfig(c, w),
     ephemeral: true,
-    dynamicTools,
     ...(c.codexModel ? { model: c.codexModel } : {}),
   });
   if (response.activePermissionProfile?.id !== 'videocut')
     throw new Error('Codex did not apply the required permission profile');
   console.log(
-    'PASS: database, native task isolation, browser, ChatGPT login, app-server protocol. No model or TTS request was sent.',
+    '通过数据库、登录和权限配置检查；尚未发送模型或配音请求，原生命令、输入只读、跨任务隔离和媒体依赖已实测；看图及真实制作仍需验收。',
   );
 } finally {
   try {

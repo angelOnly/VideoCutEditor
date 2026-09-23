@@ -17,7 +17,7 @@
     "recovery": "tsx scripts/manage-recovery.ts",
     "render:local": "tsx scripts/local-render.ts",
     "runtime-manifest": "node scripts/runtime-manifest.mjs",
-    "test:media": "RUN_MEDIA_TESTS=1 tsx --test tests/media.test.ts",
+    "test:media": ".venv/bin/python3 -m unittest discover -s ../claude-code-video-toolkit/tests -p test_task_io.py",
     "format": "prettier --write src tests scripts config deploy/*.json deploy/*.mjs ../docker-compose.yml",
     "format:check": "prettier --check src tests scripts config deploy/*.json deploy/*.mjs ../docker-compose.yml",
     "host:check": "./deploy/start-worker.sh host-check",

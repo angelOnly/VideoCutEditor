@@ -7,6 +7,9 @@ from pathlib import Path
 
 def load_environment() -> None:
     """Read the shared repository .env; injected container values take priority."""
+    # 原生任务只使用注入的供应商配置，不加载仓库数据库等无关凭据。
+    if os.getenv('VIDEOCUT_RENDER_SANDBOX') == 'native':
+        return
     from dotenv import load_dotenv
     load_dotenv(Path(__file__).resolve().parents[2] / ".env", override=False)
 

@@ -79,9 +79,6 @@ def identifier(value):
 
 
 def execution_path(root, request_path):
-    # Worker 的控制目录只向可信媒体工具开放，制作 shell 不能清除预算。
-    if (Path(root) / '.control/policy.json').is_file():
-        return Path(root) / '.control/execution.json'
     return Path(request_path).resolve().parent / 'execution.json'
 
 
@@ -376,9 +373,7 @@ def validate(request_path, artifact_path):
         value = read(artifact)
         if request['stage'] == 'analysis':
             details = validate_plan(root, request, value)
-            # 正式工具在 analysis 阶段拒绝调用；此检查不是 OS 级访问审计。
-            require(not any((root / 'cache').rglob('request.json')), 'analysis 存在正式 TTS 记录')
-            require(not any((root / 'output').rglob('*.mp4')), 'analysis 存在正式 MP4')
+            # 同任务后续分析允许保留此前媒体；阶段授权由当前请求决定。
             result = {**result_base(request), 'status': 'candidate', 'planFile': str(artifact.relative_to(root)), 'planSha256': digest(artifact), **details}
         else:
             from stage_media import validate_delivery
@@ -397,7 +392,6 @@ def execution(request_path, action):
         root, request = load_request(request_path, 'render')
         require(not active_processes(root), '本任务仍有活跃制作进程，请先检查已有进程', 'TASK_BUSY')
         path = execution_path(root, request_path)
-        managed = (Path(root) / '.control/policy.json').is_file()
         state = read(path) if path.exists() else {'elapsedSeconds': 0, 'repairRounds': 0, 'operations': []}
         require(not state.get('stopReason'), state.get('stopReason', ''), 'REPAIR_BUDGET_EXHAUSTED')
         require(state['repairRounds'] == 0 or state['repairRounds'] < request['limits']['repairRounds'],
@@ -421,13 +415,10 @@ def execution(request_path, action):
                 # 正常时间轴协商不扣修复次数；同一混音、同一帧数不得无进展重试。
                 key = json_digest({'action': action, 'details': exc.details})
                 adjustments = state.setdefault('timelineAdjustments', [])
-                if not managed and any(item['key'] == key for item in adjustments):
+                if any(item['key'] == key for item in adjustments):
                     state['stopReason'] = '相同混音与帧数重复请求补帧，必须先修正时间轴，禁止原样重试'
                     raise StageError('TIMELINE_ADJUSTMENT_STALLED', state['stopReason'], details=exc.details) from exc
                 adjustments.append({'key': key, 'action': action, 'details': exc.details, 'at': time.time()})
-                raise
-            if managed:
-                state.setdefault('events', []).append({'action': action, 'code': getattr(exc, 'code', 'EXECUTION_FAILED'), 'message': str(exc)})
                 raise
             # 工具内部失败也计数，不依赖模型主动调用 repair 或结束 turn。
             code = getattr(exc, 'code', 'EXECUTION_FAILED')
@@ -450,7 +441,6 @@ def execution(request_path, action):
 
 def repair(request_path, reason):
     root, request = load_request(request_path, 'render')
-    require(not (root / '.control/policy.json').is_file(), 'Worker 修复预算由外层管理', 'STAGE_FORBIDDEN')
     with lock(root / '.execution.lock'):
         path = Path(request_path).resolve().parent / 'execution.json'
         state = read(path) if path.exists() else {'elapsedSeconds': 0, 'repairRounds': 0, 'operations': []}

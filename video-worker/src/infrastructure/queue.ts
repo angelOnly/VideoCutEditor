@@ -19,7 +19,7 @@ export class Queue {
       if (!slot) return null;
       const run = (
         await q.query<Run>(
-          "SELECT * FROM runs WHERE state='queued' ORDER BY created_at,id LIMIT 1 FOR UPDATE",
+          "SELECT r.* FROM runs r WHERE r.state='queued' AND (r.delivery_next_attempt_at IS NULL OR r.delivery_next_attempt_at<=now()) AND NOT EXISTS (SELECT 1 FROM runs a WHERE a.task_id=r.task_id AND a.id<>r.id AND (a.state IN ('running','cancelling','waiting_human') OR (a.state='queued' AND a.plan_version<r.plan_version))) ORDER BY r.created_at,r.id LIMIT 1 FOR UPDATE",
         )
       ).rows[0];
       if (!run) return null;
@@ -81,43 +81,19 @@ export class Queue {
       return r;
     });
   }
-  async consumeRepair(l: Lease, max: number) {
-    return this.withLease(l, async (q, r) => {
-      if (r.repair_rounds >= max) throw new AppError('REPAIR_BUDGET_EXHAUSTED', '修复次数已用尽');
-      return (
-        await q.query<Run>(
-          'UPDATE runs SET repair_rounds=repair_rounds+1 WHERE id=$1 RETURNING *',
-          [r.id],
-        )
-      ).rows[0];
-    });
-  }
   async release(q: Sql, l: Lease) {
     await q.query(
       'UPDATE execution_slots SET run_id=NULL,owner=NULL,lease_expires_at=NULL WHERE id=$1 AND fencing_token=$2',
       [l.slot, l.token],
     );
   }
-  // 调用方必须先确认进程清理；暂停不产生最终失败回调。
-  async waitHuman(l: Lease, issue: any) {
+  async deferDelivery(l: Lease, error: any) {
     return this.withLease(l, async (q, r) => {
-      const remaining = Math.max(0, (new Date(r.deadline!).getTime() - Date.now()) / 1000);
-      const recovery = {
-        ...r.recovery,
-        revision: (r.recovery?.revision ?? 0) + 1,
-        issue,
-        pausedAt: new Date().toISOString(),
-        attempt: r.attempt,
-      };
       await q.query(
-        "UPDATE runs SET state='waiting_human',progress_stage='waiting_human',recovery=$2,remaining_seconds=$3,deadline=NULL,error=$4 WHERE id=$1",
-        [r.id, recovery, remaining, { code: issue.code, message: issue.message, retryable: false }],
+        "UPDATE runs SET state='queued',progress_stage='delivery_retry',error=$2,delivery_next_attempt_at=now()+interval '30 seconds' WHERE id=$1",
+        [r.id, error],
       );
-      await q.query("UPDATE tasks SET state='waiting_human',updated_at=now() WHERE id=$1", [
-        r.task_id,
-      ]);
       await this.release(q, l);
-      return recovery;
     });
   }
   async failed(l: Lease, error: any) {
@@ -178,9 +154,8 @@ export class Queue {
         const r = (await q.query<Run>('SELECT * FROM runs WHERE id=$1', [s.run_id])).rows[0];
         if (
           r.state === 'running' &&
-          r.attempt < maxAttempts &&
-          r.deadline &&
-          new Date(r.deadline).getTime() > Date.now()
+          (r.prepared?.delivery ||
+            (r.attempt < maxAttempts && r.deadline && new Date(r.deadline).getTime() > Date.now()))
         ) {
           await q.query("UPDATE runs SET state='queued',progress_stage='recovered' WHERE id=$1", [
             r.id,

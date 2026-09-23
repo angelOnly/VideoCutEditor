@@ -1,6 +1,13 @@
 export type Stage = 'analysis' | 'render';
 export type RunState =
-  'queued' | 'running' | 'cancelling' | 'waiting_human' | 'succeeded' | 'failed' | 'cancelled';
+  | 'queued'
+  | 'running'
+  | 'cancelling'
+  | 'needs_input'
+  | 'waiting_human'
+  | 'succeeded'
+  | 'failed'
+  | 'cancelled';
 export class AppError extends Error {
   constructor(
     public code: string,
@@ -22,6 +29,7 @@ export interface Run {
   stage: Stage;
   state: RunState;
   input: any;
+  prepared?: any;
   plan_version: number;
   attempt: number;
   repair_rounds: number;

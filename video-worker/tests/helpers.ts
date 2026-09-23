@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { Postgres, migrate } from '../src/infrastructure/postgres.js';
 import { PGlite } from '@electric-sql/pglite';
-import { readFile, chmod, readdir } from 'node:fs/promises';
+import { chmod, readdir } from 'node:fs/promises';
 import type { Database, Sql } from '../src/infrastructure/postgres.js';
 import type { Config } from '../src/config.js';
 export async function database() {
@@ -27,8 +27,20 @@ export async function database() {
   const adapt = (q: any): Sql => ({
     query: async <T = any>(sql: string, args?: any[]) => (await q.query(sql, args)) as any,
   });
-  for (const name of ['001_initial.sql', '002_pipeline_liveness.sql', '003_render_recovery.sql'])
-    await pg.exec(await readFile(new URL('../migrations/' + name, import.meta.url), 'utf8'));
+  // 使用部署入口的迁移清单，避免测试单独建表掩盖升级遗漏。
+  await migrate({
+    ...adapt(pg),
+    tx: (fn) =>
+      pg.transaction((t) =>
+        fn({
+          query: async (sql) => {
+            await t.exec(sql);
+            return { rows: [] };
+          },
+        }),
+      ),
+    close: () => pg.close(),
+  });
   const db: Database = {
     ...adapt(pg),
     tx: (fn) => pg.transaction((t) => fn(adapt(t))),
@@ -62,7 +74,6 @@ export function config(overrides: Partial<Config> = {}): Config {
     leaseSeconds: 60,
     timeoutSeconds: 14400,
     maxAttempts: 3,
-    repairRounds: 1,
     hostFingerprint: 'test-host',
     customTemplatePackageOrigins: [],
     ttsVoice: 'test',

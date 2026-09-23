@@ -1,4 +1,3 @@
-import { publicScene } from '../../domain/storyboard.js';
 import type { Stage, Run } from '../../domain/task.js';
 export function accepted(run: Run) {
   return {
@@ -14,6 +13,7 @@ export function accepted(run: Run) {
   };
 }
 export function callback(eventId: string, run: Run, task: any, result: any, error: any = null) {
+  const config = run.prepared?.taskConfig ?? task.config;
   const common = {
     schemaVersion: 2,
     eventId,
@@ -29,15 +29,15 @@ export function callback(eventId: string, run: Run, task: any, result: any, erro
     ...common,
     ...(run.stage === 'render' ? { resultVersion: task.result_version } : {}),
     dataInfo: {
-      templateId: task.config.templateId,
+      templateId: config.templateId,
       ...(run.stage === 'analysis'
         ? {
             durationMode: 'estimated',
             previews: [],
           }
-        : { sceneCount: result.dataList.length, ...task.config.outputSpec }),
+        : { sceneCount: result.dataList.length, ...config.outputSpec }),
     },
-    dataList: result.dataList.map(publicScene),
+    dataList: result.dataList,
     ...(run.stage === 'analysis' ? { plan: {} } : {}),
   };
 }

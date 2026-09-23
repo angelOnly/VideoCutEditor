@@ -104,7 +104,7 @@ def render_batch(args):
         manifest = read(manifest_path)
         require(args.slots in (1, 2, 3), '只支持 1/2/3 个渲染槽')
         verify_manifest(root, args.request, request, manifest, args.modules, args.browser)
-        require(os.environ.get('VIDEOCUT_RENDER_SANDBOX', 'seatbelt' if sys.platform == 'darwin' else 'bwrap') in ('seatbelt', 'bwrap'),
+        require(os.environ.get('VIDEOCUT_RENDER_SANDBOX', 'seatbelt' if sys.platform == 'darwin' else 'bwrap') in ('seatbelt', 'bwrap', 'native'),
                 '批次必须使用只读输入沙箱', 'CAPABILITY_MISSING')
         stop = threading.Event()
         deadline = started + budget
@@ -163,7 +163,7 @@ def render_batch(args):
                 argv = ['/usr/bin/env', 'TMPDIR='+str(scratch), 'HOME='+str(scratch), args.node,
                         str(Path(__file__).with_name('render_scene.cjs')), str(build / 'config.json')]
                 sandbox = os.environ.get('VIDEOCUT_RENDER_SANDBOX') or ('seatbelt' if sys.platform == 'darwin' else 'bwrap')
-                require(sandbox in ('bwrap', 'seatbelt'), '批次必须使用只读输入沙箱', 'CAPABILITY_MISSING')
+                require(sandbox in ('bwrap', 'seatbelt', 'native'), '批次必须使用只读输入沙箱', 'CAPABILITY_MISSING')
                 if sandbox == 'bwrap':
                     argv = ['bwrap', '--die-with-parent', '--unshare-pid', '--ro-bind', '/', '/',
                             '--bind', str(build), str(build), '--dev-bind', '/dev', '/dev', '--proc', '/proc', '--', *argv]

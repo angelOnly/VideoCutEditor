@@ -16,7 +16,7 @@ const tenantSchema = z.object({
 export type Tenant = z.infer<typeof tenantSchema>;
 export interface Config {
   executor: 'host';
-  executionProtocol?: 'video-two-stage/1';
+  executionProtocol?: 'video-pipeline-io/1' | 'video-two-stage/1';
   customTemplateApiBaseUrl?: string;
   customTemplatePackageOrigins: string[];
   codexPath: string;
@@ -24,7 +24,6 @@ export interface Config {
   hostBrowser: string;
   hostMemory: string;
   hostCpus: number;
-  hostRenderSlots?: number;
   hostTasksMax: number;
   databaseUrl: string;
   port: number;
@@ -35,7 +34,6 @@ export interface Config {
   leaseSeconds: number;
   timeoutSeconds: number;
   maxAttempts: number;
-  repairRounds: number;
   hostFingerprint?: string;
   codexModel?: string;
   codexReasoningEffort?:
@@ -106,8 +104,9 @@ export function loadConfig(envFile = path.resolve(serviceRoot, '../.env')): Conf
     throw Error('TEMPLATE_API_URL 已停用，请配置定制 ZIP 服务或本地 ZIP');
   return {
     executionProtocol: z
-      .literal('video-two-stage/1')
-      .parse(process.env.WORKER_PROTOCOL ?? 'video-two-stage/1'),
+      .enum(['video-pipeline-io/1', 'video-two-stage/1'])
+      .transform(() => 'video-pipeline-io/1' as const)
+      .parse(process.env.WORKER_PROTOCOL ?? 'video-pipeline-io/1'),
     customTemplateApiBaseUrl: process.env.CUSTOM_TEMPLATE_API_BASE_URL || undefined,
     customTemplatePackageOrigins: (process.env.CUSTOM_TEMPLATE_PACKAGE_ORIGINS ?? '')
       .split(',')
@@ -123,12 +122,6 @@ export function loadConfig(envFile = path.resolve(serviceRoot, '../.env')): Conf
       .string()
       .regex(/^\d+[MG]$/)
       .parse(process.env.HOST_TASK_MEMORY ?? '4G'),
-    hostRenderSlots: z.coerce
-      .number()
-      .int()
-      .min(1)
-      .max(3)
-      .parse(process.env.HOST_RENDER_SLOTS ?? 1),
     hostCpus: z.coerce
       .number()
       .positive()
@@ -150,7 +143,6 @@ export function loadConfig(envFile = path.resolve(serviceRoot, '../.env')): Conf
     leaseSeconds: 60,
     timeoutSeconds: 14400,
     maxAttempts: 3,
-    repairRounds: 10,
     codexModel: process.env.CODEX_MODEL || undefined,
     codexReasoningEffort: z
       .enum(['minimal', 'low', 'medium', 'high', 'xhigh', 'max', 'ultra', 'persistent'])

@@ -1,9 +1,3 @@
-import {
-  normalizeConfirmedScenes,
-  confirmPlan,
-  pipelineRevision,
-  publicScene,
-} from '../domain/storyboard.js';
 import { randomUUID } from 'node:crypto';
 import type { Database, Sql } from './postgres.js';
 import { lock } from './postgres.js';
@@ -34,15 +28,7 @@ export class TaskRepository {
         ])
       ).rows[0];
       if (!task && stage === 'render') fail('TASK_NOT_FOUND', '请先提交分析任务', 404);
-      if (task) {
-        const active = (
-          await q.query(
-            "SELECT id FROM runs WHERE task_id=$1 AND state IN ('queued','running','cancelling','waiting_human')",
-            [task.id],
-          )
-        ).rows[0];
-        if (active) fail('TASK_BUSY', `已有活动执行 ${active.id}`, 409);
-      } else {
+      if (!task) {
         task = (
           await q.query(
             'INSERT INTO tasks(id,tenant,external_id,state,config) VALUES($1,$2,$3,$4,$5) RETURNING *',
@@ -50,52 +36,24 @@ export class TaskRepository {
           )
         ).rows[0];
       }
-      let version = task.plan_version;
-      let confirmed: any;
+      if (task.config.executionProtocol !== 'video-pipeline-io/1')
+        fail('PIPELINE_REVISION_EXPIRED', '旧任务只保留记录，请使用新的任务 ID', 409);
+      const version = task.plan_version + 1;
+      let taskConfig = stage === 'analysis' ? config : task.config;
       if (stage === 'render') {
-        if (version !== input.basePlanVersion) fail('STALE_PLAN', '基础方案版本已过期', 409);
-        if (
-          input.templateId !== task.config.templateId ||
-          input.field_5 !== task.config.digitalHumanAccountId
-        )
-          fail('CONFIG_CONFLICT', '模板或数字人账号与任务配置不一致', 409);
-        if (task.config.pipelineRevision !== pipelineRevision)
-          fail('PIPELINE_REVISION_EXPIRED', '旧任务需重新提交分析', 409);
-        const previous = (
-          await q.query('SELECT plan FROM plan_versions WHERE task_id=$1 AND version=$2', [
-            task.id,
-            version,
-          ])
-        ).rows[0]?.plan?.plan;
-        if (!previous || previous.taskId !== task.id)
-          fail('CONFIRMED_PLAN_MISSING', '服务端方案快照缺失或身份不符', 409);
-        for (const key of ['taskId', 'inputDigest', 'contractVersion'])
-          if (input.plan?.[key] !== undefined && input.plan[key] !== previous[key])
-            fail('CONFIG_CONFLICT', '客户端方案关联信息不匹配', 409);
-        const analysisPlan = (
+        const base = (
           await q.query(
-            "SELECT plan FROM plan_versions WHERE task_id=$1 AND kind='analysis' AND version<=$2 ORDER BY version DESC LIMIT 1",
-            [task.id, version],
+            'SELECT p.plan,r.prepared FROM plan_versions p JOIN runs r ON r.id=p.run_id WHERE p.task_id=$1 AND p.version=$2',
+            [task.id, input.basePlanVersion],
           )
-        ).rows[0]?.plan?.plan;
-        if (!analysisPlan) fail('CONFIRMED_PLAN_MISSING', '原分析文本缺失', 409);
-        const dataList = normalizeConfirmedScenes(input.dataList);
-        confirmed = {
-          dataList,
-          plan: confirmPlan(previous, dataList),
-          confirmation: {
-            requestId: input.requestId,
-            basePlanVersion: version,
-            planVersion: version + 1,
-            original: analysisPlan.scenes.map((s: any) => ({ id: s.id, text: s.text })),
-            before: previous.scenes.map((s: any) => ({ id: s.id, text: s.text })),
-            final: dataList.map((s) => ({ id: s.id, text: s.content })),
-            changed:
-              digest(previous.scenes.map((s: any) => ({ id: s.id, text: s.text }))) !==
-              digest(dataList.map((s) => ({ id: s.id, text: s.content }))),
-          },
-        };
-        version++;
+        ).rows[0];
+        if (!base) fail('STALE_PLAN', '基础方案版本不存在', 409);
+        taskConfig = base.prepared?.taskConfig ?? task.config;
+        if (
+          input.templateId !== taskConfig.templateId ||
+          input.field_5 !== taskConfig.digitalHumanAccountId
+        )
+          fail('CONFIG_CONFLICT', '模板或账号与任务配置不一致', 409);
       }
       const run = (
         await q.query<Run>(
@@ -107,13 +65,21 @@ export class TaskRepository {
       if (stage === 'render')
         await q.query(
           "INSERT INTO plan_versions(task_id,version,run_id,kind,plan) VALUES($1,$2,$3,'confirmed',$4)",
-          [task.id, version, run.id, confirmed],
+          [
+            task.id,
+            version,
+            run.id,
+            { dataList: input.dataList, plan: input.plan ?? {}, requestId: input.requestId },
+          ],
         );
       await q.query(
         'UPDATE tasks SET state=$2,config=$3,plan_version=$4,latest_run=$5,updated_at=now() WHERE id=$1',
         [task.id, `${stage}_queued`, stage === 'analysis' ? config : task.config, version, run.id],
       );
-      return accepted(run);
+      await q.query('UPDATE runs SET prepared=$2 WHERE id=$1', [run.id, { taskConfig }]);
+      const response = accepted(run);
+      response.msg = '等待当前操作结束后交给 Codex';
+      return response;
     });
   }
   async query(tenant: string, externalId: string) {
@@ -158,8 +124,20 @@ export class TaskRepository {
             ).rows[0].n,
           ) + 1
         : null;
+    const result = (
+      await this.db.query('SELECT result FROM run_results WHERE run_id=$1', [latest.id])
+    ).rows[0]?.result;
+    const progress =
+      (
+        await this.db.query(
+          'SELECT last_event_at,last_progress_at,current_tool_name,tool_status FROM host_executions WHERE run_id=$1',
+          [latest.id],
+        )
+      ).rows[0] ?? null;
     return {
       taskId: externalId,
+      result: result?.result ?? null,
+      progress,
       taskState: task.state,
       planVersion: task.plan_version,
       resultVersion: task.result_version,
@@ -181,8 +159,8 @@ export class TaskRepository {
       queuePosition: ahead,
       callbackState: event?.state ?? null,
       callback: event,
-      plan: plan ? { plan: {}, dataList: (plan.dataList ?? []).map(publicScene) } : null,
-      latestResult: artifacts.map((a) => publicScene(a.scene)),
+      plan: plan ?? null,
+      latestResult: artifacts.map((a) => a.scene),
     };
   }
   async cancel(tenant: string, runId: string) {
@@ -212,10 +190,10 @@ export class TaskRepository {
       [run.id, state, error],
     );
     const task = (
-      await q.query('UPDATE tasks SET state=$2,updated_at=now() WHERE id=$1 RETURNING *', [
-        run.task_id,
-        state,
-      ])
+      await q.query(
+        'UPDATE tasks SET state=CASE WHEN latest_run=$3 THEN $2 ELSE state END,updated_at=now() WHERE id=$1 RETURNING *',
+        [run.task_id, state, run.id],
+      )
     ).rows[0];
     const id = randomUUID();
     await q.query(

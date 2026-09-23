@@ -1,4 +1,3 @@
-import { Workspaces } from '../src/infrastructure/workspace.js';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { database, config, tenant, analysis } from './helpers.js';
@@ -7,137 +6,73 @@ import { TaskRepository } from '../src/infrastructure/task-repository.js';
 import { Queue } from '../src/infrastructure/queue.js';
 import { publishResult } from '../src/application/results.js';
 import { Storage } from '../src/infrastructure/storage.js';
-import { normalizeAnalysis } from '../src/domain/storyboard.js';
-import { confirmedPlan } from '../src/infrastructure/stage-workspace.js';
-
-test('省略与空 plan、增删重排均形成服务端确认版本，元数据不能锁定旧场景', async () => {
-  const db = await database(),
-    c = config(),
-    repo = new TaskRepository(db),
-    tasks = new Tasks(repo, c),
-    q = new Queue(db);
+test('完整确认列表原样保存，允许同任务新消息排队并保持幂等', async () => {
+  const db = await database();
   try {
+    const c = config(),
+      repo = new TaskRepository(db),
+      tasks = new Tasks(repo, c),
+      q = new Queue(db);
     await tasks.analysis(tenant, analysis());
-    const a = (await q.claim('test'))!;
-    const plan = normalizeAnalysis(
-      { status: 'candidate', scenes: [{ text: '第一句。' }, { text: '第二句。' }], error: null },
-      analysis().script,
-      a.run.task_id,
-      'a'.repeat(64),
-    );
-    await publishResult(
-      q,
-      new Storage(c),
-      a,
-      { root: '', assets: [], task: {}, taskConfig: {}, hashes: {}, reuse: [], sceneHashes: {} },
-      tenant,
-      plan,
-    );
-    const base = {
+    const a = (await q.claim('w'))!;
+    await publishResult(q, new Storage(c), a, {} as any, tenant, {
+      outcome: {
+        status: 'completed',
+        result: { dataList: [{ id: 's', content: '原稿' }] },
+        error: null,
+      },
+      files: [],
+    });
+    const dataList = [
+      {
+        id: 'new',
+        content: '  修改后，保留标点！？  ',
+        production: { custom: '要求' },
+        custom: '扩展字段',
+      },
+    ];
+    const body = {
       schemaVersion: 2,
       taskId: 'task1',
+      requestId: 'one',
       templateId: 'finance_vertical_v1',
       field_5: '',
+      basePlanVersion: 1,
+      dataList,
     };
-    const dataList = [
-      { id: 'scene_002', content: '编辑第二句。' },
-      { id: 'added', content: '新句。' },
-    ];
-    const r = await tasks.render(tenant, {
-      ...base,
-      requestId: 'one',
-      basePlanVersion: 1,
-      dataList,
-    });
-    const l = (await q.claim('test'))!;
-    const stored = await confirmedPlan(db, l);
-    assert.deepEqual(
-      stored.scenes.map((s: any) => [s.id, s.text]),
-      dataList.map((s) => [s.id, s.content]),
+    const accepted = await tasks.render(tenant, body),
+      again = await tasks.render(tenant, body);
+    assert.equal(accepted.data.runId, again.data.runId);
+    const l = (await q.claim('w'))!;
+    assert.deepEqual(l.run.input, body);
+    const row = (await db.query('SELECT plan FROM plan_versions WHERE run_id=$1', [l.run.id]))
+      .rows[0].plan;
+    assert.deepEqual(row.dataList, dataList);
+    assert.deepEqual(row.plan, {});
+    const next = await tasks.render(tenant, { ...body, requestId: 'two', plan: {} });
+    assert.equal(next.data.state, 'queued');
+    assert.equal(await q.claim('other'), null);
+    await repo.cancel(tenant.id, next.data.runId);
+    assert.equal(
+      (await db.query('SELECT state FROM runs WHERE id=$1', [l.run.id])).rows[0].state,
+      'running',
     );
-    assert.equal(l.run.input.plan, undefined);
-    const changedConfig = config({ runtimeVersion: 'changed-runtime' });
-    await assert.rejects(
-      new Workspaces(changedConfig, db, new Storage(changedConfig)).prepare(l, tenant),
-      { code: 'PIPELINE_REVISION_EXPIRED' },
-    );
-    await q.failed(l, { code: 'TEST', message: '测试', retryable: false });
-    const again = await tasks.render(tenant, {
-      ...base,
-      requestId: 'two',
-      basePlanVersion: 2,
-      dataList,
-      plan: {},
-    });
-    assert.equal(again.data.planVersion, 3);
-    await repo.cancel(tenant.id, again.data.runId);
-    await assert.rejects(
-      tasks.render(tenant, {
-        ...base,
-        requestId: 'wrong',
-        basePlanVersion: 3,
-        dataList,
-        plan: { taskId: 'wrong' },
-      }),
-      { code: 'CONFIG_CONFLICT' },
-    );
-    await tasks.render(tenant, {
-      ...base,
-      requestId: 'three',
-      basePlanVersion: 3,
-      dataList,
-      plan: { taskId: a.run.task_id, inputDigest: plan.inputDigest, scenes: [] },
-    });
-    const view = await repo.query(tenant.id, 'task1');
-    assert.deepEqual(view.plan?.plan, {});
-    assert.equal(JSON.stringify(view).includes('sourceMapping'), false);
-    const duplicate = await tasks.render(tenant, {
-      ...base,
-      requestId: 'one',
-      basePlanVersion: 1,
-      dataList,
-    });
-    assert.equal(duplicate.data.runId, r.data.runId);
   } finally {
     await db.close();
   }
 });
-
-test('旧待执行版本明确拒绝，迁移按顺序且可重复运行', async () => {
-  const db = await database(),
-    repo = new TaskRepository(db),
-    tasks = new Tasks(repo, config()),
-    q = new Queue(db);
+test('旧协议任务只保留记录，不静默回退制作机制', async () => {
+  const db = await database();
   try {
+    const repo = new TaskRepository(db),
+      tasks = new Tasks(repo, config());
     await tasks.analysis(tenant, analysis());
-    const l = (await q.claim('test'))!;
-    const changedConfig = config({ runtimeVersion: 'changed-runtime' });
-    await assert.rejects(
-      new Workspaces(changedConfig, db, new Storage(changedConfig)).prepare(l, tenant),
-      { code: 'PIPELINE_REVISION_EXPIRED' },
+    await db.query(
+      "UPDATE tasks SET config=jsonb_set(config,'{executionProtocol}','\"video-two-stage/1\"')",
     );
-    await q.failed(l, { code: 'TEST', message: '测试', retryable: false });
-    await db.query("UPDATE tasks SET config=config-'pipelineRevision',plan_version=1 WHERE id=$1", [
-      l.run.task_id,
-    ]);
-    await assert.rejects(
-      tasks.render(tenant, {
-        schemaVersion: 2,
-        taskId: 'task1',
-        requestId: 'render',
-        basePlanVersion: 1,
-        field_5: '',
-        templateId: 'finance_vertical_v1',
-        dataList: [{ id: 's', content: '测试。' }],
-      }),
-      { code: 'PIPELINE_REVISION_EXPIRED' },
-    );
-    const cols = (
-      await db.query(
-        "SELECT column_name FROM information_schema.columns WHERE table_name='host_executions' AND column_name='last_progress_at'",
-      )
-    ).rows;
-    assert.equal(cols.length, 1);
+    await assert.rejects(tasks.analysis(tenant, analysis('task1', 'new')), {
+      code: 'PIPELINE_REVISION_EXPIRED',
+    });
   } finally {
     await db.close();
   }

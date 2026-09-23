@@ -10,15 +10,11 @@ import { Queue } from '../src/infrastructure/queue.js';
 import { Workspaces } from '../src/infrastructure/workspace.js';
 import { Storage } from '../src/infrastructure/storage.js';
 import { writeJson, readJson } from '../src/infrastructure/files.js';
-import { snapshotDigest } from '../src/infrastructure/stage-workspace.js';
-import { stagePath } from '../src/contracts/two-stage.js';
 import { publishResult } from '../src/application/results.js';
 import { command } from '../src/infrastructure/process.js';
-import { bubblewrapArgs } from '../src/infrastructure/host-processes.js';
 import { validate } from '../src/infrastructure/validation.js';
 import { executeRun } from '../src/application/execute-run.js';
 import { resumeRun } from '../src/application/resume-run.js';
-import { pipelineRevision } from '../src/domain/storyboard.js';
 import yazl from 'yazl';
 
 async function zipFixture(files: Record<string, string>) {
@@ -75,256 +71,6 @@ async function setup() {
     },
   };
 }
-async function renderSetup(h: Awaited<ReturnType<typeof setup>>) {
-  await h.tasks.analysis(h.t, analysis());
-  const a = (await h.q.claim('worker'))!;
-  const w = await h.workspaces.prepare(a, h.t);
-  const p = plan(w);
-  await check(h, a, w, p);
-  const result = await publishResult(h.q, h.storage, a, w, h.t, p);
-  await h.tasks.render(h.t, {
-    schemaVersion: 2,
-    taskId: 'task1',
-    requestId: 'render-recovery',
-    basePlanVersion: 1,
-    field_5: '',
-    templateId: 'finance_vertical_v1',
-    dataList: result.dataList,
-  });
-  return { lease: (await h.q.claim('worker'))! };
-}
-test(
-  '人工恢复校验版本、幂等请求和预算，保留同一 run',
-  { skip: !process.env.STAGE_TEST_PYTHON },
-  async () => {
-    const h = await setup();
-    try {
-      h.c.python = process.env.STAGE_TEST_PYTHON!;
-      const { lease } = await renderSetup(h);
-      await h.workspaces.prepare(lease, h.t);
-      await h.q.waitHuman(lease, { code: 'SHARED_PIPELINE_ERROR', message: '已修复的测试问题' });
-      const paused = (await h.db.query('SELECT * FROM runs WHERE id=$1', [lease.run.id])).rows[0];
-      const input = {
-        runId: lease.run.id,
-        requestId: 'resume-1',
-        revision: paused.recovery.revision,
-        note: '回归检查通过',
-        actor: 'test-operator',
-        runtimeVersion: h.c.runtimeVersion,
-        pipelineRevision,
-      };
-      let stops = 0;
-      const stop = async () => {
-        stops++;
-      };
-      await assert.rejects(resumeRun(h.db, h.c, { ...input, pipelineRevision: 'old' }, stop), {
-        code: 'PIPELINE_REVISION_EXPIRED',
-      });
-      await assert.rejects(resumeRun(h.db, h.c, { ...input, revision: input.revision + 1 }, stop), {
-        code: 'STALE_RECOVERY',
-      });
-      assert.equal((await resumeRun(h.db, h.c, input, stop)).reused, false);
-      const stopped = stops;
-      assert.equal((await resumeRun(h.db, h.c, input, stop)).reused, true);
-      assert.equal(stops, stopped);
-      await assert.rejects(resumeRun(h.db, h.c, { ...input, note: '不同请求' }, stop), {
-        code: 'IDEMPOTENCY_CONFLICT',
-      });
-      const next = (await h.q.claim('resume-worker'))!;
-      assert.equal(next.run.id, lease.run.id);
-      assert.equal(next.run.repair_rounds, paused.repair_rounds);
-      assert.ok(
-        new Date(next.run.deadline!).getTime() - Date.now() <=
-          Number(paused.remaining_seconds) * 1000 + 1000,
-      );
-      assert.equal(
-        (await h.db.query('SELECT * FROM run_resumptions WHERE run_id=$1', [lease.run.id])).rows
-          .length,
-        1,
-      );
-    } finally {
-      await h.close();
-    }
-  },
-);
-function plan(w: any) {
-  return {
-    contractVersion: 'video-two-stage/1',
-    taskId: w.task.taskId,
-    inputDigest: snapshotDigest(w.task.snapshot),
-    scenes: ['第一句。', '第二句。'].map((text, i) => ({
-      id: `s${i}`,
-      text,
-      sourceMapping: [{ start: i * 4, end: (i + 1) * 4, unit: 'unicode_codepoints' }],
-      timing: {
-        kind: 'estimated',
-        speechSeconds: 1,
-        totalSeconds: 1,
-        totalRangeSeconds: [0.5, 2],
-        basis: '未正式配音',
-      },
-      assetRefs: [],
-      production: {
-        speakers: ['male', 'female'],
-        layout: { custom: '双主持人' },
-        visualBlocks: [{ id: 'block' }],
-      },
-    })),
-    nonspoken: [],
-    previews: [],
-    requirementsNotes: '仅参考当前模板',
-  };
-}
-async function check(h: any, l: any, w: any, p: any) {
-  await writeJson(path.join(w.root, 'analysis/plan.json'), p);
-  await writeJson(path.join(w.root, 'output/agent-response.json'), {
-    contractVersion: w.task.contractVersion,
-    taskId: w.task.taskId,
-    runId: l.run.id,
-    stage: l.run.stage,
-    status: 'candidate',
-    artifact: 'analysis/plan.json',
-    error: null,
-  });
-  const python = process.env.STAGE_TEST_PYTHON;
-  if (!python) return;
-  const sandbox: any = {
-    validate: async () =>
-      JSON.parse(
-        await command(python, [
-          path.join(h.c.toolkitRoot, 'tools/worker_stage.py'),
-          'check',
-          '--request',
-          path.join(w.root, stagePath(w.task)),
-          '--artifact',
-          'analysis/plan.json',
-        ]),
-      ),
-  };
-  await validate(sandbox, l, w, new AbortController().signal);
-}
-test('两阶段请求、完整确认、模板冻结、数据库版本和估算回调往返', async () => {
-  const h = await setup();
-  try {
-    await h.tasks.analysis(h.t, analysis());
-    const l = (await h.q.claim('worker'))!;
-    const w = await h.workspaces.prepare(l, h.t),
-      p = plan(w);
-    assert.equal(w.task.runId, l.run.id);
-    assert.equal(w.task.taskId, l.run.task_id);
-    assert.equal(w.task.renderSelection, undefined);
-    assert.equal(w.task.tts, undefined);
-    await check(h, l, w, p);
-    await publishResult(h.q, h.storage, l, w, h.t, p);
-    const status = await h.repo.query(h.t.id, 'task1');
-    assert.equal(status.taskState, 'awaiting_editor');
-    const event = (
-      await h.db.query('SELECT payload FROM callback_events WHERE run_id=$1', [l.run.id])
-    ).rows[0].payload;
-    assert.equal(event.dataInfo.durationMode, 'estimated');
-    assert.deepEqual(event.plan, {});
-    assert.deepEqual(status.plan?.plan, {});
-    await assert.rejects(
-      h.tasks.render(h.t, {
-        schemaVersion: 2,
-        taskId: 'task1',
-        requestId: 'bad',
-        basePlanVersion: 1,
-        field_5: '',
-        templateId: 'finance_vertical_v1',
-        dataList: [],
-      }),
-      /./,
-    );
-    const edited = structuredClone(p);
-    edited.scenes[0].production.layout.custom = '上下分区';
-    await h.tasks.render(h.t, {
-      schemaVersion: 2,
-      taskId: 'task1',
-      requestId: 'render',
-      basePlanVersion: 1,
-      field_5: '',
-      templateId: 'finance_vertical_v1',
-      plan: edited,
-      dataList: event.dataList.map((s: any, i: number) => ({
-        ...s,
-        production: edited.scenes[i].production,
-      })),
-    });
-    const r = (await h.q.claim('worker'))!,
-      rw = await h.workspaces.prepare(r, h.t);
-    const confirmed = await readJson(path.join(rw.root, rw.task.confirmation.planFile));
-    assert.equal(confirmed.scenes[0].production.layout.custom, '上下分区');
-    assert.equal(
-      await readFile(path.join(rw.root, rw.task.input.scriptFile), 'utf8'),
-      '第一句。第二句。',
-    );
-    assert.deepEqual(
-      await readJson(path.join(rw.root, rw.task.input.requirementsFile)),
-      await readJson(path.join(w.root, w.task.input.requirementsFile)),
-    );
-    assert.equal(rw.task.confirmation.planVersion, r.run.plan_version);
-    assert.equal(
-      await readFile(
-        path.join(w.root, (await readJson(path.join(w.root, 'input/template.json'))).document),
-        'utf8',
-      ),
-      await readFile(
-        path.join(rw.root, (await readJson(path.join(rw.root, 'input/template.json'))).document),
-        'utf8',
-      ),
-    );
-    if (process.env.STAGE_TEST_PYTHON) {
-      const out = await command(process.env.STAGE_TEST_PYTHON, [
-        '-c',
-        `import sys;sys.path.insert(0,sys.argv[1]);from two_stage import load_request;load_request(sys.argv[2],'render');print('ok')`,
-        path.join(h.c.toolkitRoot, 'tools'),
-        path.join(rw.root, stagePath(rw.task)),
-      ]);
-      assert.equal(out.trim(), 'ok');
-    }
-    const args = bubblewrapArgs({ ...h.c, python: '/opt/venv/bin/python3' }, rw, ['bash'], 'agent');
-    const request = path.join(rw.root, stagePath(rw.task));
-    assert.equal(args[args.lastIndexOf(request) - 2], '--ro-bind');
-    assert.ok(!args.includes('--share-net'));
-    assert.ok(!args.includes(path.join(h.c.dataRoot, r.run.task_id, 'tool-cache')));
-    assert.ok(
-      !bubblewrapArgs(
-        { ...h.c, python: '/opt/venv/bin/python3' },
-        rw,
-        ['bash'],
-        'validate',
-      ).includes('--bind'),
-    );
-    await h.repo.cancel(h.t.id, r.run.id);
-    await assert.rejects(publishResult(h.q, h.storage, r, rw, h.t, { scenes: [] }), /./);
-  } finally {
-    await h.close();
-  }
-});
-
-test('只读终检拒绝乱序与伪造输入；analysis 不生成配音文件', async () => {
-  const h = await setup();
-  try {
-    await h.tasks.analysis(h.t, analysis());
-    const l = (await h.q.claim('worker'))!,
-      w = await h.workspaces.prepare(l, h.t);
-    const p = plan(w);
-    await check(h, l, w, p);
-    if (process.env.STAGE_TEST_PYTHON) {
-      p.scenes.reverse();
-      await assert.rejects(check(h, l, w, p), /原稿|原文/);
-    }
-    await assert.rejects(readFile(path.join(w.root, 'input/audio-manifest.json')), {
-      code: 'ENOENT',
-    });
-    const registry = await readJson(path.join(w.root, 'job.json'));
-    assert.equal(Object.keys(registry.requests).length, 1);
-  } finally {
-    await h.close();
-  }
-});
-
 test('定制化模板详情下载 ZIP，冻结目录在 render 阶段原样复用', async () => {
   const h = await setup();
   const archive = await zipFixture({
@@ -390,27 +136,39 @@ test('定制化模板详情下载 ZIP，冻结目录在 render 阶段原样复�
     });
     const analysisLease = (await h.q.claim('worker'))!;
     const analysisWorkspace = await h.workspaces.prepare(analysisLease, h.t);
-    const template = await readJson(path.join(analysisWorkspace.root, 'input/template.json'));
+    const template = (
+      await readJson(path.join(analysisWorkspace.root, analysisWorkspace.task.attachmentsFile))
+    ).template;
     assert.equal(template.source, 'custom_template_api');
-    assert.equal(template.document, 'input/template/财经模板/财经模板.md');
-    assert.equal(template.root, 'input/template/财经模板');
+    assert.equal(
+      template.document,
+      `input/message-${analysisLease.run.id}/template/财经模板/财经模板.md`,
+    );
+    assert.equal(template.root, `input/message-${analysisLease.run.id}/template/财经模板`);
     assert.match(template.archiveSha256, /^[a-f0-9]{64}$/);
     assert.equal(
       await readFile(
-        path.join(analysisWorkspace.root, 'input/template/财经模板/assets/guide.txt'),
+        path.join(analysisWorkspace.root, template.root + '/assets/guide.txt'),
         'utf8',
       ),
       '布局示意',
     );
-    const p = plan(analysisWorkspace);
-    await check(h, analysisLease, analysisWorkspace, p);
+    const p = {};
+    const delivery = {
+      outcome: {
+        status: 'completed',
+        result: { dataList: [{ id: 's', content: '第一句。' }] },
+        error: null,
+      },
+      files: [],
+    };
     const analysisResult = await publishResult(
       h.q,
       h.storage,
       analysisLease,
       analysisWorkspace,
       h.t,
-      p,
+      delivery,
     );
     await h.tasks.render(h.t, {
       schemaVersion: 2,
@@ -427,10 +185,7 @@ test('定制化模板详情下载 ZIP，冻结目录在 render 阶段原样复�
     assert.equal(details, 1);
     assert.equal(downloads, 1);
     assert.equal(
-      await readFile(
-        path.join(renderWorkspace.root, 'input/template/财经模板/assets/guide.txt'),
-        'utf8',
-      ),
+      await readFile(path.join(renderWorkspace.root, template.root + '/assets/guide.txt'), 'utf8'),
       '布局示意',
     );
     const { TemplateProvider } = await import('../src/infrastructure/template-provider.js');
@@ -463,7 +218,8 @@ test('本机财经 ZIP 作为显式测试模板时保留入口和相对资源目
     });
     const lease = (await h.q.claim('worker'))!;
     const workspace = await h.workspaces.prepare(lease, h.t);
-    const template = await readJson(path.join(workspace.root, 'input/template.json'));
+    const template = (await readJson(path.join(workspace.root, workspace.task.attachmentsFile)))
+      .template;
     assert.equal(template.source, 'local_zip');
     assert.ok(template.document.endsWith('.md'));
     assert.ok(
@@ -485,279 +241,13 @@ test('本机财经 ZIP 作为显式测试模板时保留入口和相对资源目
       /财报揭秘室/,
     );
     assert.match(
-      await readFile(path.join(workspace.root, 'input/template', rendererManifest.path), 'utf8'),
+      await readFile(
+        path.join(workspace.root, `input/message-${lease.run.id}/template`, rendererManifest.path),
+        'utf8',
+      ),
       /FinanceEpisode/,
     );
   } finally {
     await h.close();
-  }
-});
-
-test(
-  '真实短媒体经过可信终检、N 分镜发布、生成资源扩展名及完整回调',
-  { skip: !process.env.RUN_STAGE_MEDIA },
-  async () => {
-    const h = await setup();
-    try {
-      await h.tasks.analysis(h.t, analysis());
-      const a = (await h.q.claim('worker'))!,
-        aw = await h.workspaces.prepare(a, h.t),
-        p = plan(aw);
-      await check(h, a, aw, p);
-      const analysisResult = await publishResult(h.q, h.storage, a, aw, h.t, p);
-      await h.tasks.render(h.t, {
-        schemaVersion: 2,
-        taskId: 'task1',
-        requestId: 'render',
-        basePlanVersion: 1,
-        field_5: '',
-        templateId: 'finance_vertical_v1',
-        plan: p,
-        dataList: analysisResult.dataList,
-      });
-      const l = (await h.q.claim('worker'))!,
-        w = await h.workspaces.prepare(l, h.t),
-        python = process.env.STAGE_TEST_PYTHON!;
-      await command(
-        python,
-        [
-          path.resolve('tests/stage-media-fixture.py'),
-          path.join(h.c.toolkitRoot, 'tools'),
-          path.join(w.root, stagePath(w.task)),
-        ],
-        { timeout: 60000, env: process.env },
-      );
-      const manifest = await readJson(path.join(w.root, 'output/manifest.json'));
-      // 媒体夹具补齐终检要求的句级字幕结构。
-      manifest.scenes[0].captions = [
-        { text: manifest.scenes[0].text, startSeconds: 0, endSeconds: 1 },
-      ];
-      await writeJson(path.join(w.root, 'output/manifest.json'), manifest);
-      await writeJson(path.join(w.root, 'output/agent-response.json'), {
-        contractVersion: w.task.contractVersion,
-        taskId: w.task.taskId,
-        runId: l.run.id,
-        stage: 'render',
-        status: 'candidate',
-        artifact: 'output/manifest.json',
-        error: null,
-      });
-      const sandbox: any = {
-        validate: async () =>
-          JSON.parse(
-            await command(
-              python,
-              [
-                path.join(h.c.toolkitRoot, 'tools/worker_stage.py'),
-                'check',
-                '--request',
-                path.join(w.root, stagePath(w.task)),
-                '--artifact',
-                'output/manifest.json',
-              ],
-              { timeout: 60000, env: process.env },
-            ),
-          ),
-      };
-      const candidate = await validate(sandbox, l, w, new AbortController().signal);
-      const timelineFile = path.join(w.root, 'render', l.run.id, 'timeline.json');
-      const timeline = await readJson(timelineFile);
-      await writeJson(timelineFile, { ...timeline, revision: 2 });
-      await assert.rejects(validate(sandbox, l, w, new AbortController().signal), {
-        code: 'TIMELINE_STALE',
-      });
-      await writeJson(timelineFile, timeline);
-      const result = await publishResult(h.q, h.storage, l, w, h.t, candidate);
-      assert.equal(result.dataList.length, 2);
-      for (const s of result.dataList) {
-        assert.ok(s.url.endsWith('.mp4'));
-        assert.deepEqual(s.extraData.resources, []);
-        await readFile(s.url);
-      }
-      const events = (
-        await h.db.query('SELECT payload FROM callback_events WHERE run_id=$1', [l.run.id])
-      ).rows;
-      assert.equal(events[0].payload.dataInfo.sceneCount, 2);
-      assert.equal((await h.repo.query(h.t.id, 'task1')).taskState, 'ready');
-    } finally {
-      await h.close();
-    }
-  },
-);
-
-test('替换素材保持冻结模板和原稿，允许新素材并重新绑定可信摘要', async () => {
-  const h = await setup();
-  try {
-    await mkdir(path.join(h.c.mediaRoot, 'input'), { recursive: true });
-    const source = path.join(h.c.mediaRoot, 'input/new.png');
-    await writeFile(source, 'current-test-image');
-    await h.tasks.analysis(h.t, analysis());
-    const a = (await h.q.claim('worker'))!,
-      aw = await h.workspaces.prepare(a, h.t),
-      p = plan(aw);
-    await check(h, a, aw, p);
-    const result = await publishResult(h.q, h.storage, a, aw, h.t, p);
-    const edited = structuredClone(p);
-    edited.scenes[0].assetRefs = ['new'];
-    const dataList = result.dataList.map((s: any, i: number) => ({
-      ...s,
-      extraData: { ...s.extraData, picInfoList: i === 0 ? [{ assetId: 'new', url: source }] : [] },
-    }));
-    await h.tasks.render(h.t, {
-      schemaVersion: 2,
-      taskId: 'task1',
-      requestId: 'replace',
-      basePlanVersion: 1,
-      field_5: '',
-      templateId: 'finance_vertical_v1',
-      plan: edited,
-      dataList,
-    });
-    const l = (await h.q.claim('worker'))!,
-      w = await h.workspaces.prepare(l, h.t);
-    const manifest = await readJson(path.join(w.root, 'input/assets.json'));
-    assert.equal(manifest.assets[0].id, 'new');
-    assert.equal(
-      await readFile(path.join(w.root, manifest.assets[0].path), 'utf8'),
-      'current-test-image',
-    );
-    if (process.env.STAGE_TEST_PYTHON)
-      await command(process.env.STAGE_TEST_PYTHON, [
-        '-c',
-        `import sys;sys.path.insert(0,sys.argv[1]);from two_stage import load_request;load_request(sys.argv[2],'render')`,
-        path.join(h.c.toolkitRoot, 'tools'),
-        path.join(w.root, stagePath(w.task)),
-      ]);
-  } finally {
-    await h.close();
-  }
-});
-
-test('旧模板正文配置被拒绝，不回退 README', async () => {
-  const { TemplateProvider } = await import('../src/infrastructure/template-provider.js');
-  const provider = new TemplateProvider(
-    config({ templates: { old: { path: 'templates/ifeng-scenes', version: '1' } } }),
-  );
-  await assert.rejects(provider.read('old'), { code: 'TEMPLATE_UNAVAILABLE' });
-});
-
-test('缺少能力不重开模型 turn，等待人工并释放名额，不发送终态回调', async () => {
-  const h = await setup();
-  try {
-    const { lease } = await renderSetup(h);
-    let calls = 0;
-    const sandbox: any = {
-      run: async (l: any, w: any) => {
-        calls++;
-        await writeJson(path.join(w.root, 'output/agent-response.json'), {
-          contractVersion: w.task.contractVersion,
-          taskId: l.run.task_id,
-          runId: l.run.id,
-          stage: l.run.stage,
-          status: 'failed',
-          artifact: null,
-          error: { code: 'CAPABILITY_MISSING', message: '缺少模板必需字体', retryable: true },
-        });
-      },
-      stop: async () => {},
-    };
-    await executeRun(h.c, h.q, sandbox, lease);
-    const status = await h.repo.query(h.t.id, 'task1');
-    assert.equal(calls, 1);
-    assert.equal(status.taskState, 'waiting_human');
-    assert.equal(status.latestRun.error.code, 'CAPABILITY_MISSING');
-    assert.equal(status.latestRun.error.retryable, false);
-    assert.equal(
-      (await h.db.query('SELECT * FROM execution_slots WHERE run_id IS NOT NULL')).rows.length,
-      0,
-    );
-    const event = (
-      await h.db.query('SELECT payload FROM callback_events WHERE run_id=$1', [lease.run.id])
-    ).rows[0];
-    assert.equal(event, undefined);
-  } finally {
-    await h.close();
-  }
-});
-
-test('提前返回制作进度会自动续轮，未知公共错误转人工', async () => {
-  const h = await setup();
-  try {
-    const { lease } = await renderSetup(h);
-    let calls = 0;
-    const sandbox: any = {
-      stop: async () => {},
-      run: async (l: any, w: any) => {
-        calls++;
-        const feedback =
-          calls > 1 ? await readJson(path.join(w.root, '.control/feedback.json')) : null;
-        if (calls > 1) assert.equal(feedback.runId, l.run.id);
-        await writeJson(path.join(w.root, 'output/agent-response.json'), {
-          contractVersion: w.task.contractVersion,
-          taskId: l.run.task_id,
-          runId: l.run.id,
-          stage: 'render',
-          status: calls === 1 ? 'continue_required' : 'human_required',
-          artifact: null,
-          error: {
-            code: calls === 1 ? 'PRODUCTION_INCOMPLETE' : 'SHARED_PIPELINE_ERROR',
-            message: '测试恢复',
-            retryable: false,
-          },
-        });
-      },
-    };
-    await executeRun(h.c, h.q, sandbox, lease);
-    assert.equal(calls, 2);
-    const status = await h.repo.query(h.t.id, 'task1');
-    assert.equal(status.taskState, 'waiting_human');
-    assert.equal(
-      (await h.db.query('SELECT repair_rounds FROM runs WHERE id=$1', [lease.run.id])).rows[0]
-        .repair_rounds,
-      0,
-    );
-  } finally {
-    await h.close();
-  }
-});
-
-test('执行失败保留原因，身份不符仍拒绝', async () => {
-  const root = await mkdtemp(path.join(os.tmpdir(), 'worker-response-'));
-  try {
-    await mkdir(path.join(root, 'output'));
-    const response = {
-      contractVersion: 'video-two-stage/1',
-      taskId: 'task',
-      runId: 'run',
-      stage: 'analysis',
-      status: 'failed',
-      artifact: null,
-      error: { code: 'EXECUTION_HOST_DISABLED', message: '执行主机已禁用', retryable: true },
-    };
-    const w: any = { root, assets: [], task: { contractVersion: response.contractVersion } };
-    const l: any = { run: { task_id: 'task', id: 'run', stage: 'analysis' } };
-    await writeJson(path.join(root, 'output/agent-response.json'), response);
-    await assert.rejects(
-      validate({} as any, l, w, new AbortController().signal),
-      /EXECUTION_HOST_DISABLED: 执行主机已禁用/,
-    );
-    await writeJson(path.join(root, 'output/agent-response.json'), {
-      ...response,
-      error: { code: 'CAPABILITY_MISSING', message: '没有可用的声学对齐能力', retryable: true },
-    });
-    await assert.rejects(validate({} as any, l, w, new AbortController().signal), {
-      code: 'CAPABILITY_MISSING',
-      retryable: false,
-    });
-    await writeJson(path.join(root, 'output/agent-response.json'), {
-      ...response,
-      taskId: 'other',
-    });
-    await assert.rejects(
-      validate({} as any, l, w, new AbortController().signal),
-      /候选协议或执行身份不符/,
-    );
-  } finally {
-    await rm(root, { recursive: true, force: true });
   }
 });
