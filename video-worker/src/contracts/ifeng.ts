@@ -58,10 +58,13 @@ const webAnalysisRequest = z
         digitalHumanId: z.string().max(128).optional().default(''),
         templateId: z.string().max(128).optional().default(''),
         customTemplateId: z.string().max(128).optional().default(''),
-      })
+    })
       .strict(),
     otherMaterial: z
-      .object({ picInfoList: z.array(z.object({ url: z.string() }).strict()).max(200), videoInfoList: z.array(z.object({ url: z.string() }).strict()).max(200) })
+      .object({
+        picInfoList: z.array(z.object({ url: z.string() }).strict()).max(200),
+        videoInfoList: z.array(z.object({ url: z.string() }).strict()).max(200),
+      })
       .strict(),
   })
   .strict();
@@ -76,7 +79,9 @@ export function normalizeAnalysisRequest(body: unknown) {
   const templateId = web.plugin.customTemplateId || web.plugin.templateId;
   if (!templateId) fail('TEMPLATE_REQUIRED', '网页任务未选择模板');
   const fingerprint = createHash('sha256')
-    .update(JSON.stringify({ content: web.content, requirements: web.otherRequirements, templateId }))
+    .update(
+      JSON.stringify({ content: web.content, requirements: web.otherRequirements, templateId }),
+    )
     .digest('hex')
     .slice(0, 16);
   return {
