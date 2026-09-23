@@ -93,16 +93,21 @@ def schema(value, kind):
 
 @contextmanager
 def lock(path):
-    Path(path).parent.mkdir(parents=True, exist_ok=True)
-    with open(path, 'a') as stream:
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    # 执行锁绑定工作区目录，删除空锁文件不能解除仍在运行的制作锁。
+    fd = os.open(path.parent, os.O_RDONLY | os.O_DIRECTORY) if path.name == '.execution.lock' else os.open(path, os.O_CREAT | os.O_RDWR, 0o600)
+    try:
         try:
-            fcntl.flock(stream, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError as exc:
             raise StageError('TASK_BUSY', '同一任务操作正在执行', True) from exc
         try:
             yield
         finally:
-            fcntl.flock(stream, fcntl.LOCK_UN)
+            fcntl.flock(fd, fcntl.LOCK_UN)
+    finally:
+        os.close(fd)
 
 
 def process_signature(pid):

@@ -106,6 +106,26 @@ class ContractTests(Fixture):
             with self.assertRaises(StageError) as error:confirm(self.request,self.plan_path,1,'冲突确认')
             self.assertEqual(error.exception.code,'TASK_BUSY')
 
+    def test_deleting_lock_file_cannot_start_duplicate_execution(self):
+        render=self.render_request()
+        probe = """import sys
+sys.path.insert(0, sys.argv[1])
+from two_stage import execution, StageError
+try:
+    with execution(sys.argv[2], 'duplicate'): pass
+except StageError as exc:
+    print(exc.code)
+else:
+    raise SystemExit('重复执行未被阻止')
+"""
+        with execution(render,'original'):
+            old_lock=self.job/'.execution.lock'
+            old_lock.touch(); old_lock.unlink(); old_lock.touch()
+            result=subprocess.run([sys.executable,'-c',probe,str(ROOT/'tools'),str(render)],capture_output=True,text=True)
+            self.assertEqual(result.returncode,0,result.stderr)
+            self.assertEqual(result.stdout.strip(),'TASK_BUSY')
+        with execution(render,'after_release'): pass
+
     def test_no_confirmation_before_analysis_validation(self):
         with self.assertRaises(StageError):confirm(self.request,self.plan_path,0,'不能跳过分析')
 

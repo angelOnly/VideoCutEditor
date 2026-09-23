@@ -5,7 +5,7 @@
   "defaultExecutor": "host-app-server",
   "taskIsolation": "codex-native-systemd-user",
   "remotionVersion": "4.0.425",
-  "runtimeSourceSha256": "df2f1aecc384531e4c2d002834d843266805b6872f223ccba33825e36ebf1e9a",
+  "runtimeSourceSha256": "7adcdf253b02d4df58de358d856a5905cb43e8a73ea6f702e8b812b2cd6bebbf",
   "files": {
     "claude-code-video-toolkit/.agents/skills/video-pipeline/SKILL.md": "f959dd4b913b8a0a48ef9e8fe5981a4936d0120ba4535c4cc6785d0bd3600e1f",
     "claude-code-video-toolkit/.agents/skills/video-pipeline/agents/openai.yaml": "8b31a00612837d7ca772138b38441ae244015f329c746ce34e2d622439bd646a",
@@ -41,7 +41,7 @@
     "claude-code-video-toolkit/tools/stage_media.py": "244702f70ab11e875fe434c79a07793c9cbd8c80ee6459826c8542f6834ea454",
     "claude-code-video-toolkit/tools/stage_tts.py": "46ac3af5b04470bb27008f73f85fc4a3415512c8f9d402f9edac85029b6262ce",
     "claude-code-video-toolkit/tools/task_io.py": "9e81f988323e1a493bf698d7b3482f2cd5161d5e750e246d42186d781c9fff75",
-    "claude-code-video-toolkit/tools/two_stage.py": "3b4734e56d528299e5d8732c76600844e2c25d740f79d21d458c00a767f49546",
+    "claude-code-video-toolkit/tools/two_stage.py": "9d7d0d6c0b1505baa9c3111592f768f9bf133ce03e1475d42a380f2d4a4d906a",
     "claude-code-video-toolkit/tools/voiceover.py": "8aa120b0099e7b4bf757e93f1f9250990d910ac67e79fae97302c0587a4d4c9d",
     "claude-code-video-toolkit/tools/worker_stage.py": "c2ed6556cd7120047b0a82d0412a221b11615ae15acddcb2f47b893b700c0ec5",
     "video-worker/config/templates.json": "1d465e074912c1c4460db53bed1b7e6ee905b4941fe1c8518e52f6bf38221e48",
