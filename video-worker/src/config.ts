@@ -29,6 +29,8 @@ export interface Config {
   databaseUrl: string;
   port: number;
   mediaRoot: string;
+  /** 浏览器访问已发布媒体的服务地址；未配置时保留本地路径回调兼容。 */
+  mediaPublicBaseUrl?: string;
   dataRoot: string;
   toolkitRoot: string;
   tenants: Tenant[];
@@ -138,6 +140,9 @@ export function loadConfig(envFile = path.resolve(serviceRoot, '../.env')): Conf
     databaseUrl,
     port: Number(process.env.PORT ?? 8080),
     mediaRoot,
+    mediaPublicBaseUrl: process.env.MEDIA_PUBLIC_BASE_URL
+      ? new URL(process.env.MEDIA_PUBLIC_BASE_URL).toString().replace(/\/$/, '')
+      : undefined,
     dataRoot: process.env.DATA_ROOT ?? '/home/ops/jiangzb/video-worker-data',
     toolkitRoot:
       process.env.TOOLKIT_ROOT ?? path.resolve(serviceRoot, '../claude-code-video-toolkit'),

@@ -29,6 +29,8 @@ export class Storage {
     return { file, relative };
   }
   export(tenant: Tenant, key: string) {
+    if (this.config.mediaPublicBaseUrl)
+      return new URL(`media/${key}`, this.config.mediaPublicBaseUrl + '/').toString();
     if (!within(this.config.mediaRoot, path.join(this.config.mediaRoot, key)))
       throw new AppError('PATH_FORBIDDEN', '结果路径越界');
     return path.join(tenant.exportRoot, key);

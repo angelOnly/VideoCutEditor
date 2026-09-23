@@ -1,4 +1,5 @@
 import Fastify from 'fastify';
+import { createReadStream } from 'node:fs';
 import { ZodError, z } from 'zod';
 import type { Config, Tenant } from '../config.js';
 import { AppError } from '../domain/task.js';
@@ -6,6 +7,7 @@ import { Tasks } from '../application/tasks.js';
 import type { Database } from '../infrastructure/postgres.js';
 import { TaskRepository } from '../infrastructure/task-repository.js';
 import { CallbackOutbox } from '../infrastructure/callback-outbox.js';
+import { safeFile } from '../infrastructure/files.js';
 export function createApi(db: Database, config: Config) {
   const api = Fastify({
     bodyLimit: 2 * 1024 * 1024,
@@ -36,6 +38,12 @@ export function createApi(db: Database, config: Config) {
   api.get('/healthz', async () => {
     await db.query('SELECT 1');
     return { status: 0 };
+  });
+  // 仅暴露 Worker 已发布的媒体根；safeFile 同时拒绝穿越和符号链接越界。
+  api.get<{ Params: { '*': string } }>('/media/*', async (req, reply) => {
+    const file = await safeFile(config.mediaRoot, req.params['*']);
+    const type = file.endsWith('.mp4') ? 'video/mp4' : 'application/octet-stream';
+    return reply.type(type).send(createReadStream(file));
   });
   api.post('/narrate/ai_video_director/getAiVideoEditingAnalysisData', async (req, reply) => {
     const r = await tasks.analysis(tenant, req.body);
