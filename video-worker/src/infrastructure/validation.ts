@@ -8,6 +8,7 @@ import {
   outcomeSchema,
   matchIdentity,
   replaceArtifactRefs,
+  validateRenderResult,
 } from '../contracts/pipeline-io.js';
 export async function validate(_sandbox: Sandbox, l: Lease, w: Workspace, signal: AbortSignal) {
   signal.throwIfAborted();
@@ -33,6 +34,7 @@ export async function validate(_sandbox: Sandbox, l: Lease, w: Workspace, signal
   )
     throw new AppError('RESULT_PROTOCOL_INVALID', '状态与结果或错误字段不一致');
   for (const file of result.files) await safeFile(w.root, file.path);
+  validateRenderResult(result, l.run.input);
   replaceArtifactRefs(result.result, new Map(result.files.map((f: any) => [f.id, f.path])));
   return result;
 }

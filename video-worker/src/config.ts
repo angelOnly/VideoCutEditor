@@ -29,7 +29,7 @@ export interface Config {
   databaseUrl: string;
   port: number;
   mediaRoot: string;
-  /** 浏览器访问已发布媒体的服务地址；未配置时保留本地路径回调兼容。 */
+  /** 浏览器可访问的 Worker 服务地址；未配置时禁止发布文件回调。 */
   mediaPublicBaseUrl?: string;
   dataRoot: string;
   toolkitRoot: string;

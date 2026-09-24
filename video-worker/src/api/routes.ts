@@ -1,5 +1,6 @@
 import Fastify from 'fastify';
 import { createReadStream } from 'node:fs';
+import { stat } from 'node:fs/promises';
 import { ZodError, z } from 'zod';
 import type { Config, Tenant } from '../config.js';
 import { AppError } from '../domain/task.js';
@@ -41,10 +42,54 @@ export function createApi(db: Database, config: Config) {
   });
   // 仅暴露 Worker 已发布的媒体根；safeFile 同时拒绝穿越和符号链接越界。
   api.get<{ Params: { '*': string } }>('/media/*', async (req, reply) => {
-    const file = await safeFile(config.mediaRoot, req.params['*']);
+    reply.header('Access-Control-Allow-Origin', '*');
+    reply.header('Access-Control-Expose-Headers', 'Content-Length, Content-Range, Accept-Ranges');
+    const key = req.params['*'];
+    // 只开放发布结果，输入素材、临时文件不作为媒体接口暴露。
+    if (!/^tasks\/[^/]+\/results\/[^/]+\/[^/]+\.[a-zA-Z0-9]+$/.test(key))
+      return reply.code(404).send();
+    let file: string;
+    try {
+      file = await safeFile(config.mediaRoot, key);
+    } catch (error: any) {
+      if (['ENOENT', 'ENOTDIR', 'PATH_FORBIDDEN', 'ASSET_UNAVAILABLE'].includes(error.code))
+        return reply.code(404).send();
+      throw error;
+    }
+    const { size } = await stat(file);
     const type = file.endsWith('.mp4') ? 'video/mp4' : 'application/octet-stream';
-    return reply.type(type).send(createReadStream(file));
+    reply.type(type).header('Accept-Ranges', 'bytes');
+    const range = req.method === 'GET' ? req.headers.range : undefined;
+    // 播放器使用单段 Range 拖动；多段或无法识别的 Range 忽略并返回完整文件。
+    const match = range?.match(/^bytes=(\d*)-(\d*)$/);
+    if (match && (match[1] || match[2]) && !req.headers['if-range']) {
+      const start = match[1] ? Number(match[1]) : Math.max(0, size - Number(match[2]));
+      const end = match[1] && match[2] ? Math.min(Number(match[2]), size - 1) : size - 1;
+      if (
+        !Number.isSafeInteger(start) ||
+        !Number.isSafeInteger(end) ||
+        start > end ||
+        start >= size
+      )
+        return reply.code(416).header('Content-Range', `bytes */${size}`).send();
+      return reply
+        .code(206)
+        .header('Content-Range', `bytes ${start}-${end}/${size}`)
+        .header('Content-Length', end - start + 1)
+        .send(createReadStream(file, { start, end }));
+    }
+    reply.header('Content-Length', size);
+    // Fastify 的 HEAD 处理会丢弃流正文，同时保留真实 Content-Length。
+    return reply.send(createReadStream(file));
   });
+  api.options('/media/*', async (_req, reply) =>
+    reply
+      .code(204)
+      .header('Access-Control-Allow-Origin', '*')
+      .header('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS')
+      .header('Access-Control-Allow-Headers', 'Range, If-Range')
+      .send(),
+  );
   api.post('/narrate/ai_video_director/getAiVideoEditingAnalysisData', async (req, reply) => {
     const r = await tasks.analysis(tenant, req.body);
     return reply.code(202).send(r);

@@ -66,6 +66,7 @@ def prepare(entry_path):
                 'scenes': [], 'nonspoken': [], 'previews': [], 'requirementsNotes': '完整要求见原始输入，口播服从当前确认列表'}
         scenes = []
         for item in raw['dataList']:
+            require(item['id'] not in ('whole', 'whole-video'), '分镜 ID 与整片保留 ID 冲突')
             identifier(item['id']); text = item['content']
             require(isinstance(text, str) and text.strip(), '确认口播不能为空')
             extra = item.get('extraData') or {}
@@ -107,7 +108,7 @@ def prepare(entry_path):
                          'templateSnapshot': relative(template_file), 'assetsManifest': relative(assets_file)},
                'snapshot': snapshot, 'confirmation': None, 'previousArtifacts': None, 'outputSpec': output_spec,
                'limits': {'executionSeconds': 14400, 'repairRounds': 10},
-               'delivery': {'kind': 'analysis_plan' if entry['stage'] == 'analysis' else 'scene_mp4', 'includeWholeVideo': False}}
+               'delivery': {'kind': 'analysis_plan' if entry['stage'] == 'analysis' else 'scene_mp4', 'includeWholeVideo': entry['stage'] == 'render'}}
     if plan is not None:
         plan['inputDigest'] = json_digest(snapshot)
         plan_file = directory/'confirmed.json'; write(plan_file, plan)
@@ -153,9 +154,23 @@ def complete_render(entry_path, manifest_path):
     root, entry, raw, _ = load(entry_path)
     require(entry['stage'] == 'render', '当前不是制作阶段')
     saved = read(binding(root, entry_path))
+    request_path = local(root, saved['request'])
+    manifest_file = local(root, manifest_path)
+    # 交付入口兜底合片；已有整片只做终检，损坏时禁止静默替换或回调成功。
+    if read(manifest_file).get('wholeVideo') is None:
+        from stage_media import assemble
+        assemble(request_path, manifest_file)
     # 制作终检属于 toolkit，由 Codex 显式调用；Worker 不运行此函数。
-    validate(local(root, saved['request']), local(root, manifest_path))
-    manifest = read(local(root, manifest_path)); data, files = [], []
+    validate(request_path, manifest_file)
+    manifest = read(manifest_file)
+    whole = manifest['wholeVideo']
+    spec = read(request_path)['outputSpec']
+    require(all(item['id'] not in ('whole', 'whole-video') for item in raw['dataList']), '分镜 ID 与整片保留 ID 冲突')
+    data = [{'id': 'whole-video', 'content': '\n'.join(item['content'] for item in raw['dataList']),
+             'dur': whole['durationSeconds'], 'durationSource': 'measured', 'artifactRef': 'video-whole',
+             'extraData': {'kind': 'wholeVideo', 'sceneCount': len(manifest['scenes']),
+                           **spec, 'sha256': whole['sha256']}}]
+    files = [{'id': 'video-whole', 'path': whole['path']}]
     for item in raw['dataList']:
         scene = next(s for s in manifest['scenes'] if s['id'] == item['id'])
         ref = 'video-' + identifier(item['id'])

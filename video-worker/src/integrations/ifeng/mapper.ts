@@ -35,7 +35,11 @@ export function callback(eventId: string, run: Run, task: any, result: any, erro
             durationMode: 'estimated',
             previews: [],
           }
-        : { sceneCount: result.dataList.length, ...config.outputSpec }),
+        : {
+            sceneCount: result.dataList.filter((item: any) => item.extraData?.kind !== 'wholeVideo')
+              .length,
+            ...config.outputSpec,
+          }),
     },
     dataList: result.dataList,
     ...(run.stage === 'analysis' ? { plan: {} } : {}),

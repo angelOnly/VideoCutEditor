@@ -7,7 +7,7 @@ import type { Workspace } from '../infrastructure/workspace.js';
 import type { Tenant } from '../config.js';
 import { hashFile } from '../infrastructure/files.js';
 import { callback } from '../integrations/ifeng/mapper.js';
-import { replaceArtifactRefs } from '../contracts/pipeline-io.js';
+import { replaceArtifactRefs, validateRenderResult } from '../contracts/pipeline-io.js';
 export async function publishStage(
   queue: Queue,
   storage: Storage,
@@ -16,11 +16,18 @@ export async function publishStage(
   tenant: Tenant,
   delivery: any,
 ) {
+  validateRenderResult(delivery.outcome, l.run.input);
   const urls = new Map<string, string>();
   const artifacts: any[] = [];
   for (const file of delivery.files) {
     if ((await hashFile(file.source)) !== file.sha256)
       throw new AppError('FILE_HANDOFF_FAILED', '已交接文件损坏');
+    if (
+      delivery.outcome.stage === 'render' &&
+      file.id === 'video-whole' &&
+      delivery.outcome.result.dataList[0].extraData.sha256 !== file.sha256
+    )
+      throw new AppError('FILE_HANDOFF_FAILED', '整片摘要与交付清单不符');
     const published = await storage.publish(
       tenant,
       l.run.task_id,
@@ -51,7 +58,10 @@ export async function publishStage(
     }
     if (state === 'succeeded' && r.stage === 'render') {
       const version = task.result_version + 1;
-      for (const [order, scene] of result.dataList.entries())
+      // 整片保存在 run_results；分镜表继续只记录可独立编辑的分镜。
+      for (const [order, scene] of result.dataList
+        .filter((item: any) => item.extraData?.kind !== 'wholeVideo')
+        .entries())
         await q.query(
           'INSERT INTO scene_artifacts(task_id,result_version,scene_id,input_hash,artifact) VALUES($1,$2,$3,$4,$5)',
           [r.task_id, version, String(order), '', { order, scene }],

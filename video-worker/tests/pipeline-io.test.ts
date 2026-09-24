@@ -12,8 +12,12 @@ import { Storage } from '../src/infrastructure/storage.js';
 import { executeRun } from '../src/application/execute-run.js';
 import { validate } from '../src/infrastructure/validation.js';
 import { productionRecord } from '../src/infrastructure/production-record.js';
-import { writeJson, readJson } from '../src/infrastructure/files.js';
-import { replaceArtifactRefs, ioProtocol } from '../src/contracts/pipeline-io.js';
+import { writeJson, readJson, hashFile } from '../src/infrastructure/files.js';
+import {
+  replaceArtifactRefs,
+  ioProtocol,
+  validateRenderResult,
+} from '../src/contracts/pipeline-io.js';
 async function fixture() {
   const db = await database(),
     directory = await mkdtemp(path.join(os.tmpdir(), 'pipeline-io-'));
@@ -82,8 +86,6 @@ test('原始输入保真、稳定工程、同任务串行和无制作门禁交�
   const f = await fixture();
   try {
     const body: any = analysis();
-    delete body.outputSpec;
-    delete body.narration;
     body.script = '  标点！？\n末尾  ';
     await f.tasks.analysis(tenant, body);
     const a = (await f.queue.claim('w'))!;
@@ -125,22 +127,88 @@ test('原始输入保真、稳定工程、同任务串行和无制作门禁交�
           await readJson(path.join(w.root, `input/message-${a.run.id}/request.json`)),
           body,
         );
-        await writeFile(path.join(w.root, 'output/file.bin'), '不是视频也能交接');
+        // 此测试只验证协议与发布；实际视频合片另由 Python 媒体测试覆盖。
+        await writeFile(path.join(w.root, 'output/whole.mp4'), '整片交接测试');
+        await writeFile(path.join(w.root, 'output/scene.mp4'), '分镜交接测试');
         const result = outcome(w);
-        result.files = [{ id: 'artifact', path: 'output/file.bin' }];
-        result.result.dataList[0].artifactRef = 'artifact';
+        result.files = [
+          { id: 'video-whole', path: 'output/whole.mp4' },
+          { id: 'video-a', path: 'output/scene.mp4' },
+        ];
+        result.result.dataList = [
+          {
+            id: 'whole-video',
+            content: '  确认  ',
+            dur: 1,
+            durationSource: 'measured',
+            artifactRef: 'video-whole',
+            extraData: {
+              kind: 'wholeVideo',
+              sceneCount: 1,
+              sha256: await hashFile(path.join(w.root, 'output/whole.mp4')),
+            },
+          },
+          { ...input.dataList[0], dur: 1, durationSource: 'measured', artifactRef: 'video-a' },
+        ];
         await response(l, w, result);
       }),
       r,
     );
     const result = (await f.db.query('SELECT result FROM run_results WHERE run_id=$1', [r.run.id]))
       .rows[0].result;
-    assert.match(result.result.dataList[0].url, /artifact.bin$/);
+    assert.equal(result.result.dataList[0].id, 'whole-video');
+    assert.match(
+      result.result.dataList[0].url,
+      /^http:\/\/10\.20\.130\.251:8080\/media\/.*video-whole.mp4$/,
+    );
     assert.equal(result.result.dataList[0].artifactRef, undefined);
+    const event = (
+      await f.db.query('SELECT payload FROM callback_events WHERE run_id=$1', [r.run.id])
+    ).rows[0].payload;
+    assert.equal(event.dataInfo.sceneCount, 1);
+    assert.deepEqual(event.dataList, result.result.dataList);
+    assert.equal((await f.db.query('SELECT count(*)::int n FROM scene_artifacts')).rows[0].n, 1);
     assert.equal((await f.queue.claim('next'))!.run.id, next.data.runId);
     assert.equal((await f.db.query('SELECT count(*)::int n FROM callback_events')).rows[0].n, 2);
   } finally {
     await f.close();
+  }
+});
+test('Render 协议拒绝缺少整片、重复文件、错误顺序和服务器路径', () => {
+  const input = { dataList: [{ id: 'a', content: '确认。' }] };
+  const good = {
+    stage: 'render',
+    status: 'completed',
+    files: [
+      { id: 'video-whole', path: 'out/whole.mp4' },
+      { id: 'video-a', path: 'out/a.mp4' },
+    ],
+    result: {
+      dataList: [
+        {
+          id: 'whole-video',
+          content: '确认。',
+          dur: 1,
+          durationSource: 'measured',
+          artifactRef: 'video-whole',
+          extraData: { kind: 'wholeVideo', sceneCount: 1, sha256: 'a'.repeat(64) },
+        },
+        { id: 'a', content: '确认。', dur: 1, durationSource: 'measured', artifactRef: 'video-a' },
+      ],
+    },
+  };
+  validateRenderResult(good, input);
+  for (const mutate of [
+    (v: any) => v.result.dataList.shift(),
+    (v: any) => v.result.dataList.reverse(),
+    (v: any) => (v.result.dataList[1].artifactRef = 'video-whole'),
+    (v: any) => (v.result.dataList[0].url = '/home/ops/video.mp4'),
+    (v: any) => (v.result.dataList[1].content = '未确认内容'),
+    (v: any) => (v.result.dataList[0].dur = 0),
+  ]) {
+    const invalid = structuredClone(good);
+    mutate(invalid);
+    assert.throws(() => validateRenderResult(invalid, input), { code: 'RESULT_PROTOCOL_INVALID' });
   }
 });
 test('拒绝旧回复、错配身份、目录逃逸和未知文件引用', async () => {

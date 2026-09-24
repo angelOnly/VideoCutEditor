@@ -36,6 +36,44 @@ export function matchIdentity(value: any, task: any) {
   if (['protocol', 'taskId', 'requestId', 'stage'].some((k) => value[k] !== task[k]))
     throw new AppError('RESULT_PROTOCOL_INVALID', '结果不属于当前任务消息');
 }
+// 只检查交付协议；合片和音画终检仍由 toolkit 完成。
+export function validateRenderResult(outcome: any, input: any) {
+  if (outcome.stage !== 'render' || outcome.status !== 'completed') return;
+  const data = outcome.result?.dataList;
+  const whole = data?.[0];
+  const scenes = input.dataList;
+  const files = new Map(outcome.files.map((file: any) => [file.id, file.path]));
+  if (
+    !Array.isArray(data) ||
+    !Array.isArray(scenes) ||
+    data.length !== scenes.length + 1 ||
+    whole?.id !== 'whole-video' ||
+    whole.extraData?.kind !== 'wholeVideo' ||
+    whole.artifactRef !== 'video-whole' ||
+    whole.extraData.sceneCount !== scenes.length ||
+    !/^[a-f0-9]{64}$/.test(whole.extraData.sha256 ?? '') ||
+    data.some(
+      (item: any) =>
+        !item ||
+        !Number.isFinite(item.dur) ||
+        item.dur <= 0 ||
+        item.durationSource !== 'measured' ||
+        'url' in item ||
+        !String(files.get(item.artifactRef) ?? '').endsWith('.mp4'),
+    ) ||
+    scenes.some(
+      (scene: any, i: number) =>
+        data[i + 1].id !== scene.id ||
+        data[i + 1].content !== scene.content ||
+        data[i + 1].extraData?.kind === 'wholeVideo',
+    ) ||
+    new Set(data.map((item: any) => item.artifactRef)).size !== data.length
+  )
+    throw new AppError(
+      'RESULT_PROTOCOL_INVALID',
+      'Render 必须交付第 0 项整片和按确认顺序排列的分镜 MP4',
+    );
+}
 // 只映射明确文件引用，不推导分镜、时长或正文。
 export function replaceArtifactRefs(value: any, urls: Map<string, string>): any {
   if (Array.isArray(value)) return value.map((v) => replaceArtifactRefs(v, urls));

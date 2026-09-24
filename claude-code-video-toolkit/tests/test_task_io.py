@@ -4,6 +4,7 @@ import sys
 import subprocess
 import tempfile
 import unittest
+from copy import deepcopy
 from pathlib import Path
 from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[1]
@@ -43,9 +44,41 @@ class TaskIOTests(unittest.TestCase):
    subprocess.run([sys.executable,str(ROOT.parent/'video-worker/tests/stage-media-fixture.py'),str(ROOT/'tools'),str(self.root/prepared['request'])],check=True,capture_output=True)
    reference=complete_render(entry,'output/manifest.json');result=read(self.root/reference['resultFile'])
    self.assertEqual(result['status'],'completed');self.assertEqual(result['requestId'],name)
-   self.assertEqual(result['result']['dataList'][0]['content'],text)
+   whole, scene = result['result']['dataList']
+   self.assertEqual(whole['id'],'whole-video');self.assertEqual(whole['content'],text)
+   self.assertEqual(whole['extraData']['kind'],'wholeVideo');self.assertEqual(whole['dur'],1)
+   self.assertEqual(scene['id'],'scene_001');self.assertEqual(scene['content'],text)
+   self.assertEqual(result['files'][0]['id'],'video-whole')
    self.assertTrue((self.root/result['files'][0]['path']).is_file());self.assertFalse((self.root/'.control').exists())
   self.assertTrue((self.root/'output/r/result.json').exists())
+ def test_whole_video_preserves_confirmed_order_and_rejects_corruption(self):
+  self.analyzed()
+  items=[{'id':'z','content':'先说。','custom':'保留'}, {'id':'a','content':'后说。'}]
+  entry=self.message('ordered','render',{'dataList':items},self.analysis)
+  prepared=prepare(entry)
+  self.assertTrue(read(self.root/prepared['request'])['delivery']['includeWholeVideo'])
+  subprocess.run([sys.executable,str(ROOT.parent/'video-worker/tests/stage-media-fixture.py'),str(ROOT/'tools'),str(self.root/prepared['request'])],check=True,capture_output=True)
+  original=read(self.root/'output/manifest.json')
+  for scenes in [original['scenes'][:1], list(reversed(original['scenes']))]:
+   broken=deepcopy(original);broken['scenes']=scenes;write(self.root/'output/manifest.json',broken)
+   with self.assertRaises(StageError):complete_render(entry,'output/manifest.json')
+   self.assertFalse((self.root/'output/ordered/result.json').exists())
+  write(self.root/'output/manifest.json',original)
+  reference=complete_render(entry,'output/manifest.json');result=read(self.root/reference['resultFile'])
+  data=result['result']['dataList'];manifest=read(self.root/'output/manifest.json')
+  self.assertEqual([s['id'] for s in data],['whole-video','z','a'])
+  self.assertEqual(data[0]['content'],'先说。\n后说。');self.assertEqual(data[0]['dur'],2)
+  self.assertEqual(data[0]['extraData']['sceneCount'],2);self.assertEqual(data[1]['custom'],'保留')
+  self.assertEqual(manifest['wholeVideo']['frames'],20)
+  self.assertEqual(data[0]['extraData']['sha256'],manifest['wholeVideo']['sha256'])
+  complete_render(entry,'output/manifest.json')
+  self.assertEqual(read(self.root/reference['resultFile']),result)
+  manifest['wholeVideo']['sha256']='0'*64;write(self.root/'output/manifest.json',manifest)
+  with self.assertRaises(StageError):complete_render(entry,'output/manifest.json')
+ def test_reserved_whole_video_id_rejected(self):
+  for id in ['whole', 'whole-video']:
+   entry=self.message(id,'render',{'dataList':[{'id':id,'content':'确认。'}]},self.analysis)
+   with self.assertRaises(StageError):prepare(entry)
  def test_render_does_not_require_analysis_converter_records(self):
   # Codex 可直接返回分析业务结果，Render 仍应能从原始消息继续。
   entry=self.message('direct','render',{'dataList':[{'id':'one','content':'确认原文。'}]},self.analysis)

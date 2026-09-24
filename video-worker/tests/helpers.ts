@@ -68,6 +68,7 @@ export function config(overrides: Partial<Config> = {}): Config {
     databaseUrl: 'unused',
     port: 0,
     mediaRoot: tenant.inputRoot,
+    mediaPublicBaseUrl: 'http://10.20.130.251:8080',
     dataRoot: '/tmp/video-worker-test',
     toolkitRoot: new URL('../../claude-code-video-toolkit', import.meta.url).pathname,
     tenants: [tenant],
