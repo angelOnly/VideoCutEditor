@@ -375,13 +375,9 @@ export class TemplateProvider {
     }
   }
   async read(id: string, frozenPath?: string): Promise<FrozenTemplate> {
-    if (this.config.customTemplateApiBaseUrl) {
-      if (!frozenPath) throw templateError('TEMPLATE_UNAVAILABLE', '缺少模板冻结目录');
-      return this.custom(id, frozenPath);
-    }
     const entry = this.config.templates[id];
-    if (!entry) throw new AppError('TEMPLATE_UNAVAILABLE', '未配置模板文件');
-    if (entry.archivePath) {
+    // 已人工冻结的定制模板优先使用本地归档，避免上游临时鉴权故障阻断已验证版本的任务。
+    if (entry?.archivePath) {
       if (!frozenPath) throw templateError('TEMPLATE_UNAVAILABLE', '缺少模板冻结目录');
       const archive = await safeFile(this.config.toolkitRoot, entry.archivePath);
       const extracted = await extractArchive(archive, frozenPath, entry.document);
@@ -394,6 +390,11 @@ export class TemplateProvider {
         ...extracted,
       };
     }
+    if (this.config.customTemplateApiBaseUrl) {
+      if (!frozenPath) throw templateError('TEMPLATE_UNAVAILABLE', '缺少模板冻结目录');
+      return this.custom(id, frozenPath);
+    }
+    if (!entry) throw new AppError('TEMPLATE_UNAVAILABLE', '未配置模板文件');
     throw new AppError('TEMPLATE_UNAVAILABLE', '模板必须显式配置 ZIP');
   }
 }
