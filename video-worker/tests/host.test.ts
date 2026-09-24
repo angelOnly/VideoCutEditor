@@ -14,6 +14,7 @@ import {
   type Rpc,
 } from '../src/infrastructure/app-server.js';
 import { HostCodex, threadConfig } from '../src/runner/codex-host.js';
+import { prompt } from '../src/runner/prompts.js';
 import { Workspaces } from '../src/infrastructure/workspace.js';
 import { Storage } from '../src/infrastructure/storage.js';
 import { Queue } from '../src/infrastructure/queue.js';
@@ -93,6 +94,11 @@ test('Analysis 与 Render 使用独立的 systemd 资源档位', () => {
   });
   assert.deepEqual(taskLimits(c, 'analysis'), { memory: '3G', cpus: 2, tasksMax: 300 });
   assert.deepEqual(taskLimits(c, 'render'), { memory: '16G', cpus: 11, tasksMax: 1536 });
+});
+test('Render 提示禁止将批量渲染转入后台', () => {
+  const value = prompt({ stage: 'render', entryFile: 'input/task.json' });
+  assert.match(value, /严禁使用 nohup、&、disown 或 setsid/);
+  assert.match(value, /必须以前台命令执行并等待正常退出/);
 });
 test('仅收当前 turn 最终回复，接受原生事件、复用 thread，取消先确认停止', async () => {
   const db = await database(),

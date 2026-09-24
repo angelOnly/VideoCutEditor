@@ -10,7 +10,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'tools'))
 from task_io import prepare, complete_analysis, complete_render, finish
-from two_stage import read, write, load_request, StageError
+from two_stage import read, write, load_request, StageError, process_signature
 
 class TaskIOTests(unittest.TestCase):
  def setUp(self):
@@ -104,4 +104,35 @@ class TaskIOTests(unittest.TestCase):
    from config import get_doubao_tts_api_key
    with patch('dotenv.load_dotenv',side_effect=AssertionError('不能读取整份环境文件')):
     self.assertEqual(get_doubao_tts_api_key(),'only-test')
+ def test_render_cannot_write_terminal_status_while_media_execution_is_active(self):
+  entry=self.message('running','render',{'dataList':[{'id':'scene_001','content':'确认。'}]},self.analysis)
+  prepared=prepare(entry);request=self.root/prepared['request']
+  child=subprocess.Popen([sys.executable,'-c','import time;time.sleep(30)'])
+  self.addCleanup(lambda: child.poll() is None and child.kill())
+  try:
+   write(request.parent/'execution.json',{'activeSince':1,'activeAction':'render-batch',
+                                          'executor':{'pid':child.pid,'signature':process_signature(child.pid)},'operations':[]})
+   for status,kwargs in [
+    ('completed',{'result':{}}),
+    ('needs_input',{'error':{'code':'MEDIA_EXECUTION_INTERRUPTED','message':'误判'}}),
+    ('failed',{'error':{'code':'RENDER_FAILED','message':'误判'}}),
+   ]:
+    with self.assertRaises(StageError) as error: finish(entry,status,**kwargs)
+    self.assertEqual(error.exception.code,'TASK_BUSY')
+   self.assertFalse((self.root/'output/running/result.json').exists())
+  finally:
+   child.terminate();child.wait(timeout=3)
+  media_child=subprocess.Popen([sys.executable,'-c','import time;time.sleep(30)'],start_new_session=True)
+  self.addCleanup(lambda: media_child.poll() is None and media_child.kill())
+  try:
+   work=request.parent/'work';work.mkdir()
+   write(work/'scene_001.process.json',{'state':'running','pid':media_child.pid,
+                                         'signature':process_signature(media_child.pid)})
+   with self.assertRaises(StageError) as error:
+    finish(entry,'needs_input',error={'code':'MEDIA_EXECUTION_INTERRUPTED','message':'误判'})
+   self.assertEqual(error.exception.code,'TASK_BUSY')
+  finally:
+   media_child.terminate();media_child.wait(timeout=3)
+  ref=finish(entry,'needs_input',error={'code':'RENDER_FAILED','message':'进程已结束'})
+  self.assertEqual(read(self.root/ref['resultFile'])['status'],'needs_input')
 if __name__=='__main__':unittest.main()

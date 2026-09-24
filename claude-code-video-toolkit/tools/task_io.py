@@ -8,7 +8,8 @@ import sys
 import json
 import hashlib
 from two_stage import (VERSION, StageError, read, write, local, require, identifier, digest,
-                       json_digest, schema, storyboard, validate, validate_plan)
+                       json_digest, schema, storyboard, validate, validate_plan, active_execution,
+                       active_processes)
 
 PROTOCOL = 'video-pipeline-io/1'
 
@@ -26,6 +27,22 @@ def load(entry_path):
 
 def binding(root, entry_path):
     return root/'work/io'/Path(entry_path).parent.name/'binding.json'
+
+
+def ensure_render_is_idle(root, entry_path, entry):
+    """媒体仍在运行时不允许写任何终态，避免 Worker 清理掉后台批渲染。"""
+    if entry['stage'] != 'render': return
+    saved_path = binding(root, entry_path)
+    if not saved_path.exists(): return
+    request_path = local(root, read(saved_path)['request'])
+    active = []
+    owner = active_execution(request_path)
+    if owner: active.append(owner)
+    work_prefix = str(request_path.parent.relative_to(root) / 'work') + '/'
+    active.extend(item for item in active_processes(root) if item['record'].startswith(work_prefix))
+    if active:
+        details = '、'.join(f"{item.get('action', '媒体进程')}（PID {item['pid']}）" for item in active)
+        require(False, f'当前 Render 仍有活跃制作进程：{details}；请等待当前批次完成', 'TASK_BUSY')
 
 
 def prepare(entry_path):
@@ -131,6 +148,7 @@ def finish(entry_path, status, result=None, files=None, error=None):
     root, entry, _, _ = load(entry_path)
     require(status in ('completed', 'needs_input', 'failed'), '状态无效')
     require((status == 'completed' and result is not None and error is None) or (status != 'completed' and error), '结果状态不一致')
+    ensure_render_is_idle(root, entry_path, entry)
     files = files or []
     require(len({f['id'] for f in files}) == len(files), '文件 ID 重复')
     for file in files: identifier(file['id']); local(root, file['path'])
@@ -153,6 +171,7 @@ def complete_analysis(entry_path, text_result):
 def complete_render(entry_path, manifest_path):
     root, entry, raw, _ = load(entry_path)
     require(entry['stage'] == 'render', '当前不是制作阶段')
+    ensure_render_is_idle(root, entry_path, entry)
     saved = read(binding(root, entry_path))
     request_path = local(root, saved['request'])
     manifest_file = local(root, manifest_path)

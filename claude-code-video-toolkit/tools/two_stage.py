@@ -132,6 +132,19 @@ def active_processes(root):
     return active
 
 
+def active_execution(request_path):
+    """返回仍存活的制作入口，PID 被复用时不能误判为活跃。"""
+    root, _ = load_request(request_path, 'render')
+    path = execution_path(root, request_path)
+    if not path.exists(): return None
+    state = read(path)
+    owner = state.get('executor') or {}
+    pid, signature = owner.get('pid'), owner.get('signature')
+    if not state.get('activeSince') or not isinstance(pid, int) or not isinstance(signature, str): return None
+    if process_signature(pid) != signature: return None
+    return {'pid': pid, 'action': state.get('activeAction', '制作'), 'record': str(path.relative_to(root))}
+
+
 def failure(request_path, step, exc):
     payload = {'status': 'failed', 'step': step, 'error': {'code': getattr(exc, 'code', 'EXECUTION_FAILED'),
                'message': str(exc), 'retryable': getattr(exc, 'retryable', False)}}
@@ -407,6 +420,10 @@ def execution(request_path, action):
         remaining = request['limits']['executionSeconds'] - state['elapsedSeconds']
         require(remaining > 0, '阶段执行预算耗尽', 'BUDGET_EXHAUSTED')
         state['activeSince'] = time.time(); state['activeAction'] = action
+        signature = process_signature(os.getpid())
+        if signature:
+            # 终态写入方据此识别仍在前台执行的制作入口，禁止提前结束任务。
+            state['executor'] = {'pid': os.getpid(), 'signature': signature}
         write(path, state)
         try:
             yield root, request, remaining
@@ -441,7 +458,7 @@ def execution(request_path, action):
         finally:
             state['elapsedSeconds'] += time.time() - state.pop('activeSince')
             state['operations'].append({'action': action, 'endedAt': time.time()})
-            state.pop('activeAction', None); write(path, state)
+            state.pop('activeAction', None); state.pop('executor', None); write(path, state)
 
 
 def repair(request_path, reason):
