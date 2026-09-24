@@ -10,6 +10,7 @@ import {
   AppServer,
   codexEnvironment,
   codexOverrides,
+  taskLimits,
   type Rpc,
 } from '../src/infrastructure/app-server.js';
 import { HostCodex, threadConfig } from '../src/runner/codex-host.js';
@@ -73,6 +74,19 @@ test('原生命令和看图可用，文件限定任务和只读工具，环境�
   assert.equal(env.POSTGRES_PASSWORD, undefined);
   assert.equal(env.IFENG_CALLBACK_SECRET, undefined);
   assert.equal(env.VIDEOCUT_RENDER_SANDBOX, 'native');
+  assert.equal(env.VIDEOCUT_RENDER_SLOTS, '5');
+});
+test('Analysis 与 Render 使用独立的 systemd 资源档位', () => {
+  const c = config({
+    hostAnalysisMemory: '3G',
+    hostAnalysisCpus: 2,
+    hostAnalysisTasksMax: 300,
+    hostRenderMemory: '16G',
+    hostRenderCpus: 11,
+    hostRenderTasksMax: 1536,
+  });
+  assert.deepEqual(taskLimits(c, 'analysis'), { memory: '3G', cpus: 2, tasksMax: 300 });
+  assert.deepEqual(taskLimits(c, 'render'), { memory: '16G', cpus: 11, tasksMax: 1536 });
 });
 test('仅收当前 turn 最终回复，接受原生事件、复用 thread，取消先确认停止', async () => {
   const db = await database(),

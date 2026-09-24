@@ -2,6 +2,10 @@ import type { Database, Sql } from './postgres.js';
 import { lock } from './postgres.js';
 import { AppError, type Run, type Lease } from '../domain/task.js';
 import { TaskRepository } from './task-repository.js';
+
+export const MAX_ACTIVE_RUNS = 6;
+export const MAX_RENDER_RUNS = 4;
+
 export class Queue {
   constructor(
     public db: Database,
@@ -17,9 +21,23 @@ export class Queue {
         )
       ).rows[0];
       if (!slot) return null;
+      const activeRenderRuns = Number(
+        (
+          await q.query<{ count: number | string }>(
+            `SELECT count(*) AS count
+             FROM execution_slots s
+             JOIN runs r ON r.id=s.run_id
+             WHERE s.run_id IS NOT NULL AND r.stage='render'`,
+          )
+        ).rows[0]?.count ?? 0,
+      );
+      // scheduler_lock 已串行化领取与释放；Render 满额时跳过它，避免占住空槽却阻塞 Analysis。
+      const renderPredicate = activeRenderRuns < MAX_RENDER_RUNS ? '' : " AND r.stage <> 'render'";
       const run = (
         await q.query<Run>(
-          "SELECT r.* FROM runs r WHERE r.state='queued' AND (r.delivery_next_attempt_at IS NULL OR r.delivery_next_attempt_at<=now()) AND NOT EXISTS (SELECT 1 FROM runs a WHERE a.task_id=r.task_id AND a.id<>r.id AND (a.state IN ('running','cancelling','waiting_human') OR (a.state='queued' AND a.plan_version<r.plan_version))) ORDER BY r.created_at,r.id LIMIT 1 FOR UPDATE",
+          "SELECT r.* FROM runs r WHERE r.state='queued' AND (r.delivery_next_attempt_at IS NULL OR r.delivery_next_attempt_at<=now())" +
+            renderPredicate +
+            " AND NOT EXISTS (SELECT 1 FROM runs a WHERE a.task_id=r.task_id AND a.id<>r.id AND (a.state IN ('running','cancelling','waiting_human') OR (a.state='queued' AND a.plan_version<r.plan_version))) ORDER BY CASE WHEN r.stage='render' THEN 0 ELSE 1 END,r.created_at,r.id LIMIT 1 FOR UPDATE",
         )
       ).rows[0];
       if (!run) return null;

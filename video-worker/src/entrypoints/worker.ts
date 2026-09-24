@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { setTimeout } from 'node:timers/promises';
 import { loadConfig } from '../config.js';
 import { Postgres } from '../infrastructure/postgres.js';
-import { Queue } from '../infrastructure/queue.js';
+import { MAX_ACTIVE_RUNS, Queue } from '../infrastructure/queue.js';
 import { HostSandbox } from '../infrastructure/host-sandbox.js';
 import { executeRun } from '../application/execute-run.js';
 if (process.env.VIDEOCUT_SUPERVISOR_LOCKED !== '1')
@@ -25,7 +25,7 @@ try {
     }
     try {
       await queue.recover(owner, (id) => sandbox.stop(id), config.maxAttempts, activeIds);
-      while (active.size < 4 && !abort.signal.aborted) {
+      while (active.size < MAX_ACTIVE_RUNS && !abort.signal.aborted) {
         if (sandbox instanceof HostSandbox && !sandbox.healthy) break;
         const l = await queue.claim(owner);
         if (!l) break;

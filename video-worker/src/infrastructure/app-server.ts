@@ -5,6 +5,26 @@ import { EventEmitter } from 'node:events';
 import { createInterface } from 'node:readline';
 import type { Config } from '../config.js';
 
+export interface HostTaskLimits {
+  memory: string;
+  cpus: number;
+  tasksMax: number;
+}
+
+export function taskLimits(config: Config, stage: 'analysis' | 'render'): HostTaskLimits {
+  return stage === 'render'
+    ? {
+        memory: config.hostRenderMemory,
+        cpus: config.hostRenderCpus,
+        tasksMax: config.hostRenderTasksMax,
+      }
+    : {
+        memory: config.hostAnalysisMemory,
+        cpus: config.hostAnalysisCpus,
+        tasksMax: config.hostAnalysisTasksMax,
+      };
+}
+
 export interface Rpc {
   request(method: string, params: any): Promise<any>;
   on(event: 'notification' | 'fatal', listener: (...args: any[]) => void): this;
@@ -27,6 +47,7 @@ export function codexEnvironment(config: Config): NodeJS.ProcessEnv {
     REMOTION_BROWSER_EXECUTABLE: config.hostBrowser,
     PYTHONDONTWRITEBYTECODE: '1',
     VIDEOCUT_RENDER_SANDBOX: 'native',
+    VIDEOCUT_RENDER_SLOTS: String(config.renderSlots),
     DOUBAO_TTS_API_KEY: process.env.DOUBAO_TTS_API_KEY,
     DOUBAO_TTS_RESOURCE_ID: config.ttsResourceId,
     DOUBAO_TTS_SPEAKER: config.ttsVoice,
@@ -53,6 +74,7 @@ export const codexOverrides: Record<string, unknown> = {
       'PYTHONDONTWRITEBYTECODE',
       'TMPDIR',
       'VIDEOCUT_RENDER_SANDBOX',
+      'VIDEOCUT_RENDER_SLOTS',
       'DOUBAO_TTS_API_KEY',
       'DOUBAO_TTS_RESOURCE_ID',
       'DOUBAO_TTS_SPEAKER',
@@ -80,7 +102,12 @@ export class AppServer extends EventEmitter implements Rpc {
   private id = 0;
   healthy = false;
   handleRequest?: (method: string, params: any) => Promise<any>;
-  async start(config: Config, runId?: string, overrides: Record<string, unknown> = codexOverrides) {
+  async start(
+    config: Config,
+    runId?: string,
+    overrides: Record<string, unknown> = codexOverrides,
+    limits: HostTaskLimits = taskLimits(config, 'analysis'),
+  ) {
     const args = ['app-server'];
     for (const [key, value] of Object.entries(overrides)) args.push('-c', `${key}=${toml(value)}`);
     const env = codexEnvironment(config);
@@ -102,9 +129,9 @@ export class AppServer extends EventEmitter implements Rpc {
           '--property=SendSIGKILL=yes',
           '--property=UMask=0077',
           '--property=NoNewPrivileges=yes',
-          `--property=MemoryMax=${config.hostMemory}`,
-          `--property=CPUQuota=${config.hostCpus * 100}%`,
-          `--property=TasksMax=${config.hostTasksMax}`,
+          `--property=MemoryMax=${limits.memory}`,
+          `--property=CPUQuota=${limits.cpus * 100}%`,
+          `--property=TasksMax=${limits.tasksMax}`,
           '--property=PartOf=videocut-worker.service',
           ...Object.keys(env)
             .filter((k) => env[k] !== undefined)

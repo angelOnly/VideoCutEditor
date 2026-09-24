@@ -26,6 +26,13 @@ export interface Config {
   hostMemory: string;
   hostCpus: number;
   hostTasksMax: number;
+  hostAnalysisMemory: string;
+  hostAnalysisCpus: number;
+  hostAnalysisTasksMax: number;
+  hostRenderMemory: string;
+  hostRenderCpus: number;
+  hostRenderTasksMax: number;
+  renderSlots: number;
   databaseUrl: string;
   port: number;
   mediaRoot: string;
@@ -105,6 +112,40 @@ export function loadConfig(envFile = path.resolve(serviceRoot, '../.env')): Conf
     : {};
   if (process.env.TEMPLATE_API_URL)
     throw Error('TEMPLATE_API_URL 已停用，请配置定制 ZIP 服务或本地 ZIP');
+  // 保留 HOST_TASK_* 作为旧配置兼容回退；分阶段变量仅在显式配置后覆盖它。
+  const hostMemory = z
+    .string()
+    .regex(/^\d+[MG]$/)
+    .parse(process.env.HOST_TASK_MEMORY ?? '4G');
+  const hostCpus = z.coerce
+    .number()
+    .positive()
+    .max(64)
+    .parse(process.env.HOST_TASK_CPUS ?? 2);
+  const hostTasksMax = z.coerce
+    .number()
+    .int()
+    .min(32)
+    .max(8192)
+    .parse(process.env.HOST_TASK_PIDS ?? 256);
+  const memory = (name: string, fallback: string) =>
+    z
+      .string()
+      .regex(/^\d+[MG]$/)
+      .parse(process.env[name] ?? fallback);
+  const cpus = (name: string, fallback: number) =>
+    z.coerce
+      .number()
+      .positive()
+      .max(64)
+      .parse(process.env[name] ?? fallback);
+  const pids = (name: string, fallback: number) =>
+    z.coerce
+      .number()
+      .int()
+      .min(32)
+      .max(8192)
+      .parse(process.env[name] ?? fallback);
   return {
     executionProtocol: z
       .enum(['video-pipeline-io/1', 'video-two-stage/1'])
@@ -122,21 +163,16 @@ export function loadConfig(envFile = path.resolve(serviceRoot, '../.env')): Conf
     executor: z.literal('host').parse(process.env.WORKER_EXECUTOR ?? 'host'),
     codexPath: process.env.CODEX_PATH || path.join(serviceRoot, 'node_modules/.bin/codex'),
     codexHome: process.env.CODEX_HOME || path.join(os.homedir(), '.codex'),
-    hostMemory: z
-      .string()
-      .regex(/^\d+[MG]$/)
-      .parse(process.env.HOST_TASK_MEMORY ?? '4G'),
-    hostCpus: z.coerce
-      .number()
-      .positive()
-      .max(64)
-      .parse(process.env.HOST_TASK_CPUS ?? 2),
-    hostTasksMax: z.coerce
-      .number()
-      .int()
-      .min(32)
-      .max(4096)
-      .parse(process.env.HOST_TASK_PIDS ?? 256),
+    hostMemory,
+    hostCpus,
+    hostTasksMax,
+    hostAnalysisMemory: memory('HOST_ANALYSIS_TASK_MEMORY', hostMemory),
+    hostAnalysisCpus: cpus('HOST_ANALYSIS_TASK_CPUS', hostCpus),
+    hostAnalysisTasksMax: pids('HOST_ANALYSIS_TASK_PIDS', hostTasksMax),
+    hostRenderMemory: memory('HOST_RENDER_TASK_MEMORY', hostMemory),
+    hostRenderCpus: cpus('HOST_RENDER_TASK_CPUS', hostCpus),
+    hostRenderTasksMax: pids('HOST_RENDER_TASK_PIDS', hostTasksMax),
+    renderSlots: z.coerce.number().int().min(1).max(5).parse(process.env.RENDER_TASK_SLOTS ?? 5),
     databaseUrl,
     port: Number(process.env.PORT ?? 8080),
     mediaRoot,

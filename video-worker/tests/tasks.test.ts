@@ -49,22 +49,30 @@ test('网页渲染请求复用已确认的模板和方案版本', () => {
   assert.match(input.requestId, /^web-v1-web-task-1-render-[a-f0-9]{16}$/);
 });
 
-test('six tasks share four persistent slots; releases admit FIFO successors', async () => {
+test('six active slots prefer Render and cap it at four', async () => {
   const db = await database();
   try {
     const tasks = new Tasks(new TaskRepository(db), config()),
       q = new Queue(db);
     const submitted = [];
-    for (let i = 0; i < 6; i++) submitted.push(await tasks.analysis(tenant, analysis('task' + i)));
+    for (let i = 0; i < 8; i++) submitted.push(await tasks.analysis(tenant, analysis('task' + i)));
+    // 只验证调度器的阶段选择；正常 Render 输入校验由两阶段测试覆盖。
+    for (const item of submitted.slice(0, 5))
+      await db.query("UPDATE runs SET stage='render' WHERE id=$1", [item.data.runId]);
     const leases = await Promise.all(Array.from({ length: 6 }, (_, i) => q.claim('owner' + i)));
-    assert.equal(leases.filter(Boolean).length, 4);
+    const active = leases.filter(Boolean);
+    assert.equal(active.length, 6);
+    assert.equal(active.filter((lease) => lease!.run.stage === 'render').length, 4);
+    assert.equal(active.filter((lease) => lease!.run.stage === 'analysis').length, 2);
     assert.equal(
       (await db.query('SELECT * FROM execution_slots WHERE run_id IS NOT NULL')).rows.length,
-      4,
+      6,
     );
-    await q.failed(leases[0]!, { code: 'TEST', message: 'done', retryable: false });
+    const render = active.find((lease) => lease!.run.stage === 'render')!;
+    await q.failed(render!, { code: 'TEST', message: 'done', retryable: false });
     const next = await q.claim('owner6');
     assert.equal(next!.run.id, submitted[4].data.runId);
+    assert.equal(next!.run.stage, 'render');
   } finally {
     await db.close();
   }

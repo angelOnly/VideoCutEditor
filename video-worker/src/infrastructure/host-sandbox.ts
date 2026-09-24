@@ -3,7 +3,7 @@ import type { Lease } from '../domain/task.js';
 import type { Workspace } from './workspace.js';
 import type { Sandbox } from './sandbox.js';
 import type { Queue } from './queue.js';
-import { AppServer } from './app-server.js';
+import { AppServer, taskLimits } from './app-server.js';
 import { HostProcesses } from './host-processes.js';
 import { checkNativeIsolation } from './native-preflight.js';
 import { HostCodex, threadConfig } from '../runner/codex-host.js';
@@ -42,7 +42,12 @@ export class HostSandbox implements Sandbox {
     const codex = new HostCodex(this.config, rpc, this.queue, this.processes);
     this.sessions.set(l.run.id, { rpc, codex });
     try {
-      await rpc.start(this.config, l.run.id, threadConfig(this.config, w));
+      await rpc.start(
+        this.config,
+        l.run.id,
+        threadConfig(this.config, w),
+        taskLimits(this.config, l.run.stage),
+      );
       signal.throwIfAborted();
       await codex.run(l, w, signal);
     } finally {

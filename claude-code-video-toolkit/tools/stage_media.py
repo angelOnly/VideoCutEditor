@@ -704,6 +704,13 @@ def preflight(node, modules, browser):
 
 def main():
     p = argparse.ArgumentParser(description=__doc__); s = p.add_subparsers(dest='command', required=True)
+    configured_slots = os.environ.get('VIDEOCUT_RENDER_SLOTS')
+    if configured_slots is not None:
+        try:
+            configured_slots = int(configured_slots)
+            require(configured_slots in (1, 2, 3, 4, 5), 'VIDEOCUT_RENDER_SLOTS 只支持 1 至 5')
+        except (ValueError, StageError) as exc:
+            print(json.dumps({'error': {'code': 'RENDER_SLOT_CONFIG_INVALID', 'message': str(exc)}}, ensure_ascii=False)); return 1
     for name in ('freeze-batch', 'render-batch'):
         a = s.add_parser(name)
         a.add_argument('--request', type=Path, required=True)
@@ -711,7 +718,7 @@ def main():
         if name == 'freeze-batch':
             a.add_argument('--batch', required=True); a.add_argument('--project', required=True); a.add_argument('--entry', required=True); a.add_argument('--scenes', required=True)
         else:
-            a.add_argument('--manifest', required=True); a.add_argument('--slots', type=int, choices=(1, 2, 3), default=1)
+            a.add_argument('--manifest', required=True); a.add_argument('--slots', type=int, choices=(1, 2, 3, 4, 5), default=configured_slots or 5)
     for name in ('preflight', 'render'):
         a = s.add_parser(name); a.add_argument('--node', default='node'); a.add_argument('--modules', required=True); a.add_argument('--browser', required=True)
         if name == 'render':
@@ -729,6 +736,8 @@ def main():
     a = p.parse_args()
     try:
         if a.command in ('freeze-batch', 'render-batch'):
+            if a.command == 'render-batch' and configured_slots is not None:
+                require(a.slots == configured_slots, '当前任务的渲染槽位由 Worker 固定', 'RENDER_SLOT_CONFIG_INVALID')
             from render_batch import freeze_batch, render_batch
             result = freeze_batch(a) if a.command == 'freeze-batch' else render_batch(a)
         elif a.command == 'preflight': result = preflight(a.node, a.modules, a.browser)

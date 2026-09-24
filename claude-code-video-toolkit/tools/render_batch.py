@@ -102,7 +102,7 @@ def render_batch(args):
         batch_dir = manifest_path.parent
         require(batch_dir.parent == Path(args.request).resolve().parent / 'batches', '批次路径必须属于当前 Render')
         manifest = read(manifest_path)
-        require(args.slots in (1, 2, 3), '只支持 1/2/3 个渲染槽')
+        require(args.slots in (1, 2, 3, 4, 5), '只支持 1 至 5 个渲染槽')
         verify_manifest(root, args.request, request, manifest, args.modules, args.browser)
         require(os.environ.get('VIDEOCUT_RENDER_SANDBOX', 'seatbelt' if sys.platform == 'darwin' else 'bwrap') in ('seatbelt', 'bwrap', 'native'),
                 '批次必须使用只读输入沙箱', 'CAPABILITY_MISSING')

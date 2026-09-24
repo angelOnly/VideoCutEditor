@@ -41,6 +41,7 @@ export async function migrate(db: Database) {
     '002_pipeline_liveness.sql',
     '003_render_recovery.sql',
     '004_pipeline_io.sql',
+    '005_execution_capacity.sql',
   ]) {
     const sql = await readFile(
       fileURLToPath(new URL('../../migrations/' + name, import.meta.url)),

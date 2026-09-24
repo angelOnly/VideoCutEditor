@@ -21,7 +21,7 @@ try {
   await processes.preflight();
   if ((await command(c.codexPath, ['--version'])).trim() !== 'codex-cli 0.154.0')
     throw new Error('Pinned Codex 0.154.0 is required');
-  await db.query('SELECT id FROM execution_slots WHERE id=4');
+  await db.query('SELECT id FROM execution_slots WHERE id=6');
   await db.query(
     'SELECT run_id,last_event_at,last_progress_at,current_tool_id,cleanup_state FROM host_executions LIMIT 0',
   );
