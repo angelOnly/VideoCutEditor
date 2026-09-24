@@ -51,6 +51,12 @@ class FakeRpc extends EventEmitter implements Rpc {
       turn: { id: turnId, status: 'completed' },
     });
   }
+  fail(turnId: string, error: any) {
+    this.emit('notification', 'turn/completed', {
+      threadId: 'thread',
+      turn: { id: turnId, status: 'failed', error },
+    });
+  }
 }
 async function until(fn: () => boolean) {
   for (let i = 0; i < 100; i++) {
@@ -144,6 +150,57 @@ test('仅收当前 turn 最终回复，接受原生事件、复用 thread，取�
     assert.ok(stopped.includes(l.run.id));
   } finally {
     rpc.complete('turn-' + rpc.turn);
+    await Promise.allSettled(running ? [running] : []);
+    await db.close();
+    await writable(dir);
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+test('模型容量不足保留原始诊断，只有未启动工具的回合可重试', async () => {
+  const db = await database(),
+    dir = await mkdtemp(path.join(os.tmpdir(), 'host-capacity-'));
+  const c = config({ dataRoot: path.join(dir, 'data'), mediaRoot: path.join(dir, 'media') }),
+    rpc = new FakeRpc(),
+    queue = new Queue(db),
+    repo = new TaskRepository(db),
+    tasks = new Tasks(repo, c);
+  const host = new HostCodex(c, rpc, queue, { stop: async () => {} } as any);
+  let running: Promise<void> | undefined;
+  const capacityError = {
+    codex_error_info: 'server_overloaded',
+    message: 'Selected model is at capacity. Please try a different model.',
+  };
+  try {
+    await tasks.analysis(tenant, analysis());
+    const l = (await queue.claim('w'))!,
+      w = await new Workspaces(c, db, new Storage(c)).prepare(l, tenant);
+    running = host.run(l, w, new AbortController().signal);
+    void running.catch(() => {});
+    await until(() => rpc.turn === 1);
+    rpc.fail('turn-1', capacityError);
+    await assert.rejects(running, (error: any) => {
+      assert.equal(error.code, 'CODEX_MODEL_OVERLOADED');
+      assert.equal(error.retryable, true);
+      assert.deepEqual(error.details, {
+        turnStatus: 'failed',
+        providerCode: 'server_overloaded',
+        providerMessage: capacityError.message,
+        lastTool: null,
+      });
+      return true;
+    });
+    running = host.run(l, w, new AbortController().signal);
+    void running.catch(() => {});
+    await until(() => rpc.turn === 2);
+    rpc.event('item/started', 'turn-2', { type: 'commandExecution', id: 'cmd-1' });
+    rpc.fail('turn-2', capacityError);
+    await assert.rejects(running, (error: any) => {
+      assert.equal(error.code, 'CODEX_MODEL_OVERLOADED');
+      assert.equal(error.retryable, false);
+      assert.deepEqual(error.details.lastTool, { type: 'commandExecution', id: 'cmd-1' });
+      return true;
+    });
+  } finally {
     await Promise.allSettled(running ? [running] : []);
     await db.close();
     await writable(dir);

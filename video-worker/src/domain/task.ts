@@ -14,6 +14,8 @@ export class AppError extends Error {
     message: string,
     public httpStatus = 400,
     public retryable = false,
+    // 仅保存可向同一任务调用方展示的诊断字段，不能放入原始输入或账号信息。
+    public details?: Record<string, unknown>,
   ) {
     super(message);
   }
@@ -46,7 +48,12 @@ export interface Lease {
   run: Run;
 }
 export function publicError(e: unknown) {
-  return e instanceof AppError
-    ? { code: e.code, message: e.message, retryable: e.retryable }
-    : { code: 'INTERNAL_ERROR', message: '任务执行失败，详情见服务日志', retryable: false };
+  if (!(e instanceof AppError))
+    return { code: 'INTERNAL_ERROR', message: '任务执行失败，详情见服务日志', retryable: false };
+  return {
+    code: e.code,
+    message: e.message,
+    retryable: e.retryable,
+    ...(e.details ? { details: e.details } : {}),
+  };
 }

@@ -8,6 +8,8 @@ import { publishResult } from '../src/application/results.js';
 import { Storage } from '../src/infrastructure/storage.js';
 import { createApi } from '../src/api/routes.js';
 import { normalizeAnalysisRequest, normalizeRenderRequest } from '../src/contracts/ifeng.js';
+import { executeRun } from '../src/application/execute-run.js';
+import { AppError } from '../src/domain/task.js';
 
 test('网页数据解读请求映射为定制模板的横版两阶段请求', () => {
   const raw = {
@@ -73,6 +75,63 @@ test('six active slots prefer Render and cap it at four', async () => {
     const next = await q.claim('owner6');
     assert.equal(next!.run.id, submitted[4].data.runId);
     assert.equal(next!.run.stage, 'render');
+  } finally {
+    await db.close();
+  }
+});
+test('模型容量不足在未执行工具时按退避重试，耗尽后保留诊断失败', async () => {
+  const db = await database();
+  try {
+    const c = config(),
+      tasks = new Tasks(new TaskRepository(db), c),
+      q = new Queue(db);
+    await tasks.analysis(tenant, analysis());
+    const sandbox = {
+      run: async () => {
+        throw new AppError(
+          'CODEX_MODEL_OVERLOADED',
+          'Codex 模型当前容量不足，任务将稍后自动重试',
+          503,
+          true,
+          {
+            turnStatus: 'failed',
+            providerCode: 'server_overloaded',
+            providerMessage: 'Selected model is at capacity. Please try a different model.',
+            lastTool: null,
+          },
+        );
+      },
+      stop: async () => {},
+    };
+    for (const [attempt, delay] of [30, 90, 270].entries()) {
+      const l = (await q.claim(`worker-${attempt}`))!;
+      assert.equal(l.run.attempt, attempt + 1);
+      await executeRun(c, q, sandbox, l);
+      const run = (await db.query('SELECT * FROM runs WHERE id=$1', [l.run.id])).rows[0];
+      assert.equal(run.state, 'queued');
+      assert.equal(run.progress_stage, 'codex_capacity_retry');
+      assert.equal(run.error.code, 'CODEX_MODEL_OVERLOADED');
+      assert.equal(run.error.retryable, true);
+      assert.equal(run.error.retryAfterSeconds, delay);
+      assert.equal(run.error.details.providerCode, 'server_overloaded');
+      assert.equal(await q.claim(`early-${attempt}`), null);
+      await db.query(
+        "UPDATE runs SET delivery_next_attempt_at=now()-interval '1 second' WHERE id=$1",
+        [l.run.id],
+      );
+    }
+    const final = (await q.claim('worker-final'))!;
+    assert.equal(final.run.attempt, 4);
+    await executeRun(c, q, sandbox, final);
+    const run = (await db.query('SELECT * FROM runs WHERE id=$1', [final.run.id])).rows[0];
+    assert.equal(run.state, 'failed');
+    assert.equal(run.error.code, 'CODEX_MODEL_OVERLOADED');
+    assert.equal(run.error.retryable, false);
+    assert.equal(run.error.retryExhausted, true);
+    assert.equal(
+      (await db.query('SELECT * FROM execution_slots WHERE run_id IS NOT NULL')).rows.length,
+      0,
+    );
   } finally {
     await db.close();
   }

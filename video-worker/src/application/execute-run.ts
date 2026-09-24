@@ -101,7 +101,15 @@ export async function executeRun(
     // If the daemon cannot confirm termination, throw without releasing the slot.
     await sandbox.stop(l.run.id);
     try {
-      await queue.failed(l, publicError(pulseError ?? e));
+      const failure = publicError(pulseError ?? e);
+      if (
+        !pulseError &&
+        e instanceof AppError &&
+        e.code === 'CODEX_MODEL_OVERLOADED' &&
+        e.retryable
+      )
+        await queue.retryCodexCapacity(l, failure);
+      else await queue.failed(l, failure);
     } catch (err) {
       if (!(err instanceof AppError) || !['LEASE_LOST', 'RUN_NOT_ACTIVE'].includes(err.code))
         throw err;

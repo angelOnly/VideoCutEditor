@@ -64,6 +64,8 @@ interface Active {
   requested: boolean;
   ended: boolean;
   completed: boolean;
+  toolStarted: boolean;
+  lastTool: { type: string; id: string | null } | null;
   terminal: Promise<void>;
   finish: () => void;
   final: string;
@@ -73,6 +75,54 @@ interface Active {
   reject: (e: Error) => void;
   done: Promise<void>;
 }
+
+function diagnosticText(value: unknown) {
+  if (typeof value !== 'string' && typeof value !== 'number') return null;
+  // Codex 的原始错误可能来自上游服务；限制长度并折叠换行，避免任务错误被异常内容撑大。
+  return String(value).replace(/\s+/g, ' ').trim().slice(0, 500) || null;
+}
+
+function isToolItem(item: any) {
+  const type = item?.type;
+  // 未知 item 按工具处理，宁可不重试也不能重放可能已执行的操作。
+  return typeof type === 'string' && !['agentMessage', 'reasoning'].includes(type);
+}
+
+function turnFailure(params: any, state: Active) {
+  const source = params?.turn?.error ?? params?.error ?? {};
+  const nested = source?.error ?? {};
+  const providerCode = diagnosticText(
+    source?.codex_error_info ?? source?.code ?? nested?.codex_error_info ?? nested?.code,
+  );
+  const providerMessage = diagnosticText(source?.message ?? nested?.message);
+  const atCapacity =
+    providerCode === 'server_overloaded' ||
+    providerMessage?.toLowerCase().includes('selected model is at capacity') === true;
+  const details = {
+    turnStatus: diagnosticText(params?.turn?.status) ?? 'unknown',
+    providerCode,
+    providerMessage,
+    lastTool: state.lastTool,
+  };
+  if (atCapacity)
+    return new AppError(
+      'CODEX_MODEL_OVERLOADED',
+      state.toolStarted
+        ? 'Codex 模型容量不足，但制作工具已启动，任务不自动重试'
+        : 'Codex 模型当前容量不足，任务将稍后自动重试',
+      503,
+      !state.toolStarted,
+      details,
+    );
+  return new AppError(
+    'CODEX_TURN_FAILED',
+    `Codex 回合执行失败（${details.turnStatus}）`,
+    502,
+    false,
+    details,
+  );
+}
+
 export class HostCodex {
   private active = new Map<string, Active>();
   constructor(
@@ -99,6 +149,10 @@ export class HostCodex {
     const turnId = params.turnId ?? params.turn?.id;
     if (state.starting && !state.turnId && method === 'turn/started') state.turnId = turnId;
     if (!turnId || state.turnId !== turnId) return;
+    if (['item/started', 'item/completed'].includes(method) && isToolItem(params.item)) {
+      state.toolStarted = true;
+      state.lastTool = { type: params.item.type, id: diagnosticText(params.item.id) };
+    }
     if (
       method === 'item/completed' &&
       params.item?.type === 'agentMessage' &&
@@ -108,7 +162,7 @@ export class HostCodex {
     if (method === 'turn/completed') {
       state.ended = true;
       if (params.turn.status === 'completed') state.resolve();
-      else state.reject(new AppError('CODEX_TURN_FAILED', `Codex turn ${params.turn.status}`));
+      else state.reject(turnFailure(params, state));
     }
     state.lastEvent = Date.now();
     const progress = ['item/started', 'item/completed', 'turn/completed'].includes(method);
@@ -194,6 +248,8 @@ export class HostCodex {
       requested: false,
       ended: false,
       completed: false,
+      toolStarted: false,
+      lastTool: null,
       terminal,
       finish,
       final: '',

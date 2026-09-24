@@ -5,6 +5,8 @@ import { TaskRepository } from './task-repository.js';
 
 export const MAX_ACTIVE_RUNS = 6;
 export const MAX_RENDER_RUNS = 4;
+// 仅用于尚未调用任何制作工具的模型容量不足；避免重放已经可能写入文件的执行。
+export const CODEX_CAPACITY_RETRY_DELAYS_SECONDS = [30, 90, 270] as const;
 
 export class Queue {
   constructor(
@@ -113,6 +115,50 @@ export class Queue {
       );
       await this.release(q, l);
     });
+  }
+  async retryCodexCapacity(l: Lease, error: any) {
+    return this.withLease(
+      l,
+      async (q, r) => {
+        if (r.state === 'cancelling') {
+          await new TaskRepository(this.db).failure(
+            q,
+            r,
+            { code: 'CANCELLED', message: '任务已取消', retryable: false },
+            'cancelled',
+          );
+          await this.release(q, l);
+          return false;
+        }
+        const delaySeconds = CODEX_CAPACITY_RETRY_DELAYS_SECONDS[r.attempt - 1];
+        if (delaySeconds === undefined) {
+          await new TaskRepository(this.db).failure(q, r, {
+            ...error,
+            retryable: false,
+            retryExhausted: true,
+          });
+          await this.release(q, l);
+          return false;
+        }
+        await q.query(
+          "UPDATE runs SET state='queued',progress_stage='codex_capacity_retry',error=$2,delivery_next_attempt_at=now()+($3 * interval '1 second') WHERE id=$1",
+          [
+            r.id,
+            {
+              ...error,
+              retryable: true,
+              retryAfterSeconds: delaySeconds,
+              retriesRemaining: CODEX_CAPACITY_RETRY_DELAYS_SECONDS.length - r.attempt,
+            },
+            delaySeconds,
+          ],
+        );
+        await q.query('UPDATE tasks SET state=$2 WHERE id=$1', [r.task_id, `${r.stage}_queued`]);
+        await this.release(q, l);
+        return true;
+      },
+      true,
+    );
   }
   async failed(l: Lease, error: any) {
     return this.withLease(
