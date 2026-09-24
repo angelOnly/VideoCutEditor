@@ -132,8 +132,9 @@ def render_batch(args):
             check()
             load_request(args.request, 'render')
             verify_manifest(root, args.request, request, manifest, args.modules, args.browser)
-        results, failures, scene_seconds = {}, [], {}
-        metrics = {'slots': args.slots, 'bundleSeconds': 0, 'bundleReused': False, 'sceneSeconds': scene_seconds}
+        results, failures, scene_seconds, scene_resources = {}, [], {}, {}
+        metrics = {'slots': args.slots, 'bundleSeconds': 0, 'bundleReused': False,
+                   'sceneSeconds': scene_seconds, 'sceneResourceMetrics': scene_resources}
         bundle_dir = batch_dir / 'bundle'
         bundle_marker = batch_dir / 'bundle.json'
         attempt = uuid.uuid4().hex
@@ -196,14 +197,18 @@ def render_batch(args):
             pending = sorted(manifest['scenes'], key=lambda s: -s['frames'])
             with ThreadPoolExecutor(max_workers=args.slots) as pool:
                 active = {}
+                fatal_error = None
                 try:
                     while pending or active:
                         check()
-                        while pending and len(active) < args.slots and not (pause and Path(pause).exists()):
+                        # 资源边界失效后不再新增分镜，但已启动分镜继续收敛并写入成功结果。
+                        while (not fatal_error and pending and len(active) < args.slots
+                               and not (pause and Path(pause).exists())):
                             check()
                             scene = pending.pop(0)
                             active[pool.submit(job, scene)] = scene
                         if not active:
+                            if fatal_error: break
                             time.sleep(.2); continue
                         done, _ = wait(active, timeout=.2, return_when=FIRST_COMPLETED)
                         for future in done:
@@ -213,6 +218,8 @@ def render_batch(args):
                                 validate_render()
                                 results[scene_id] = {'sceneId': scene_id, **result}
                                 scene_seconds[scene_id] = seconds
+                                if result.get('resourceMetrics') is not None:
+                                    scene_resources[scene_id] = result['resourceMetrics']
                                 write(batch_dir / 'results' / scene_id / (attempt + '.json'),
                                       {'version': manifest['version'], 'attemptId': attempt, 'result': results[scene_id], 'seconds': seconds})
                             except Exception as exc:
@@ -221,14 +228,18 @@ def render_batch(args):
                                 failures.append(error)
                                 write(batch_dir / 'results' / scene_id / (attempt + '.json'),
                                       {'version': manifest['version'], 'attemptId': attempt, 'error': error})
-                                if error['code'] in ('PROCESS_CLEANUP_FAILED', 'TASK_CANCELLED', 'BUDGET_EXHAUSTED', 'TIMELINE_STALE',
-                                                     'STALE_CONFIRMATION', 'INPUT_CHANGED', 'CONFIRMATION_CHANGED', 'CACHE_CORRUPT'):
+                                if error['code'] in ('PROCESS_LIMIT_EXCEEDED', 'PROCESS_CLEANUP_FAILED', 'BROWSER_UNAVAILABLE'):
+                                    # 不设置 stop：其余已启动的线程需要自行结束，成功产物要进入批次结果。
+                                    fatal_error = fatal_error or exc
+                                elif error['code'] in ('TASK_CANCELLED', 'BUDGET_EXHAUSTED', 'TIMELINE_STALE',
+                                                       'STALE_CONFIRMATION', 'INPUT_CHANGED', 'CONFIRMATION_CHANGED', 'CACHE_CORRUPT'):
                                     stop.set()
                                     raise
                             snapshot()
                 except BaseException:
                     stop.set()
                     raise
+            if fatal_error: raise fatal_error
             validate_render()
             metrics.update({'wallSeconds': time.monotonic()-started, 'reused': sum(bool(r.get('reused')) for r in results.values()),
                             'failures': len(failures)})

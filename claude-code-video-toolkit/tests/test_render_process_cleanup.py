@@ -129,5 +129,31 @@ exports.renderMedia=()=>new Promise(r=>{resolveRender=r;timer=setTimeout(r,30000
         self.assertLess(time.monotonic()-began, 7)
         self.assertNotIn('rendering', events)
 
+    def test_closed_progress_pipe_does_not_interrupt_healthy_render(self):
+        """宿主不再读取 stdout 时，进度 EPIPE 不得让完成标记或退出码失败。"""
+        modules = self.root/'modules'
+        bundler = modules/'@remotion/bundler'; bundler.mkdir(parents=True)
+        (bundler/'index.js').write_text('exports.bundle=async()=>"fake-bundle";')
+        renderer = modules/'@remotion/renderer'; renderer.mkdir(parents=True)
+        (renderer/'index.js').write_text('''
+exports.openBrowser=async()=>({close:async()=>{}});
+exports.selectComposition=async()=>({durationInFrames:1,fps:1,width:1,height:1});
+exports.renderMedia=async({onProgress})=>{await new Promise(r=>setTimeout(r,120));onProgress({progress:.5});await new Promise(r=>setTimeout(r,80));};
+''')
+        config = {'modules': str(modules), 'serveUrl': 'fake-bundle', 'browser': 'unused', 'composition': 'fake',
+                  'props': {}, 'frames': 1, 'spec': {'fps': 1, 'width': 1, 'height': 1}, 'done': str(self.root/'done.json')}
+        config_path = self.root/'config.json'; config_path.write_text(json.dumps(config))
+        child = subprocess.Popen([NODE, str(Path(media.__file__).with_name('render_scene.cjs')), str(config_path)],
+                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        try:
+            # 提前关闭父端读管道，强制子进程的 onProgress 写入触发 EPIPE。
+            child.stdout.close()
+            exit_code = child.wait(timeout=5)
+            self.assertEqual(exit_code, 0, child.stderr.read().decode(errors='replace'))
+            self.assertTrue((self.root/'done.json').is_file())
+        finally:
+            if child.poll() is None: child.kill()
+            if child.stderr: child.stderr.close()
+
 
 if __name__ == '__main__': unittest.main()

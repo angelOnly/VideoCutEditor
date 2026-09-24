@@ -214,6 +214,53 @@ class BatchTests(Fixture):
         self.assertEqual(render.call_count, 1)
         self.assertEqual(read(self.dir/'progress.json')['failures'][0]['code'], 'PROCESS_CLEANUP_FAILED')
 
+    def test_process_limit_preserves_started_scene(self):
+        """资源故障发生时，已启动的分镜必须等到结果已落盘。"""
+        self.args.slots = 2
+        started = threading.Barrier(2)
+        dispatched = []
+        def render(*call_args, **_kwargs):
+            scene_id = call_args[1]; dispatched.append(scene_id)
+            started.wait(timeout=5)
+            if scene_id == 'scene_2':
+                raise StageError('PROCESS_LIMIT_EXCEEDED', 'PID 配额已满', details={'resourceMetrics': {'pids': {'max': 1024}}})
+            time.sleep(.05)
+            return {'path': 'scene_1.mp4', 'reused': False, 'resourceMetrics': {'pids': {'max': 2048}}}
+        with patch('stage_media.supervise', side_effect=self.build), patch('stage_media.render_scene', side_effect=render):
+            with self.assertRaises(StageError) as error: render_batch(self.args)
+        self.assertEqual(error.exception.code, 'PROCESS_LIMIT_EXCEEDED')
+        self.assertEqual(set(dispatched), {'scene_1', 'scene_2'})
+        progress = read(self.dir/'progress.json')
+        self.assertEqual([item['sceneId'] for item in progress['results']], ['scene_1'])
+        self.assertEqual(progress['failures'][0]['code'], 'PROCESS_LIMIT_EXCEEDED')
+        self.assertEqual(progress['metrics']['sceneResourceMetrics']['scene_1']['pids']['max'], 2048)
+
+    def test_process_limit_stops_pending_dispatch(self):
+        self.args.slots = 1
+        with patch('stage_media.supervise', side_effect=self.build), patch('stage_media.render_scene', side_effect=StageError('PROCESS_LIMIT_EXCEEDED', 'PID 配额已满')) as render:
+            with self.assertRaises(StageError) as error: render_batch(self.args)
+        self.assertEqual(error.exception.code, 'PROCESS_LIMIT_EXCEEDED')
+        self.assertEqual(render.call_count, 1)
+
+    def test_cgroup_metrics_marks_new_pid_rejection_as_process_limit(self):
+        root = self.base/'cgroup'; directory = root/'system.slice'/'videocut.service'; directory.mkdir(parents=True)
+        process = self.base/'proc-self-cgroup'
+        process.write_text('0::/system.slice/videocut.service\n')
+        for name, value in {
+            'pids.current': '100\n', 'pids.max': '1024\n', 'pids.peak': '101\n',
+            'pids.events': 'max 2\n', 'memory.current': '4096\n', 'memory.peak': '8192\n',
+        }.items():
+            (directory/name).write_text(value)
+        with patch.object(stage_media.sys, 'platform', 'linux'):
+            usage = stage_media.CgroupUsage(root, process)
+            (directory/'pids.current').write_text('1024\n')
+            (directory/'pids.events').write_text('max 3\n')
+            usage.observe()
+        self.assertTrue(usage.process_limit_exceeded())
+        self.assertEqual(usage.diagnostics()['pids']['max'], 1024)
+        self.assertEqual(usage.diagnostics()['pids']['currentPeakObserved'], 1024)
+        self.assertEqual(stage_media.render_failure_code('write EPIPE', usage), 'PROCESS_LIMIT_EXCEEDED')
+
     def test_duplicate_scene_rejected(self):
         write(self.job/'scenes.json', [self.scenes[0], self.scenes[0]])
         with self.assertRaises(StageError): freeze_batch(self.args)

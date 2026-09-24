@@ -8,6 +8,27 @@ let browserPromise = null;
 let closePromise = null;
 let cancelled = false;
 let shutdownTimer = null;
+let progressPipeOpen = true;
+// 进度是旁路观测；父级日志管道关闭不能中断已经开始的 MP4 编码。
+const ignoreBrokenOutputPipe = (error) => {
+  if (error && error.code === 'EPIPE') {
+    progressPipeOpen = false;
+    return;
+  }
+  progressPipeOpen = false;
+};
+process.stdout.on('error', ignoreBrokenOutputPipe);
+process.stderr.on('error', ignoreBrokenOutputPipe);
+const writeProgress = (progress) => {
+  if (!progressPipeOpen || process.stdout.destroyed) return;
+  try {
+    process.stdout.write(JSON.stringify({progress}) + '\n', (error) => {
+      if (error) ignoreBrokenOutputPipe(error);
+    });
+  } catch (error) {
+    ignoreBrokenOutputPipe(error);
+  }
+};
 const closeBrowser = () => {
   if (!browserPromise) return Promise.resolve();
   if (!closePromise) closePromise = (async () => {
@@ -67,7 +88,7 @@ const {selectComposition, renderMedia, openBrowser} = require(path.join(c.module
       ffmpegOverride: ({type, args}) => type === 'pre-stitcher'
         ? [...args.slice(0, -1), '-f', 'mp4', args.at(-1)] : args,
       forSeamlessAacConcatenation: false, enforceAudioTrack: !c.fixedAudio, logLevel: 'error',
-      onProgress: p => console.log(JSON.stringify({progress: p.progress}))});
+      onProgress: p => writeProgress(p.progress)});
     checkCancelled();
     // 完成标记在关闭浏览器之前写入；父进程仍须独立验证 MP4。
     fs.writeFileSync(c.done + '.tmp', JSON.stringify({frames: c.frames, completedAt: Date.now(), recommendations: [...recommendations.values()]}));
@@ -75,4 +96,8 @@ const {selectComposition, renderMedia, openBrowser} = require(path.join(c.module
   } finally {
     await closeBrowser();
   }
-})().catch(error => {console.error(error.stack); process.exitCode = 1;});
+})().catch(error => {
+  // stderr 也可能随宿主采集器关闭；编码失败仍依赖退出码和父级的 MP4 校验。
+  if (progressPipeOpen && !process.stderr.destroyed) process.stderr.write(String(error.stack || error) + '\n');
+  process.exitCode = 1;
+});

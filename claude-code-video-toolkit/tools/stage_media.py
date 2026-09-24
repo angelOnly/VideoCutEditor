@@ -32,6 +32,126 @@ def check_batch():
     check = getattr(_BATCH_CONTEXT, "check", None)
     if check: check()
 
+
+def _cgroup_value(path):
+    """读取 cgroup 单值；内核或运行环境未提供时保守地返回 None。"""
+    try:
+        value = Path(path).read_text(encoding='utf-8').strip()
+    except OSError:
+        return None
+    if not value or value == 'max': return None
+    try:
+        return int(value)
+    except ValueError:
+        return None
+
+
+def _cgroup_events(path):
+    try:
+        rows = Path(path).read_text(encoding='utf-8').splitlines()
+    except OSError:
+        return {}
+    events = {}
+    for row in rows:
+        parts = row.split()
+        if len(parts) != 2: continue
+        try: events[parts[0]] = int(parts[1])
+        except ValueError: continue
+    return events
+
+
+def cgroup_metrics(cgroup_root=Path('/sys/fs/cgroup'), process_cgroup=Path('/proc/self/cgroup')):
+    """返回当前 Linux cgroup v2 的轻量资源快照，非 Linux 或不可见时不影响渲染。"""
+    if sys.platform != 'linux': return None
+    try:
+        relative = None
+        for row in Path(process_cgroup).read_text(encoding='utf-8').splitlines():
+            hierarchy, controllers, value = row.split(':', 2)
+            if hierarchy == '0' and not controllers:
+                relative = Path(value.lstrip('/'))
+                break
+        if relative is None or '..' in relative.parts: return None
+        directory = Path(cgroup_root) / relative
+        if not directory.is_dir(): return None
+    except (OSError, ValueError):
+        return None
+    return {
+        'pids': {
+            'current': _cgroup_value(directory / 'pids.current'),
+            'max': _cgroup_value(directory / 'pids.max'),
+            'peak': _cgroup_value(directory / 'pids.peak'),
+        },
+        'pidsEvents': _cgroup_events(directory / 'pids.events'),
+        'memory': {
+            'current': _cgroup_value(directory / 'memory.current'),
+            'peak': _cgroup_value(directory / 'memory.peak'),
+        },
+    }
+
+
+class CgroupUsage:
+    """在一个渲染子进程生命周期内累计 cgroup 峰值和 PID 拒绝事件。"""
+    def __init__(self, cgroup_root=Path('/sys/fs/cgroup'), process_cgroup=Path('/proc/self/cgroup')):
+        self.cgroup_root, self.process_cgroup = cgroup_root, process_cgroup
+        self.before = cgroup_metrics(cgroup_root, process_cgroup)
+        self.latest = self.before
+        self.peaks = {'pidsCurrent': None, 'memoryCurrent': None}
+        self.observe()
+
+    def observe(self):
+        snapshot = cgroup_metrics(self.cgroup_root, self.process_cgroup)
+        if snapshot is None: return None
+        self.latest = snapshot
+        for source, target in (('pids', 'pidsCurrent'), ('memory', 'memoryCurrent')):
+            value = snapshot[source]['current']
+            if value is not None and (self.peaks[target] is None or value > self.peaks[target]):
+                self.peaks[target] = value
+        return snapshot
+
+    def process_limit_exceeded(self):
+        if not self.before or not self.latest: return False
+        return self.latest['pidsEvents'].get('max', 0) > self.before['pidsEvents'].get('max', 0)
+
+    def diagnostics(self):
+        if not self.latest: return None
+        return {
+            'pids': {
+                **self.latest['pids'],
+                'currentPeakObserved': self.peaks['pidsCurrent'],
+                'eventsBefore': self.before['pidsEvents'] if self.before else {},
+                'eventsAfter': self.latest['pidsEvents'],
+            },
+            'memory': {
+                **self.latest['memory'],
+                'currentPeakObserved': self.peaks['memoryCurrent'],
+            },
+        }
+
+
+def process_limit_error(usage):
+    return StageError(
+        'PROCESS_LIMIT_EXCEEDED',
+        '当前渲染任务触达进程或线程上限，已停止继续派发新分镜',
+        details={'resourceMetrics': usage.diagnostics()},
+    )
+
+
+def render_failure_code(tail, usage):
+    """优先归因 cgroup；仅将明显的公共浏览器启动故障视为批次级故障。"""
+    if usage.process_limit_exceeded(): return 'PROCESS_LIMIT_EXCEEDED'
+    if 'TASK_LAYOUT_INVALID' in tail: return 'TASK_LAYOUT_INVALID'
+    lowered = tail.lower()
+    browser_failures = (
+        'could not find browser',
+        'failed to launch the browser process',
+        'failed to launch browser',
+        'browser has disconnected',
+        'browser is not open',
+    )
+    if any(value in lowered for value in browser_failures): return 'BROWSER_UNAVAILABLE'
+    return 'RENDER_FAILED'
+
+
 def command(argv, timeout=120):
     check_batch()
     started = time.monotonic()
@@ -358,8 +478,14 @@ class OwnedProcessTree:
 def supervise(argv, cwd, log, done_file, timeout, close_timeout=10):
     """独立进程组；完成标记之后仍需由调用方验证实际文件。"""
     started, closing = time.monotonic(), None
+    usage = CgroupUsage()
     with Path(log).open('wb') as output:
-        child = subprocess.Popen(argv, cwd=cwd, stdout=output, stderr=subprocess.STDOUT, start_new_session=True)
+        try:
+            child = subprocess.Popen(argv, cwd=cwd, stdout=output, stderr=subprocess.STDOUT, start_new_session=True)
+        except OSError as exc:
+            usage.observe()
+            if usage.process_limit_exceeded(): raise process_limit_error(usage) from exc
+            raise
         process_record = Path(log).with_suffix('.process.json')
         record = {'state': 'running', 'pid': child.pid, 'signature': process_signature(child.pid), 'startedAt': time.time()}
         write(process_record, record)
@@ -369,21 +495,29 @@ def supervise(argv, cwd, log, done_file, timeout, close_timeout=10):
             while child.poll() is None:
                 check_batch()
                 now = time.monotonic()
+                usage.observe()
                 if now - last_scan >= .5:
                     owned.scan(); last_scan = now
                 if Path(done_file).exists() and closing is None: closing = now
                 if closing is not None and now - closing > close_timeout:
-                    return {'closeTimedOut': True, 'pid': child.pid}
+                    return {'closeTimedOut': True, 'pid': child.pid, 'resourceMetrics': usage.diagnostics()}
                 if now - started > timeout:
+                    if usage.process_limit_exceeded(): raise process_limit_error(usage)
                     raise StageError('RENDER_TIMEOUT', '本次渲染进程超时', True)
                 time.sleep(.1)
+            usage.observe()
             if child.returncode != 0 or not Path(done_file).is_file():
                 tail = Path(log).read_text(encoding='utf-8', errors='replace')[-4000:]
-                code = 'TASK_LAYOUT_INVALID' if 'TASK_LAYOUT_INVALID' in tail else 'RENDER_FAILED'
-                raise StageError(code, f'当前工程需调整，查看 {log}', details={
+                code = render_failure_code(tail, usage)
+                messages = {
+                    'PROCESS_LIMIT_EXCEEDED': '当前渲染任务触达进程或线程上限，已停止继续派发新分镜',
+                    'BROWSER_UNAVAILABLE': '公共浏览器运行环境不可用，已停止继续派发新分镜',
+                }
+                raise StageError(code, messages.get(code, f'当前工程需调整，查看 {log}'), details={
                     'log': str(log), 'exitCode': child.returncode,
-                    'logTail': tail})
-            return {'closeTimedOut': False, 'pid': child.pid, 'recommendations': read(done_file).get('recommendations', [])}
+                    'logTail': tail, 'resourceMetrics': usage.diagnostics()})
+            return {'closeTimedOut': False, 'pid': child.pid, 'recommendations': read(done_file).get('recommendations', []),
+                    'resourceMetrics': usage.diagnostics()}
         finally:
             # 先让 Node 执行 browser.close；之后仅清理已核验自有后代。
             try:
@@ -614,7 +748,9 @@ def render_scene(request_path, scene_id, project_name, entry_name, composition, 
         timings['evidenceSeconds'] = time.monotonic() - phase_started
         timings['wallSeconds'] = time.monotonic() - scene_started
         return {**receipt, **info, 'path': str(out.relative_to(root)), 'mix': mixed, 'evidence': evidence,
-                'reused': False, 'timings': timings, 'renderReused': raw_reused, 'recommendations': recovery.get('recommendations', [])}
+                'reused': False, 'timings': timings, 'renderReused': raw_reused,
+                'recommendations': recovery.get('recommendations', []),
+                'resourceMetrics': recovery.get('resourceMetrics')}
 
 
 def extract_frames(root, request, scene_id, path, frames):
