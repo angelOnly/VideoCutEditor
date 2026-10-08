@@ -23,7 +23,7 @@ import time
 from two_stage import (StageError, digest, execution, identifier, json_digest, load_request,
                        local, read, require, schema, write, process_signature, failure)
 from finance_timeline import derive_timeline
-from actual_timeline import sample_frames, extend_timeline
+from actual_timeline import sample_frames, extend_timeline, check_fixed_ending
 
 
 _BATCH_CONTEXT = threading.local()
@@ -599,24 +599,34 @@ def scene_audio_contract(project, props):
     sources += ['template-assets/' + scene[k]['src'] for k in ('intro', 'outro') if scene.get(k)]
     if contract['bgm']:
         sources.append('template-assets/' + contract['bgm']['src'])
+    ending = props.get('timeline', {}).get('ending')
+    if ending:
+        # 片尾在可信合成层追加；其来源与起点同样属于固定混音合同。
+        contract['ending'] = ending
+        if ending.get('outro'):
+            sources.append('template-assets/' + ending['outro']['src'])
     contract['sources'] = {src: digest(local(project/'public', src)) for src in sources}
     return json_digest(contract)
 
 
-def check_speech_coverage(project, props, frames, fps):
+def check_speech_coverage(project, props, frames, fps, ending_bounds=None):
     """渲染前验证源音频窗口，防止先截音再得到等长混音的假通过。"""
     scene = props.get('scene')
     if not isinstance(scene, dict):
         return
     require(scene['frames'] == frames, 'props 与实际帧数不一致')
     previous = 0
+    scene_from = scene.get('from', scene.get('startFrame', 0))
+    speech_limit = min(frames, ending_bounds['narrationEndFrame'] - scene_from) if ending_bounds else frames
     for utterance in scene.get('utterances', []):
         info = audio_info(local(project/'public', utterance['src']))
         start, end = utterance['startFrame'], utterance['endFrameExclusive']
         needed = sample_frames(info['samples'], info['sampleRate'], fps)
-        require(type(start) is int and type(end) is int and previous <= start < end <= frames,
+        require(type(start) is int and type(end) is int and previous <= start < end <= speech_limit,
                 '配音边界重叠或超出场景', 'CONTENT_TIMELINE_REQUIRED')
         require(end - start >= needed, f'{utterance["id"]} 真实音频需要 {needed} 帧，当前仅 {end-start} 帧；先按实测音频重建时间轴', 'CONTENT_TIMELINE_REQUIRED')
+        if ending_bounds:
+            require(end - start == needed, '固定结束语及片尾必须采用当前实测配音边界', 'CONTENT_TIMELINE_REQUIRED')
         previous = end
     # 未显式剪辑的音效必须完整容纳；不再以默认三秒截断素材。
     for cue in scene.get('sfx', []):
@@ -624,6 +634,144 @@ def check_speech_coverage(project, props, frames, fps):
         needed = cue.get('durationFrames', sample_frames(info['samples'], info['sampleRate'], fps))
         require(type(needed) is int and needed > 0 and cue['frame'] + needed <= scene.get('contentFrames', frames),
                 f'音效 {cue["src"]} 超出声音窗口；依据实测时长延长或明确剪辑', 'CONTENT_TIMELINE_REQUIRED')
+        if ending_bounds:
+            require(cue['frame'] + needed <= speech_limit, '正文音效尚未结束，不能在追加片尾时截断', 'CONTENT_TIMELINE_REQUIRED')
+
+
+def fixed_ending_policy(root, request):
+    """只读取可信冻结模板，任务副本不能自行开启新的合成合同。"""
+    template = read(local(root, request['input']['templateSnapshot']))
+    folder = template.get('root')
+    declaration = local(root, folder + '/renderer/renderer-manifest.json', exists=False) if folder else None
+    return read(declaration).get('endingPolicy') if declaration and declaration.is_file() else None
+
+
+def inspect_outro(project, ending, spec):
+    """复核冻结前整理的片尾副本；不在渲染末端偷偷改变长度。"""
+    outro = ending.get('outro')
+    if not outro:
+        return None
+    require(isinstance(outro.get('src'), str) and type(outro.get('muted')) is bool,
+            '片尾需明确本地路径和是否保留原声')
+    path = local(project / 'public' / 'template-assets', outro['src'])
+    data = probe(path)
+    videos = [s for s in data['streams'] if s['codec_type'] == 'video']
+    audios = [s for s in data['streams'] if s['codec_type'] == 'audio']
+    require(len(videos) == 1, '片尾需要唯一视频轨；先整理本地素材', 'MEDIA_INVALID')
+    video = videos[0]
+    frames = int(video.get('nb_read_frames') or 0)
+    require(type(outro.get('frames')) is int and frames == outro['frames'] and frames > 0,
+            '片尾实测长度已变化，重建正式时间轴并重新冻结', 'TIMELINE_STALE')
+    fps = Fraction(str(spec['fps']))
+    require((video['width'], video['height']) == (spec['width'], spec['height'])
+            and abs(float(Fraction(video['avg_frame_rate']) - fps)) < .001
+            and abs(float(Fraction(video['r_frame_rate']) - fps)) < .001
+            and video.get('pix_fmt') == 'yuv420p',
+            '片尾尚未按输出尺寸、恒定帧率与yuv420p整理；请在冻结前准备副本', 'MEDIA_INVALID')
+    require(video.get('color_space') == 'bt709' and video.get('color_range') == 'tv',
+            '片尾需先整理为BT.709有限范围，避免拼接后颜色突变', 'MEDIA_INVALID')
+    timestamps = json.loads(command([os.environ.get('FFPROBE', 'ffprobe'), '-v', 'error', '-select_streams', 'v:0',
+                                    '-show_entries', 'frame=best_effort_timestamp_time', '-of', 'json', str(path)]))['frames']
+    require(len(timestamps) == frames and all(abs(float(f['best_effort_timestamp_time']) - i / float(fps)) < .002
+            for i, f in enumerate(timestamps)), '片尾不是从0开始的恒定帧率素材，请先整理副本', 'MEDIA_INVALID')
+    info = None
+    if not outro['muted'] and audios:
+        require(len(audios) == 1, '片尾多音轨需先整理为明确保留的一轨', 'AUDIO_INVALID')
+        require(abs(float(audios[0].get('start_time', 0))) <= .001,
+                '片尾声音起点不为0，请在冻结前整理副本', 'TIMESTAMP_OFFSET')
+        info = audio_info(path)
+        require(sample_frames(info['samples'], info['sampleRate'], spec['fps']) <= frames,
+                '片尾原声比画面长，请先补足素材末态再实测；禁止截尾', 'CONTENT_TIMELINE_REQUIRED')
+    return {'path': path, 'frames': frames, 'sha256': digest(path), 'hasAudio': info is not None, 'audioInfo': info}
+
+
+def fixed_ending_context(root, request, request_path, project, props):
+    policy = fixed_ending_policy(root, request)
+    timeline = props.get('timeline', {})
+    if policy != 'hold-closing-then-append/v1':
+        require(not timeline.get('ending'), '当前冻结模板不支持新的片尾合同，请使用匹配版本', 'INVALID_CONTRACT')
+        return None, None
+    official = read(local(root, str((Path(request_path).resolve().parent / 'timeline.json').relative_to(root))))
+    require(not any(s.get('outro') for s in official['scenes']), '新模板不能在正文scene.outro中播放片尾')
+    # 派生只改变坐标别名和音频溯源字段；禁止用另一份props更换合成素材。
+    expected = json.loads(json.dumps(official))
+    for item in expected['scenes']:
+        item['from'] = item.pop('startFrame')
+        item['frames'] = item.pop('endFrameExclusive') - item['from']
+        for utterance in item['utterances']:
+            utterance.pop('audioPath', None)
+    require(timeline == expected and props.get('scene') in timeline['scenes'],
+            '渲染props不是当前正式时间轴派生结果', 'TIMELINE_STALE')
+    require(type(official.get('withBgm')) is bool and props.get('withBgm') is official['withBgm'],
+            '渲染音乐选择与正式时间轴不一致', 'TIMELINE_STALE')
+    bounds = check_fixed_ending(official)
+    media = inspect_outro(project, official['ending'], request['outputSpec']) if bounds and props['scene']['id'] == bounds['lastSceneId'] else None
+    return bounds, media
+
+
+def append_scene_outro(video, mix, outro, bounds, spec, frames, folder, timeout=600, fixed_audio=False):
+    """只在末镜封装前追加一次；保留原始输出，固定混音不重复追加声音。"""
+    prefix, count = bounds['appendFromFrame'], outro['frames']
+    require(0 < prefix and prefix + count <= frames, '正文与完整片尾不能容纳在正式末镜中')
+    fps = Fraction(str(spec['fps']))
+    output_video, output_mix = folder / 'appended-video.mp4', folder / 'appended-mix.wav'
+    extra = frames - prefix - count
+    filters = (f'[0:v]trim=end_frame={prefix},setpts=PTS-STARTPTS,setsar=1,format=yuv420p[body];'
+               f'[1:v]trim=end_frame={count},setpts=PTS-STARTPTS,setsar=1,format=yuv420p[tail];'
+               f'[body][tail]concat=n=2:v=1:a=0,tpad=stop_mode=clone:stop_duration={extra / float(fps)},'
+               f'trim=end_frame={frames},setpts=PTS-STARTPTS[out]')
+    ffmpeg('-y', '-i', video, '-i', outro['path'], '-filter_complex', filters, '-map', '[out]', '-an',
+           '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '18', '-pix_fmt', 'yuv420p', '-r', str(spec['fps']),
+           '-colorspace', 'bt709', '-color_primaries', 'bt709', '-color_trc', 'bt709', '-color_range', 'tv',
+           output_video, timeout=timeout)
+    if fixed_audio:
+        return output_video, mix
+    original = audio_info(mix)
+    boundary = math.ceil(Fraction(prefix) / fps * original['sampleRate'])
+    require(original['samples'] <= boundary or zero_mix_tail(mix, boundary),
+            '全部口播结束后仍有正文声音，先修正声音安排，禁止裁掉尾音', 'CONTENT_TIMELINE_REQUIRED')
+    head_samples = math.ceil(Fraction(prefix) / fps * 48000)
+    tail_samples = math.ceil(Fraction(count) / fps * 48000)
+    inputs = ['-i', mix]
+    if outro['hasAudio']:
+        inputs += ['-i', outro['path']]
+    else:
+        inputs += ['-f', 'lavfi', '-i', 'anullsrc=r=48000:cl=stereo']
+    audio_filters = (f'[0:a]aresample=48000,aformat=channel_layouts=stereo,apad,atrim=end_sample={head_samples},asetpts=PTS-STARTPTS[body];'
+                     f'[1:a]aresample=48000,aformat=channel_layouts=stereo,apad,atrim=end_sample={tail_samples},asetpts=PTS-STARTPTS[tail];'
+                     '[body][tail]concat=n=2:v=0:a=1[out]')
+    ffmpeg('-y', *inputs, '-filter_complex', audio_filters, '-map', '[out]', '-c:a', 'pcm_s16le', output_mix, timeout=timeout)
+    return output_video, output_mix
+
+
+def verify_appended_outro(video, mix, outro, bounds, spec):
+    """独立抽查真实片尾帧与原声，防止静态占位或旧PCM冒充追加成功。"""
+    prefix, count = bounds['appendFromFrame'], outro['frames']
+    errors = []
+    for index in sorted({0, count // 2, count - 1}):
+        source, actual = frame_rgb(outro['path'], index), frame_rgb(video, prefix + index)
+        require(source and len(source) == len(actual), '最终片尾抽帧失败', 'MEDIA_INVALID')
+        error = math.sqrt(sum((a - b) ** 2 for a, b in zip(source, actual)) / len(source))
+        require(error < 20, f'最终视频片尾与实际素材不符，帧{index}，像素误差{error:.2f}', 'MEDIA_INVALID')
+        errors.append(error)
+    fps = Fraction(str(spec['fps']))
+    samples = math.ceil(Fraction(count) / fps * 8000)
+    rate = audio_info(mix)['sampleRate']
+    head = math.ceil(Fraction(prefix) / fps * rate)
+    stop = math.ceil(Fraction(prefix + count) / fps * rate)
+    # 先在源采样率截取，再降采样；避免前一句声音的重采样滤波泄入静音片尾。
+    actual_raw = ffmpeg('-i', mix, '-ac', '1', '-af', f'atrim=start_sample={head}:end_sample={stop},asetpts=PTS-STARTPTS,aresample=8000',
+                        '-c:a', 'pcm_s16le', '-f', 's16le', '-')
+    if outro['hasAudio']:
+        expected_raw = ffmpeg('-i', outro['path'], '-ac', '1', '-af', f'aresample=8000,apad,atrim=end_sample={samples}',
+                             '-c:a', 'pcm_s16le', '-f', 's16le', '-')
+    else:
+        expected_raw = bytes(samples * 2)
+    expected, actual = array('h'), array('h')
+    expected.frombytes(expected_raw); actual.frombytes(actual_raw)
+    if sys.byteorder != 'little': expected.byteswap(); actual.byteswap()
+    audio_check = compare_samples(expected, actual, allow_silence=True)
+    return {'framesChecked': sorted({0, count // 2, count - 1}), 'pixelErrors': errors, 'audio': audio_check}
 
 
 def render_scene(request_path, scene_id, project_name, entry_name, composition, props_name, frames, node, modules, browser, fixed_mix=False, *, batch_context=None):
@@ -639,7 +787,10 @@ def render_scene(request_path, scene_id, project_name, entry_name, composition, 
         require(project.is_dir() and project != root, '需要独立项目目录')
         entry = local(root, entry_name); require(entry.is_relative_to(project), '入口不在项目目录')
         props = read(local(root, props_name)) if props_name else {}
-        check_speech_coverage(project, props, frames, request['outputSpec']['fps'])
+        ending_bounds, outro = fixed_ending_context(root, request, request_path, project, props)
+        if ending_bounds:
+            require(props['scene']['id'] == scene_id, 'props分镜与当前导出ID不符')
+        check_speech_coverage(project, props, frames, request['outputSpec']['fps'], ending_bounds)
         audio_contract = scene_audio_contract(project, props)
         official_path = Path(request_path).resolve().parent / 'timeline.json'
         timeline_hash = digest(official_path) if official_path.exists() else None
@@ -711,6 +862,11 @@ def render_scene(request_path, scene_id, project_name, entry_name, composition, 
                 recovery = supervise(render_command,
                                      project, work / (scene_id+'.log'), done, budget)
                 timings['renderSeconds'] = time.monotonic() - phase_started
+                if outro:
+                    phase_started = time.monotonic()
+                    video, mix = append_scene_outro(video, mix, outro, ending_bounds, request['outputSpec'],
+                                                   frames, temp, budget, fixed_audio=bool(fixed))
+                    timings['outroAppendSeconds'] = time.monotonic() - phase_started
                 write(raw_marker, {'fingerprint': fingerprint, 'video': str(video.relative_to(root)),
                                    'mix': str(mix.relative_to(root)), 'videoSha256': digest(video),
                                    'mixSha256': digest(mix), 'recovery': recovery})
@@ -724,6 +880,8 @@ def render_scene(request_path, scene_id, project_name, entry_name, composition, 
                 phase_started = time.monotonic()
                 info = mux_scene(video, mix, target, request['outputSpec'], frames, budget)
                 timings['mixAndValidationSeconds'] = time.monotonic() - phase_started
+                if outro:
+                    info['outroCheck'] = verify_appended_outro(target, mix, outro, ending_bounds, request['outputSpec'])
             except StageError as exc:
                 if exc.code == 'TIMELINE_EXTEND_REQUIRED':
                     details = {**exc.details, 'sceneId': scene_id, 'mixPath': str(mix.relative_to(root)),
@@ -734,9 +892,11 @@ def render_scene(request_path, scene_id, project_name, entry_name, composition, 
             check_batch()
             if batch_context: batch_context['validate']()
             load_request(request_path, 'render')
+            if outro:
+                require(digest(outro['path']) == outro['sha256'], '片尾源文件在合成期间发生变化', 'TIMELINE_STALE')
             publish_file(target, out)
             mixed = {'path': str(mix.relative_to(root)), 'sha256': digest(mix)}
-            write(marker, {'fingerprint': fingerprint, 'mix': mixed, 'timelineHash': timeline_hash, **info, **recovery})
+            write(marker, {'fingerprint': fingerprint, 'mix': mixed, **receipt, **info, **recovery})
         except BaseException:
             # 失败媒体和配置保留在本次 work 中，供检查原故障区间。
             raise
@@ -899,7 +1059,8 @@ def main():
                     change = read(record)
                     require(digest(local(root, change['mixPath'])) == change['mixSha256'], '补帧对应混音已改变')
                     # 已由 Render 延长的区间绝不能被旧补帧记录缩回。
-                    extensions[scene['id']] = max(scene['frames'], change['requiredFrames'])
+                    current_frames = scene['frames'] if 'frames' in scene else scene['endFrameExclusive'] - scene['startFrame']
+                    extensions[scene['id']] = max(current_frames, change['requiredFrames'])
                 resolved = extend_timeline(timeline, extensions)
                 write(output, resolved)
                 result = {'status': 'resolved', 'timeline': str(output.relative_to(root)), 'frames': resolved['totalFrames'],

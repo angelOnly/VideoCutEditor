@@ -1,20 +1,56 @@
 ---
 name: text-animations
-description: Typography and text animation patterns for Remotion.
+description: Remotion 中文排印、短语揭示、关键词强调与打字机的实现方法。
 metadata:
   tags: typography, text, typewriter, highlighter ken
 ---
 
-## Text animations
+# 中文排印与文字动画
 
-Based on `useCurrentFrame()`, reduce the string character by character to create a typewriter effect.
+先按实际字体完成静态排版，再制作运动。
+标题、图形标签、结论与完整字幕承担不同职责，不能互相替代。
 
-## Typewriter Effect
+## 分组与阅读顺序
 
-See [Typewriter](assets/text-animations-typewriter.tsx) for an advanced example with a blinking cursor and a pause after the first sentence.
+中文标题优先按语义短语或整行分组。
+不把长句拆成逐字弹跳，不默认对全部正文使用打字机。
 
-Always use string slicing for typewriter effects. Never use per-character opacity.
+先确定行宽、行高、换行和对齐。
+字号不因动画反复抖动。
+文字较长时调整展示文字、换行或阶段，不无限缩小字号。
+图解文字可提炼，确认口播及完整字幕不能因此删改。
 
-## Word Highlighting
+## 遮罩揭示
 
-See [Word Highlight](assets/text-animations-word-highlight.tsx) for an example for how a word highlight is animated, like with a highlighter pen.
+将短语或整行放在固定排版容器，
+通过容器裁切与内部位移实现揭示。
+
+文字从略低于最终位置移动到最终位置，
+可配少量透明度变化。
+位移由字号和构图决定，时间取本次口播窗口。
+
+多组可轻微错开，阅读顺序必须清楚。
+不能为等待逐组出现而推迟已经开始讲解的信息。
+
+## 关键词强调
+
+可用背景展开、下划线绘制、颜色或局部重点变化。
+强调范围按实际文字尺寸计算，不用固定宽度猜测。
+
+动作绑定相关口播，完成后保持可读，
+不持续闪烁或循环放大，避免多个重点互相竞争。
+
+## 打字机
+
+适用于输入过程、引用或需要逐步出现的短文本。
+实现打字机时可以用字符串切片。
+该方法只针对打字机，不限制遮罩揭示、短语错开等其他动画。
+
+原有打字机和高亮示例可参考，
+不照搬英文、字体、颜色和时间。
+
+## 字体与检查
+
+使用当前可用字体，按measuring-text规则测量。
+检查完整状态、中间状态、对比、揭示边缘裁字和可读时间。
+字幕按模板与真实音频边界独立显示。

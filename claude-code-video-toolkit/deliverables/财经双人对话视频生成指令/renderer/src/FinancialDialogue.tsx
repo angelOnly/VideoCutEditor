@@ -1,4 +1,4 @@
-import {AbsoluteFill, Audio, Img, Sequence, staticFile, useCurrentFrame} from 'remotion';
+import {AbsoluteFill, Audio, Freeze, Img, Sequence, staticFile, useCurrentFrame} from 'remotion';
 import {ChapterTransition} from './ChapterTransition';
 import {ChapterNav} from './ChapterNav';
 import {TemplateMotion} from './FinancialIntros';
@@ -21,6 +21,9 @@ const Background: React.FC<{frame: number}> = ({frame}) => {
 };
 
 const SceneAudio: React.FC<{scene: DialogueScene}> = ({scene}) => <>
+  {scene.intro && !scene.intro.muted ? <Sequence from={scene.intro.fromFrame ?? 0} durationInFrames={scene.intro.frames ?? 67}>
+    <Audio src={asset(scene.intro.src)} volume={.18} />
+  </Sequence> : null}
   {scene.utterances.map((utterance) => <Sequence key={utterance.id} from={utterance.startFrame} durationInFrames={utterance.endFrameExclusive - utterance.startFrame}>
     <Audio src={staticFile(utterance.src)} />
   </Sequence>)}
@@ -29,11 +32,10 @@ const SceneAudio: React.FC<{scene: DialogueScene}> = ({scene}) => <>
   </Sequence>)}
 </>;
 
-const SceneVisual: React.FC<{scene: DialogueScene; timeline: FinanceTimeline; frame: number}> = ({scene, timeline, frame}) => {
-  if (scene.intro && frame >= (scene.intro.fromFrame ?? 0)) return <><Sequence from={scene.intro.fromFrame ?? 0} durationInFrames={scene.frames - (scene.intro.fromFrame ?? 0)}>
-    <TemplateMotion {...scene.intro} holdLastFrame />
-  </Sequence><SubtitleLayer captions={scene.captions} frame={frame} /></>;
-  if (scene.outro) return <><TemplateMotion {...scene.outro} holdLastFrame /><SubtitleLayer captions={scene.captions} frame={frame} /></>;
+const BodyVisual: React.FC<{scene: DialogueScene; timeline: FinanceTimeline; frame: number}> = ({scene, timeline, frame}) => {
+  if (scene.intro && frame >= (scene.intro.fromFrame ?? 0)) return <Sequence from={scene.intro.fromFrame ?? 0} durationInFrames={scene.frames - (scene.intro.fromFrame ?? 0)}>
+    <TemplateMotion {...scene.intro} muted holdLastFrame />
+  </Sequence>;
   if (scene.chapter && frame < scene.chapter.frames) return <ChapterTransition title={scene.chapter.title} duration={scene.chapter.frames} />;
   // 单镜导出与全片共用绝对帧；章节图解、进度不会在切句后归零。
   const absolute = scene.from + frame;
@@ -46,19 +48,39 @@ const SceneVisual: React.FC<{scene: DialogueScene; timeline: FinanceTimeline; fr
     <Img src={asset('assets/images/brand/logo-dark.png')} style={{position: 'absolute', right: 44, top: 30, width: 168, height: 68, objectFit: 'contain'}} />
     <SpeakerStage speaker={scene.speaker} frame={frame - (scene.chapter?.frames ?? 0)} summary={scene.summary} />
     <VisualBlocks blocks={localBlocks ? scene.visualBlocks : chapter.visualBlocks} frame={localBlocks ? frame : absolute - chapter.from} title={chapter.title} label={chapter.label} />
-    <SubtitleLayer captions={scene.captions} frame={frame} />
     <ChapterNav chapters={timeline.chapters} frame={absolute} totalFrames={timeline.totalFrames} />
   </AbsoluteFill>;
 };
 
+// 完整时间轴定位原正文镜头，单镜导出也能保持前镜的最终状态。
+const HeldBody: React.FC<{timeline: FinanceTimeline; holdFrame: number}> = ({timeline, holdFrame}) => {
+  const source = timeline.scenes.find((item) => holdFrame >= item.from && holdFrame < item.from + item.frames);
+  if (!source) throw new Error('结束语保持帧没有对应正文分镜');
+  const local = holdFrame - source.from;
+  // 先保持当前镜头第 0 帧，再用负起点恢复正文局部时间。
+  // 直接 Freeze 到 local 会被更短的结束语 Composition 截断，单镜导出尤其明显。
+  return <Freeze frame={0}><Sequence from={-local} durationInFrames={local + 1} layout="none">
+    <BodyVisual scene={source} timeline={timeline} frame={local} />
+  </Sequence></Freeze>;
+};
+
 export const FinanceScene: React.FC<{scene: DialogueScene; timeline: FinanceTimeline; withBgm?: boolean}> = ({scene, timeline, withBgm = false}) => {
   const frame = useCurrentFrame();
+  const absolute = scene.from + frame;
+  const ending = timeline.ending;
+  const narrationEnd = ending?.narrationEndFrame ?? timeline.totalFrames;
+  const soundFrames = Math.max(0, Math.min(scene.contentFrames ?? scene.frames, narrationEnd - scene.from));
+  // 片尾区间只是静态无声占位，最终封装前由共享工具换成完整本地片尾。
+  const holding = ending?.holdFrame !== undefined && absolute > ending.holdFrame;
+  const placeholder = ending !== undefined && absolute >= narrationEnd;
+  const heldFrame = ending?.holdFrame ?? narrationEnd - 1;
   return <AbsoluteFill style={{fontFamily: 'PingFang SC, Hiragino Sans GB, Noto Sans CJK SC, sans-serif'}}>
     <LayoutGuard frame={frame} />
-    <SceneVisual scene={scene} timeline={timeline} frame={frame} />
-    {/* 音频独立于画面分支，片尾和章节转场不能吞掉配音或音效。 */}
-    <Sequence durationInFrames={scene.contentFrames ?? scene.frames}><SceneAudio scene={scene} /></Sequence>
-    {withBgm && timeline.bgm ? <Sequence from={-scene.from} durationInFrames={scene.from + (scene.contentFrames ?? scene.frames)}>
+    {holding || placeholder ? <HeldBody timeline={timeline} holdFrame={heldFrame} /> : <BodyVisual scene={scene} timeline={timeline} frame={frame} />}
+    {/* 字幕与所有声音在 Freeze 外继续，口播结束后不延伸到片尾占位。 */}
+    {!placeholder ? <SubtitleLayer captions={scene.captions} frame={frame} /> : null}
+    {soundFrames > 0 ? <Sequence durationInFrames={soundFrames}><SceneAudio scene={scene} /></Sequence> : null}
+    {soundFrames > 0 && withBgm && timeline.bgm ? <Sequence from={-scene.from} durationInFrames={scene.from + soundFrames}>
       <Audio src={asset(timeline.bgm.src)} loop volume={timeline.bgm.volume ?? .11} />
     </Sequence> : null}
   </AbsoluteFill>;

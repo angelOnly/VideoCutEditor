@@ -1,12 +1,106 @@
-import type { FinanceTimeline } from './types';
+import type {FinanceTimeline} from './types';
 
-// 此占位时间轴不能交付。Render 必须用本次任务的真实 TTS 时长覆盖它。
+// 仅演示串行片尾字段，音频和片尾必须在任务内替换、实测后才能渲染。
 export const timeline: FinanceTimeline = {
-  fps: 30,
-  width: 1920,
-  height: 1080,
-  totalFrames: 30,
-  title: '待生成的财经双人对话',
-  chapters: [],
-  scenes: [],
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "totalFrames": 300,
+  "title": "字段示例：实际制作需替换音频及时间",
+  "chapters": [
+    {
+      "id": "chapter_01",
+      "label": "核心观点",
+      "title": "本期面板标题",
+      "summary": "章节摘要，不代替逐句字幕",
+      "from": 0,
+      "endFrameExclusive": 180,
+      "visualBlocks": [
+        {
+          "id": "viewpoints",
+          "kind": "comparison",
+          "startFrame": 0,
+          "endFrameExclusive": 180,
+          "slot": "full",
+          "props": {
+            "items": [
+              "第一方观点",
+              "第二方观点"
+            ],
+            "itemFrames": [
+              0,
+              90
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "scenes": [
+    {
+      "id": "scene_001",
+      "from": 0,
+      "frames": 300,
+      "speaker": "female-host",
+      "summary": "一句关键结论",
+      "utterances": [
+        {
+          "id": "scene_001_phrase_01",
+          "text": "第一段示例，",
+          "src": "audio/本期短句01.wav",
+          "startFrame": 0,
+          "endFrameExclusive": 90
+        },
+        {
+          "id": "scene_001_phrase_02",
+          "text": "第二段示例。",
+          "src": "audio/本期短句02.wav",
+          "startFrame": 90,
+          "endFrameExclusive": 180
+        },
+        {
+          "id": "scene_001_closing_01",
+          "text": "每天三分钟，拆解财报里的关键信号。",
+          "src": "audio/本期固定结束语.wav",
+          "startFrame": 180,
+          "endFrameExclusive": 270
+        }
+      ],
+      "captions": [
+        {
+          "utteranceId": "scene_001_phrase_01",
+          "text": "第一段示例，",
+          "startFrame": 0,
+          "endFrameExclusive": 90
+        },
+        {
+          "utteranceId": "scene_001_phrase_02",
+          "text": "第二段示例。",
+          "startFrame": 90,
+          "endFrameExclusive": 180
+        },
+        {
+          "text": "每天三分钟，拆解财报里的关键信号。",
+          "startFrame": 180,
+          "endFrameExclusive": 270,
+          "utteranceId": "scene_001_closing_01"
+        }
+      ],
+      "visualBlocks": [],
+      "sfx": [],
+      "contentFrames": 300
+    }
+  ],
+  "ending": {
+    "closingUtteranceIds": [
+      "scene_001_closing_01"
+    ],
+    "holdFrame": 179,
+    "narrationEndFrame": 270,
+    "outro": {
+      "src": "assets/video/outro/本期标准化片尾.mp4",
+      "frames": 30,
+      "muted": false
+    }
+  }
 };

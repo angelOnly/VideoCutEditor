@@ -16,6 +16,7 @@ for (const directory of [
   'video-worker/migrations',
   'claude-code-video-toolkit/templates/ifeng-scenes',
   'claude-code-video-toolkit/.agents/skills/video-pipeline',
+  'claude-code-video-toolkit/.agents/skills/remotion-best-practices',
 ])
   await collect(directory);
 for (const f of [

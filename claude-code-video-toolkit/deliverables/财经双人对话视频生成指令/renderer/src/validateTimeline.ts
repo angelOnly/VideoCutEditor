@@ -88,6 +88,38 @@ export function validateTimeline(t: FinanceTimeline) {
     previous = c.endFrameExclusive;
     validateBlocks(c.visualBlocks, c.endFrameExclusive - c.from, warnings);
   }
+  const utterances = t.scenes.flatMap((scene) => scene.utterances.map((utterance) => ({scene, utterance})));
+  const utteranceIds = utterances.map(({utterance}) => utterance.id);
+  check(utteranceIds.every((id) => typeof id === 'string' && id.trim()) && new Set(utteranceIds).size === utteranceIds.length, '配音 id 为空或重复');
+  let bodyEnd = t.totalFrames;
+  if (t.ending) {
+    const e = t.ending;
+    check(Array.isArray(e.closingUtteranceIds) && new Set(e.closingUtteranceIds).size === e.closingUtteranceIds.length, '固定结束语 id 无效或重复');
+    check(utterances.length > 0, '结束记录缺少实际口播');
+    check(e.closingUtteranceIds.length <= utterances.length && e.closingUtteranceIds.every((id, index) => id === utteranceIds[utteranceIds.length - e.closingUtteranceIds.length + index]), '固定结束语必须对应末尾连续口播');
+    const last = utterances[utterances.length - 1];
+    check(integer(e.narrationEndFrame) && e.narrationEndFrame === last.scene.from + last.utterance.endFrameExclusive, '全部口播结束帧与实际配音不一致');
+    bodyEnd = e.narrationEndFrame;
+    if (e.closingUtteranceIds.length) {
+      const body = utterances[utterances.length - e.closingUtteranceIds.length - 1];
+      check(body, '固定结束语之前必须有正文');
+      check(e.holdFrame !== undefined && integer(e.holdFrame) && e.holdFrame === body.scene.from + body.utterance.endFrameExclusive - 1, '保持帧必须是结束语之前正文的最后一帧');
+      bodyEnd = e.holdFrame + 1;
+      const source = t.scenes.find((scene) => e.holdFrame! >= scene.from && e.holdFrame! < scene.from + scene.frames);
+      check(source && !source.intro && e.holdFrame >= source.from + (source.chapter?.frames ?? 0), '保持帧必须来自完整正文，不能来自片头或章节转场');
+      const chapter = t.chapters.find((c) => e.holdFrame! >= c.from && e.holdFrame! < c.endFrameExclusive);
+      check(chapter, '保持帧没有对应正文章节');
+      const blocks = source.visualBlocks.length ? source.visualBlocks : chapter.visualBlocks;
+      const local = e.holdFrame - (source.visualBlocks.length ? source.from : chapter.from);
+      check(blocks.some((b) => local >= b.startFrame && local < b.endFrameExclusive), '保持帧没有可显示的正文图解');
+    } else {
+      check(e.holdFrame === undefined, '没有固定结束语时不应指定保持帧');
+    }
+    if (e.outro) check(typeof e.outro.src === 'string' && e.outro.src.trim() && integer(e.outro.frames) && e.outro.frames > 0 && typeof e.outro.muted === 'boolean', '独立片尾须有本地路径、完整帧数及 muted');
+    const finalScene = t.scenes[t.scenes.length - 1];
+    const finalEnd = e.narrationEndFrame + (e.outro?.frames ?? 0);
+    check(finalScene && e.narrationEndFrame > finalScene.from && (finalScene.contentFrames ?? finalScene.frames) === finalEnd - finalScene.from && finalScene.from + finalScene.frames >= finalEnd, '末镜内容长度必须等于完整口播加片尾；仅允许封装补帧');
+  }
   let end = 0;
   const sceneIds = new Set<string>();
   for (const s of t.scenes) {
@@ -95,25 +127,38 @@ export function validateTimeline(t: FinanceTimeline) {
     check(s.from === end && integer(s.frames) && s.frames > 0, `${s.id} 分镜必须连续且帧数有效`); end += s.frames;
     const contentFrames = s.contentFrames ?? s.frames;
     check(integer(contentFrames) && contentFrames > 0 && contentFrames <= s.frames, `${s.id} 内容长度或封装补帧无效`);
-    for (const media of [s.intro, s.outro]) if (media) check(typeof media.muted === 'boolean', `${s.id} 视频素材须显式指定 muted`);
+    check(!('outro' in s), `${s.id} 不再接受 scene.outro；片尾必须在全部口播后独立追加`);
+    if (s.intro) check(typeof s.intro.muted === 'boolean', `${s.id} 视频素材须显式指定 muted`);
     check(s.speaker === 'male-chief' || s.speaker === 'female-host', `${s.id} 发言者无效`);
     if (s.chapter) check(integer(s.chapter.frames) && s.chapter.frames > 0 && s.chapter.frames < s.frames, `${s.id} 章节转场须为正且短于分镜`);
-    check(!(s.intro && s.outro), `${s.id} 不能同时片头和片尾`);
-    if (!s.intro && !s.outro) {
+    const bodyUntil = Math.min(end, bodyEnd);
+    if (!s.intro && s.from < bodyUntil) {
       short(s.summary, 22, '人物观点短句', warnings);
       let covered = s.from + (s.chapter?.frames ?? 0);
-      for (const c of t.chapters.filter((c) => c.endFrameExclusive > covered && c.from < end)) {
+      for (const c of t.chapters.filter((c) => c.endFrameExclusive > covered && c.from < bodyUntil)) {
         check(c.from <= covered, `${s.id} 正文章节覆盖有空隙`);
         check(s.visualBlocks.length || c.visualBlocks.length, `${s.id} 缺少图解`);
+        if (t.ending) {
+          // 只检查真实正文，结束语保持区间复用已验证的完成状态。
+          const origin = s.visualBlocks.length ? s.from : c.from;
+          const blocks = s.visualBlocks.length ? s.visualBlocks : c.visualBlocks;
+          let visualEnd = covered;
+          for (const block of [...blocks].sort((a, b) => a.startFrame - b.startFrame)) {
+            if (origin + block.endFrameExclusive <= visualEnd || origin + block.startFrame >= Math.min(c.endFrameExclusive, bodyUntil)) continue;
+            check(origin + block.startFrame <= visualEnd, `${s.id} 正文图解覆盖有空隙`);
+            visualEnd = Math.max(visualEnd, origin + block.endFrameExclusive);
+          }
+          check(visualEnd >= Math.min(c.endFrameExclusive, bodyUntil), `${s.id} 正文图解覆盖不完整`);
+        }
         covered = c.endFrameExclusive;
       }
-      check(covered >= end, `${s.id} 正文章节覆盖不完整`);
+      check(covered >= bodyUntil, `${s.id} 正文章节覆盖不完整`);
     }
     validateBlocks(s.visualBlocks, s.frames, warnings);
     let captionEnd = 0;
     for (const caption of s.captions) {
       short(caption.text, 28, `${s.id} 字幕`, warnings);
-      check(integer(caption.startFrame) && integer(caption.endFrameExclusive) && caption.startFrame >= captionEnd && caption.endFrameExclusive > caption.startFrame && caption.endFrameExclusive <= s.frames, `${s.id} 字幕越界或重叠`);
+      check(integer(caption.startFrame) && integer(caption.endFrameExclusive) && caption.startFrame >= captionEnd && caption.endFrameExclusive > caption.startFrame && caption.endFrameExclusive <= s.frames && (!t.ending || s.from + caption.endFrameExclusive <= t.ending.narrationEndFrame), `${s.id} 字幕越界或重叠`);
       captionEnd = caption.endFrameExclusive;
     }
     let utteranceEnd = s.chapter?.frames ?? 0;
@@ -121,8 +166,8 @@ export function validateTimeline(t: FinanceTimeline) {
       check(integer(u.startFrame) && integer(u.endFrameExclusive) && u.startFrame >= utteranceEnd && u.endFrameExclusive > u.startFrame && u.endFrameExclusive <= contentFrames, `${s.id} 配音越界、重叠或与标题同屏`);
       utteranceEnd = u.endFrameExclusive;
     }
-    if (s.outro) check(s.utterances.length && s.utterances[0].startFrame === 0 && utteranceEnd <= contentFrames, '片尾必须完整容纳收束旁白；素材尾音与封装补帧不延长字幕');
-    for (const cue of s.sfx ?? []) check(integer(cue.frame) && cue.frame < contentFrames && (cue.durationFrames === undefined || (integer(cue.durationFrames) && cue.durationFrames > 0 && cue.frame + cue.durationFrames <= contentFrames)), `${s.id} 音效帧越界`);
+    const soundFrames = Math.min(contentFrames, (t.ending?.narrationEndFrame ?? t.totalFrames) - s.from);
+    for (const cue of s.sfx ?? []) check(integer(cue.frame) && cue.frame < soundFrames && (cue.durationFrames === undefined || (integer(cue.durationFrames) && cue.durationFrames > 0 && cue.frame + cue.durationFrames <= soundFrames)), `${s.id} 音效越过口播或内容边界`);
   }
   check(t.scenes.length && end === t.totalFrames, '总帧数与分镜不一致');
   return warnings;

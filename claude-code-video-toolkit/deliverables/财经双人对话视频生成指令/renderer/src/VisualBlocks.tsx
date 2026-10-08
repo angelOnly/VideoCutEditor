@@ -99,8 +99,9 @@ const Block: React.FC<{block: VisualBlock; frame: number}> = ({block, frame}) =>
     </div>;
   }
   return <div data-block={block.id} style={{position: 'absolute', ...slots[block.slot ?? 'full'], display: 'flex',
-    alignItems: 'center', opacity: entry, transform: `translateY(${(1 - entry) * 20}px)`}}>
-    <div data-visual-surface data-overlay={block.intentionalOverlap ? 'true' : 'false'} style={{width: '100%', minWidth: 0}}>{body}</div>
+    // 扩展自己控制运动，外层只定位，避免二次淡入和位移。
+    alignItems: 'center', ...(Extension ? {} : {opacity: entry, transform: `translateY(${(1 - entry) * 20}px)`})}}>
+    <div data-visual-surface data-overlay={block.intentionalOverlap ? 'true' : 'false'} style={{width: '100%', minWidth: 0, height: block.kind === 'line' ? '100%' : undefined}}>{body}</div>
   </div>;
 };
 

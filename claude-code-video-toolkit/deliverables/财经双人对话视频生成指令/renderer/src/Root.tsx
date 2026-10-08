@@ -12,7 +12,7 @@ export const RemotionRoot: React.FC = () => (
     <Composition
       id="FinanceEpisode"
       component={FinanceEpisode}
-      durationInFrames={Math.max(1, timeline.totalFrames)}
+      durationInFrames={timeline.totalFrames}
       fps={timeline.fps}
       width={timeline.width}
       height={timeline.height}

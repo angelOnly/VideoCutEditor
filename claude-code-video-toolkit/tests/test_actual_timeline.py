@@ -6,13 +6,113 @@ import unittest
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]/'tools'))
-from actual_timeline import sample_frames, resolve_speech, content_frames, extend_timeline
+from actual_timeline import sample_frames, resolve_speech, content_frames, extend_timeline, check_fixed_ending
 from two_stage import StageError, execution, read, write
 from stage_media import check_speech_coverage, derive_timeline, scene_audio_contract
-from tests.test_two_stage import Fixture
+from test_two_stage import Fixture
 
 
 class ActualTimelineTests(unittest.TestCase):
+    @staticmethod
+    def ending_timeline(outro=True):
+        result = {'fps': 30, 'withBgm': False, 'totalFrames': 75 if outro else 65, 'scenes': [
+            {'id': 'body', 'from': 0, 'frames': 30, 'contentFrames': 30,
+             'utterances': [{'id': 'body-u', 'startFrame': 0, 'endFrameExclusive': 30}]},
+            {'id': 'closing-a', 'from': 30, 'frames': 20, 'contentFrames': 20,
+             'utterances': [{'id': 'closing-u1', 'startFrame': 0, 'endFrameExclusive': 20}]},
+            {'id': 'closing-b', 'from': 50, 'frames': 25 if outro else 15, 'contentFrames': 25 if outro else 15,
+             'utterances': [{'id': 'closing-u2', 'startFrame': 0, 'endFrameExclusive': 15}]}],
+            'ending': {'closingUtteranceIds': ['closing-u1', 'closing-u2'], 'holdFrame': 29, 'narrationEndFrame': 65}}
+        if outro:
+            result['ending']['outro'] = {'src': 'outro.mp4', 'frames': 10, 'muted': False}
+        return result
+
+    def test_serial_ending_uses_body_frame_and_all_narration_before_outro(self):
+        timeline = self.ending_timeline()
+        before = copy.deepcopy(timeline)
+        bounds = check_fixed_ending(timeline)
+        self.assertEqual(bounds['holdFrame'], 29)
+        self.assertEqual(bounds['appendFromFrame'], 15)
+        self.assertEqual(bounds['outroFrames'], 10)
+        self.assertEqual(bounds['lastSceneId'], 'closing-b')
+        self.assertEqual(timeline, before)
+        self.assertEqual(check_fixed_ending(self.ending_timeline(False))['outroFrames'], 0)
+
+    def test_ending_handles_no_closing_without_freezing_body(self):
+        timeline = self.ending_timeline()
+        timeline['ending']['closingUtteranceIds'] = []
+        timeline['ending'].pop('holdFrame')
+        self.assertIsNone(check_fixed_ending(timeline)['holdFrame'])
+        timeline['ending']['holdFrame'] = 29
+        with self.assertRaisesRegex(StageError, '不能冻结'):
+            check_fixed_ending(timeline)
+        self.assertIsNone(check_fixed_ending({'scenes': []}))
+        with self.assertRaises(StageError):
+            check_fixed_ending({}, required=True)
+
+    def test_same_scene_closing_includes_natural_pause_but_never_retimes_speech(self):
+        timeline = self.ending_timeline()
+        scene = {'id': 'all', 'startFrame': 0, 'endFrameExclusive': 75, 'contentFrames': 75,
+                 'utterances': [{'id': 'body-u', 'startFrame': 0, 'endFrameExclusive': 30},
+                                {'id': 'closing-u1', 'startFrame': 35, 'endFrameExclusive': 50},
+                                {'id': 'closing-u2', 'startFrame': 50, 'endFrameExclusive': 65}]}
+        timeline['scenes'] = [scene]
+        before = copy.deepcopy(timeline)
+        bounds = check_fixed_ending(timeline)
+        self.assertEqual(bounds['holdFrame'], 29)
+        self.assertEqual(bounds['appendFromFrame'], 65)
+        self.assertEqual(timeline, before)
+
+    def test_ending_rejects_wrong_ids_coordinates_and_old_scene_outro(self):
+        mutations = [
+            lambda t: t['ending'].update(closingUtteranceIds=['closing-u2', 'closing-u1']),
+            lambda t: t['ending'].update(closingUtteranceIds=['closing-u1']),
+            lambda t: t['ending'].update(closingUtteranceIds=['missing']),
+            lambda t: t['ending'].update(holdFrame=20),
+            lambda t: t['ending'].update(narrationEndFrame=64),
+            lambda t: t['scenes'][-1].update(contentFrames=26),
+            lambda t: t['scenes'][0].update(outro={'src': 'old.mov'}),
+            lambda t: t['scenes'][-1]['utterances'][0].update(id='body-u'),
+            lambda t: t['ending']['outro'].update(frames=True),
+        ]
+        for change in mutations:
+            with self.subTest(change=change):
+                timeline = self.ending_timeline()
+                change(timeline)
+                with self.assertRaises(StageError):
+                    check_fixed_ending(timeline)
+
+    def test_extension_moves_global_ending_but_does_not_reappend_tail(self):
+        timeline = self.ending_timeline()
+        result = extend_timeline(timeline, {'body': 32, 'closing-a': 23, 'closing-b': 30})
+        self.assertEqual(result['ending']['holdFrame'], 29)
+        self.assertEqual(result['ending']['narrationEndFrame'], 70)
+        self.assertEqual(result['ending']['outro']['frames'], 10)
+        self.assertEqual(result['scenes'][-1]['contentFrames'], 25)
+        self.assertEqual(result['totalFrames'], 85)
+        self.assertEqual(check_fixed_ending(result)['appendFromFrame'], 15)
+        self.assertEqual(extend_timeline(result, {'closing-b': 30}), result)
+
+    def test_extension_at_exact_voice_end_is_only_packaging_padding(self):
+        timeline = self.ending_timeline(False)
+        result = extend_timeline(timeline, {'closing-b': 18})
+        self.assertEqual(result['ending']['narrationEndFrame'], 65)
+        self.assertEqual(result['totalFrames'], 68)
+        self.assertEqual(result['scenes'][-1]['contentFrames'], 15)
+
+    def test_extension_accepts_canonical_coordinates_and_syncs_aliases(self):
+        timeline = self.ending_timeline()
+        for scene in timeline['scenes']:
+            scene['startFrame'] = scene.pop('from')
+            scene['endFrameExclusive'] = scene['startFrame'] + scene.pop('frames')
+        original = copy.deepcopy(timeline)
+        result = extend_timeline(timeline, {'body': 32})
+        self.assertEqual(timeline, original)
+        self.assertEqual(result['ending']['narrationEndFrame'], 67)
+        self.assertEqual(result['scenes'][-1]['from'], 52)
+        self.assertEqual(result['scenes'][-1]['endFrameExclusive'], 77)
+        self.assertEqual(check_fixed_ending(result)['outroFrames'], 10)
+
     def test_source_audio_must_fit_before_remotion_can_mix_it(self):
         scene={'frames':327,'utterances':[{'id':'u','src':'voice.wav','startFrame':0,'endFrameExclusive':327}]}
         with patch('stage_media.local',return_value=Path('voice.wav')), patch('stage_media.audio_info',return_value={'samples':523216,'sampleRate':48000}):
@@ -74,6 +174,28 @@ class ActualTimelineTests(unittest.TestCase):
 
 
 class AdjustmentBudgetTests(Fixture):
+    def test_derive_preserves_ending_and_never_adds_outro_twice(self):
+        request = self.render_request()
+        project = self.root/'project/renderer'
+        (project/'src').mkdir(parents=True)
+        (project/'public').mkdir()
+        audio = project/'public/a.wav'; audio.write_bytes(b'fixture')
+        timeline = ActualTimelineTests.ending_timeline()
+        for scene in timeline['scenes']:
+            scene['startFrame'] = scene['from']
+            scene['endFrameExclusive'] = scene['from'] + scene['frames']
+            for u in scene['utterances']:
+                u.update(src='a.wav', audioPath='project/renderer/public/a.wav')
+        source = request.parent/'timeline.json'; write(source, timeline)
+        before = source.read_bytes()
+        for _ in range(2):
+            derive_timeline(self.root, request, str(source.relative_to(self.root)), 'project/renderer')
+            self.assertEqual(source.read_bytes(), before)
+            props = read(request.parent/'scene-03-props.json')
+            self.assertEqual(props['timeline']['ending'], timeline['ending'])
+            self.assertEqual(props['timeline']['totalFrames'], 75)
+            self.assertEqual(props['scene']['frames'], 25)
+
     def test_derived_template_input_never_rewrites_canonical_timeline(self):
         request=self.render_request()
         project=self.root/'project/renderer'

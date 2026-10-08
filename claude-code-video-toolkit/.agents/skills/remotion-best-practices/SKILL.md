@@ -1,6 +1,6 @@
 ---
 name: remotion-best-practices
-description: Best practices for Remotion - Video creation in React
+description: 使用 React 和 Remotion 制作视频的工程、动画、音频、字幕与确定性渲染方法。
 metadata:
   tags: remotion, video, react, animation, composition
 ---
@@ -19,29 +19,26 @@ npx create-video@latest --yes --blank --no-tailwind my-video
 
 Replace `my-video` with a suitable project name.
 
-## Designing a video
+## 设计与实现动画
 
-Animate properties using `useCurrentFrame()` and `interpolate()`. Use Easing to customize the timing of the animation.
+先确定画面要表达的关系及完整状态构图，再决定运动属性。
+淡入、位移和缩放只是基础手段，不能代替数据、结构或关系表达。
 
-```tsx
-import { useCurrentFrame, Easing } from "remotion";
+数据变化读取rules/data-animation.md。
+连接、结构展开、对象移动和布局重排读取rules/diagram-animation.md。
+中文标题、短语揭示和关键词强调读取rules/text-animations.md。
+按需继续读取timing、sequencing、transitions和measuring-text。
 
-export const FadeIn = () => {
-  const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
+所有动画由当前帧确定，使用interpolate、spring或其他确定性计算。
+组件由上层传入局部frame时，直接使用该frame，
+不能再次减去组件起点，也不能混用全局和局部帧。
 
-  const opacity = interpolate(frame, [0, 2 * fps], [0, 1], {
-    extrapolateRight: "clamp",
-    extrapolateLeft: "clamp",
-    easing: Easing.bezier(0.16, 1, 0.3, 1),
-  });
+动作时间由当前任务实际窗口确定。
+数值几何变化使用不会越过真实端点的进度；
+装饰性弹簧不能导致图表短暂显示错误数值。
 
-  return <div style={{ opacity }}>Hello World!</div>;
-};
-```
-
-CSS transitions or animations are FORBIDDEN - they will not render correctly.  
-Tailwind animation class names are FORBIDDEN - they will not render correctly.
+不使用CSS animation、CSS transition或依赖实时钟的动画。
+资源目录和引用继续遵循当前工程约定。
 
 Place assets in the `public/` folder at your project root.
 
@@ -191,24 +188,21 @@ export const RemotionRoot = () => {
 };
 ```
 
-## Starting preview
+## 预览与修订
 
-Start the Remotion Studio to preview a video:
+无人值守video-pipeline使用现有入口生成静帧和带音频分镜，
+不启动Remotion Studio，不安装额外软件。
 
-```bash
-npx remotion studio
-```
+静帧检查构图、字体、完整状态和关键转折；
+带音频分镜检查连续运动、口播对应和读图时间。
+静帧不能证明动作合格，音频测量不能证明实际试听。
 
-## Optional: one-frame render check
+先验证本次关键设计，再批量渲染。
+发现拥挤、跳变、重复入场或重点错位时，修改当前组件和编排，
+重新检查受影响区间。
 
-You can render a single frame with the CLI to sanity-check layout, colors, or timing.  
-Skip it for trivial edits, pure refactors, or when you already have enough confidence from Studio or prior renders.
-
-```bash
-npx remotion still [composition-id] --scale=0.25 --frame=30
-```
-
-At 30 fps, `--frame=30` is the one-second mark (`--frame` is zero-based).
+普通本地交互式Remotion项目可按其环境使用Studio；
+不把该方式作为无人值守生产链的前提。
 
 ## Captions
 
@@ -301,6 +295,15 @@ See [rules/sequencing.md](rules/sequencing.md) for more sequencing patterns - de
 ## TailwindCSS
 
 See [rules/tailwind.md](rules/tailwind.md) for using TailwindCSS in Remotion.
+
+## 数据与关系图解
+
+数值变化和图表几何读取rules/data-animation.md。
+节点连接、结构展开与布局重排读取rules/diagram-animation.md。
+可运行示例见rules/assets/narrative-motion-examples.tsx。
+
+示例展示实现方法，不固定行业、对象数量、节目时长或组件选择。
+先看当前任务要表达的关系，再选择有用的技术。
 
 ## Text animations
 

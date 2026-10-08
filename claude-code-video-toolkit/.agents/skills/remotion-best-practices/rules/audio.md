@@ -9,8 +9,12 @@ metadata:
 
 ## Prerequisites
 
-First, the @remotion/media package needs to be installed.
-If it is not installed, use the following command:
+先遵守当前任务入口的依赖与环境约束。已有模板使用`remotion`的`Audio`时保留现有实现，
+不为了套用本页而迁移或新增依赖。受管video-pipeline或Worker任务使用现有锁定依赖，
+缺少`@remotion/media`时采用现有可用音频组件；确实缺少必需能力时报告环境问题，
+不得自行安装软件或修改公共环境。
+
+普通本地项目只有在允许安装依赖且确实需要`@remotion/media`时，才可执行：
 
 ```bash
 npx remotion add @remotion/media

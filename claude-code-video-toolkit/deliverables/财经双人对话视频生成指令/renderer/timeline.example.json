@@ -2,7 +2,7 @@
   "fps": 30,
   "width": 1920,
   "height": 1080,
-  "totalFrames": 180,
+  "totalFrames": 300,
   "title": "字段示例：实际制作需替换音频及时间",
   "chapters": [
     {
@@ -37,7 +37,7 @@
     {
       "id": "scene_001",
       "from": 0,
-      "frames": 180,
+      "frames": 300,
       "speaker": "female-host",
       "summary": "一句关键结论",
       "utterances": [
@@ -54,6 +54,13 @@
           "src": "audio/本期短句02.wav",
           "startFrame": 90,
           "endFrameExclusive": 180
+        },
+        {
+          "id": "scene_001_closing_01",
+          "text": "每天三分钟，拆解财报里的关键信号。",
+          "src": "audio/本期固定结束语.wav",
+          "startFrame": 180,
+          "endFrameExclusive": 270
         }
       ],
       "captions": [
@@ -68,10 +75,29 @@
           "text": "第二段示例。",
           "startFrame": 90,
           "endFrameExclusive": 180
+        },
+        {
+          "text": "每天三分钟，拆解财报里的关键信号。",
+          "startFrame": 180,
+          "endFrameExclusive": 270,
+          "utteranceId": "scene_001_closing_01"
         }
       ],
       "visualBlocks": [],
-      "sfx": []
+      "sfx": [],
+      "contentFrames": 300
     }
-  ]
+  ],
+  "ending": {
+    "closingUtteranceIds": [
+      "scene_001_closing_01"
+    ],
+    "holdFrame": 179,
+    "narrationEndFrame": 270,
+    "outro": {
+      "src": "assets/video/outro/本期标准化片尾.mp4",
+      "frames": 30,
+      "muted": false
+    }
+  }
 }

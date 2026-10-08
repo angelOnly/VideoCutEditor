@@ -115,6 +115,23 @@ class BatchTests(Fixture):
         with self.assertRaises(StageError) as error: render_batch(self.args)
         self.assertEqual(error.exception.code, 'TIMELINE_STALE')
 
+    def test_timeline_adapters_are_part_of_frozen_tool_inputs(self):
+        tools = self.base / 'toolkit/tools'; tools.mkdir(parents=True)
+        names = ('render_batch.py', 'stage_media.py', 'render_scene.cjs', 'two_stage.py', 'actual_timeline.py', 'finance_timeline.py')
+        for name in names:
+            (tools / name).write_text('固定版本')
+        # 用隔离副本模拟工具发布，不改正在并行开发的实际共享文件。
+        with patch.object(batch_module, '__file__', str(tools / 'render_batch.py')):
+            for index, name in enumerate(('actual_timeline.py', 'finance_timeline.py')):
+                self.args.batch = f'adapter_{index}'
+                frozen = freeze_batch(self.args)
+                manifest = read(self.job / frozen['manifest'])
+                (tools / name).write_text('新版本')
+                with self.assertRaises(StageError) as error:
+                    batch_module.verify_manifest(self.job, self.args.request, read(self.args.request), manifest,
+                                                 self.args.modules, self.args.browser)
+                self.assertEqual(error.exception.code, 'TIMELINE_STALE')
+
     def test_sigkill_parent_keeps_live_group_visible_for_recovery(self):
         work = self.args.request.parent/'work'; work.mkdir(exist_ok=True)
         script = "from pathlib import Path; import sys; sys.path.insert(0, sys.argv[1]); from stage_media import supervise; supervise([sys.executable,'-c','import time; time.sleep(30)'],Path(sys.argv[2]),Path(sys.argv[2])/'orphan.log',Path(sys.argv[2])/'done',60)"

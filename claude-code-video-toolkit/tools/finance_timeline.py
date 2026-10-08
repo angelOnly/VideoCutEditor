@@ -2,6 +2,7 @@
 import json
 from pathlib import Path
 from two_stage import local, require, read, write, digest
+from actual_timeline import check_fixed_ending
 
 def derive_timeline(root, request_path, timeline_name, project_name):
     """财经模板派生适配：保留正式记录，其他模板仍在自己的工程内适配数据。"""
@@ -11,6 +12,8 @@ def derive_timeline(root, request_path, timeline_name, project_name):
     require(project.is_dir(), '工程目录不存在', 'MISSING_INPUT')
     require(project.is_relative_to(root/'project'), '派生仅能写当前任务工程')
     derived = read(source)
+    # 收尾字段原样透传；派生只校验，不增加片尾或改写任何正式边界。
+    check_fixed_ending(derived)
     require(type(derived.get('withBgm')) is bool, '财经适配需明确 withBgm，保留本任务音乐选择')
     offset = 0
     for scene in derived['scenes']:

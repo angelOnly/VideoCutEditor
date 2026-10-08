@@ -25,6 +25,12 @@ An open-source, AI-native video production workspace for Claude Code, featuring:
 
 ## Current Status
 
+### 2026-10-08：正文图解创作与串行片尾
+
+- 增加正文构图、数据、关系、中文排印的制作指导和可渲染教学例子；本期图解通过现有扩展入口创作。
+- 固定结束语期间保持正文完成画面，字幕和声音继续；共享合成工具在口播后追加完整本地片尾。
+- 同步模板、实测时间轴、完整混音、缓存指纹与可信终检，保持原有确认分镜和交付协议。
+
 **Phase:** 3 - Templates & Brands (nearly complete)
 **Focus:** Additional templates (tutorial, changelog), testing
 **Recent:** Qwen3-TTS integration, sprint-review-v2 template, voice cloning, FilmGrain component

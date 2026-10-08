@@ -51,7 +51,6 @@ export type DialogueScene = {
   summary: string;
   chapter?: {title: string; frames: number};
   intro?: {src: string; fromFrame?: number; frames?: number; muted: boolean};
-  outro?: {src: string; frames?: number; muted: boolean};
   utterances: Utterance[];
   captions: Caption[];
   // 可选：真实音频绑定的分页时间记录，路径分别用于工程和可信终检。
@@ -68,5 +67,12 @@ export type FinanceTimeline = {
   title: string;
   chapters: Chapter[];
   bgm?: {src: string; volume?: number};
+  // 固定结束语期间只保持正文视觉；片尾由共享合成工具顺序追加。
+  ending?: {
+    closingUtteranceIds: string[];
+    holdFrame?: number;
+    narrationEndFrame: number;
+    outro?: {src: string; frames: number; muted: boolean};
+  };
   scenes: DialogueScene[];
 };

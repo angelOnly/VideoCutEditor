@@ -9,7 +9,13 @@ metadata:
 
 ## Prerequisites
 
-Install @remotion/layout-utils if it is not already installed:
+先遵守当前任务入口的依赖与环境约束。受管video-pipeline或Worker任务使用现有锁定依赖，
+不得因为本页示例缺包而自行安装软件或修改公共环境。
+未安装`@remotion/layout-utils`时，可在字体加载完成后使用当前工程已有测量能力、
+Canvas的`measureText`检查宽度，或DOM的`getBoundingClientRect`检查实际换行和溢出；
+确实缺少必需能力时按入口流程报告环境问题。
+
+普通本地项目只有在允许安装依赖时，才可执行：
 
 ```bash
 npx remotion add @remotion/layout-utils

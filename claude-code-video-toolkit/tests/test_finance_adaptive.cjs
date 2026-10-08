@@ -48,24 +48,27 @@ async function main(){
  fs.writeFileSync(path.join(project,'src/TestRoot.tsx'),`import {Composition,registerRoot} from 'remotion';import {FinanceScene} from './FinancialDialogue';import {timeline} from './timeline';import {validateTimeline} from './validateTimeline';validateTimeline(timeline);registerRoot(()=> <Composition id="Adaptive" component={FinanceScene} width={1920} height={1080} fps={30} durationInFrames={630} defaultProps={{scene:timeline.scenes[0],timeline,withBgm:false}}/>);`);
  execFileSync(process.execPath,[path.join(deps,'typescript/bin/tsc'),'--noEmit','-p',project],{stdio:'inherit'});
  if(!process.argv.includes('--render')){console.log('扩展组件 TypeScript 通过');return;}
- const {bundle}=req('@remotion/bundler');const {selectComposition,renderStill,renderMedia}=req('@remotion/renderer');
+ const {bundle}=req('@remotion/bundler');const {selectComposition,renderStill,renderMedia,openBrowser}=req('@remotion/renderer');
  const serveUrl=await bundle({entryPoint:path.join(project,'src/TestRoot.tsx'),outDir:path.join(temp,'bundle')});
  const browserExecutable='/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
- const composition=await selectComposition({serveUrl,id:'Adaptive',browserExecutable});
+ const puppeteerInstance=await openBrowser('chrome',{browserExecutable});
+ try {
+ const composition=await selectComposition({serveUrl,id:'Adaptive',browserExecutable,puppeteerInstance});
  if(!process.argv.includes('--sfx-only')) {
- for(const frame of [65,90,100,115,150,220,335,425,515,605])await renderStill({serveUrl,composition,frame,browserExecutable,output:path.join(temp,`frame-${frame}.png`)});
+ for(const frame of [65,90,100,115,150,220,335,425,515,605])await renderStill({serveUrl,composition,frame,browserExecutable,puppeteerInstance,output:path.join(temp,`frame-${frame}.png`)});
  const wrong=structuredClone(t);wrong.chapters[2].visualBlocks[1]={...quote,id:'blocking-card',props:{label:'错误覆盖',text:'这张卡片不应该挡住原内容'}};
- await assert.rejects(renderStill({serveUrl,composition:{...composition,props:{scene:wrong.scenes[0],timeline:wrong,withBgm:false}},inputProps:{scene:wrong.scenes[0],timeline:wrong,withBgm:false},frame:220,browserExecutable,output:path.join(temp,'wrong.png')}),/TASK_LAYOUT_INVALID/);
+ await assert.rejects(renderStill({serveUrl,composition:{...composition,props:{scene:wrong.scenes[0],timeline:wrong,withBgm:false}},inputProps:{scene:wrong.scenes[0],timeline:wrong,withBgm:false},frame:220,browserExecutable,puppeteerInstance,output:path.join(temp,'wrong.png')}),/TASK_LAYOUT_INVALID/);
  wrong.chapters[2].visualBlocks[0].slot='top';wrong.chapters[2].visualBlocks[1].slot='bottom';
- await renderStill({serveUrl,composition:{...composition,props:{scene:wrong.scenes[0],timeline:wrong,withBgm:false}},inputProps:{scene:wrong.scenes[0],timeline:wrong,withBgm:false},frame:220,browserExecutable,output:path.join(temp,'overlap-repaired.png')});
+ await renderStill({serveUrl,composition:{...composition,props:{scene:wrong.scenes[0],timeline:wrong,withBgm:false}},inputProps:{scene:wrong.scenes[0],timeline:wrong,withBgm:false},frame:220,browserExecutable,puppeteerInstance,output:path.join(temp,'overlap-repaired.png')});
  const overflow=structuredClone(t);overflow.scenes[0].captions[0].text='超长字幕'.repeat(40);
- await assert.rejects(renderStill({serveUrl,composition:{...composition,props:{scene:overflow.scenes[0],timeline:overflow,withBgm:false}},inputProps:{scene:overflow.scenes[0],timeline:overflow,withBgm:false},frame:65,browserExecutable,output:path.join(temp,'overflow.png')}),/TASK_LAYOUT_INVALID/);
- for(const [name,range] of [['new-motion',[90,120]],['short-motion',[270,300]],['long-motion',[360,405]],['chapter-switch',[80,100]],['overlay',[190,220]]])await renderMedia({serveUrl,composition,browserExecutable,codec:'h264',concurrency:1,frameRange:range,outputLocation:path.join(temp,name+'.mp4')});
+ await assert.rejects(renderStill({serveUrl,composition:{...composition,props:{scene:overflow.scenes[0],timeline:overflow,withBgm:false}},inputProps:{scene:overflow.scenes[0],timeline:overflow,withBgm:false},frame:65,browserExecutable,puppeteerInstance,output:path.join(temp,'overflow.png')}),/TASK_LAYOUT_INVALID/);
+ for(const [name,range] of [['new-motion',[90,120]],['short-motion',[270,300]],['long-motion',[360,405]],['chapter-switch',[80,100]],['overlay',[190,220]]])await renderMedia({serveUrl,composition,browserExecutable,puppeteerInstance,codec:'h264',concurrency:1,frameRange:range,outputLocation:path.join(temp,name+'.mp4')});
  }
- await renderMedia({serveUrl,composition,browserExecutable,codec:'h264',concurrency:1,frameRange:[0,164],outputLocation:path.join(temp,'long-sfx.mp4')});
+ await renderMedia({serveUrl,composition,browserExecutable,puppeteerInstance,codec:'h264',concurrency:1,frameRange:[0,164],outputLocation:path.join(temp,'long-sfx.mp4')});
  const pcm=execFileSync('ffmpeg',['-v','error','-ss','4.5','-i',path.join(temp,'long-sfx.mp4'),'-vn','-ac','1','-f','s16le','-']);
  let peak=0;for(let i=0;i+1<pcm.length;i+=2)peak=Math.max(peak,Math.abs(pcm.readInt16LE(i)));assert.ok(peak>100,'长于三秒的音效被意外截断');
  fs.writeFileSync(path.join(temp,'result.json'),JSON.stringify({passed:true,recommendations:warnings,checks:['七章导航','六步流程','镜内切章','任务内扩展','短/长动画','有意叠层','实际遮挡拦截及任务内修复','文字溢出拦截','长标题/字幕换行'],humanListeningPerformed:false},null,2));
  console.log('自适应真实渲染结果：'+temp);
+ } finally {await puppeteerInstance.close({silent:true});}
 }
 main().catch(e=>{console.error(e);process.exitCode=1});

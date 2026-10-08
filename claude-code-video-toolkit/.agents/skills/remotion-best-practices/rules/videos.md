@@ -9,8 +9,11 @@ metadata:
 
 ## Prerequisites
 
-First, the @remotion/media package needs to be installed.  
-If it is not, use the following command:
+先遵守当前任务入口的依赖与环境约束。已有模板使用`remotion`的`OffthreadVideo`时保留现有实现。
+受管video-pipeline或Worker任务缺少`@remotion/media`时使用现有可用视频组件；
+确实缺少必需能力时报告环境问题，不自行安装软件或修改公共环境。
+
+普通本地项目只有在允许安装依赖且确实需要`@remotion/media`时，才可执行：
 
 ```bash
 npx remotion add @remotion/media # If project uses npm
@@ -38,7 +41,9 @@ Remote URLs are also supported:
 
 ## Trimming
 
-Use `trimBefore` and `trimAfter` to remove portions of the video. Values are in seconds.
+`trimBefore`和`trimAfter`的单位是帧，使用当前Composition的fps换算。
+前者指定素材开始保留的位置，后者指定素材停止保留的位置，
+不是“从结尾减去多少帧”。以下示例保留素材第2秒到第10秒的区间。
 
 ```tsx
 const { fps } = useVideoConfig();

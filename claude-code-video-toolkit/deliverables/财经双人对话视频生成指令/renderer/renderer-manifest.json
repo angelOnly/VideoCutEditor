@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "templateVersion": "1.2.0",
+  "templateVersion": "1.3.0",
   "motionGuide": "../动效组件与内容适配说明.md",
   "entry": "src/index.ts",
   "timelineModule": "src/timeline.ts",
@@ -28,6 +28,8 @@
     "timeline.ts 和 render/<runId>/timeline.json 是本期任务文件，必须由每条独立短句 TTS 的实际时长生成；默认每条建议不超过 28 字；可靠时间记录允许复用音频分页，拼接保持确认原文，不得按比例切字幕。",
     "chapters 定义跨分镜逻辑章节；默认使用章节 visualBlocks，scene.visualBlocks 留空。单镜与全片均传入完整 timeline，不能重置全片进度。",
     "Root 渲染入口自动执行 validateTimeline；超出推荐范围返回提示，实际质量不合格或非法时序必须在任务内修正，不得删除校验。技术通过后仍须检查参考对照静帧和动效片段。",
-    "允许在任务副本 visualExtensions.tsx 注册真实图解组件及参数检查；栏目风格和必需组件不取消。推荐提示不直接结束制作，LayoutGuard 实际问题返回 Render 修复并审片。"
-  ]
+    "允许在任务副本 visualExtensions.tsx 注册真实图解组件及参数检查；栏目风格和必需组件不取消。推荐提示不直接结束制作，LayoutGuard 实际问题返回 Render 修复并审片。",
+    "本期扩展自行控制入场，VisualBlocks 外层只定位。固定结束语期间保持正文最终视觉，字幕和音频继续；全部口播结束后由 stage_media 追加完整本地片尾，正文不得使用 scene.outro。"
+  ],
+  "endingPolicy": "hold-closing-then-append/v1"
 }
