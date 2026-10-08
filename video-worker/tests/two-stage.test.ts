@@ -71,7 +71,7 @@ async function setup() {
     },
   };
 }
-test('定制化模板详情下载 ZIP，冻结目录在 render 阶段原样复用', async () => {
+test('定制化模板包直连下载，冻结目录在 render 阶段原样复用', async () => {
   const h = await setup();
   const archive = await zipFixture({
     '财经模板/财经模板.md': '# 财经模板\n![示意](assets/guide.txt)\n',
@@ -83,44 +83,14 @@ test('定制化模板详情下载 ZIP，冻结目录在 render 阶段原样复�
   const server = createServer((req, res) => {
     if (req.url === '/api/custom-templates/1') {
       details++;
-      res.setHeader('Content-Type', 'application/json');
-      res.end(
-        JSON.stringify({
-          code: 0,
-          message: 'success',
-          data: {
-            id: 1,
-            name: '财经模板',
-            description: '测试模板',
-            package_name: 'finance.zip',
-            package_url: `http://127.0.0.1:${(server.address() as any).port}/package/1`,
-            updated_at: '2026-09-20T00:00:00+08:00',
-          },
-        }),
-      );
+      res.statusCode = 401;
+      res.end();
       return;
     }
-    if (req.url === '/api/custom-templates/2') {
-      details++;
-      res.setHeader('Content-Type', 'application/json');
-      res.end(
-        JSON.stringify({
-          code: 0,
-          message: 'success',
-          data: {
-            id: 2,
-            name: '越权模板',
-            description: '',
-            package_name: 'foreign.zip',
-            package_url: 'https://untrusted.example/foreign.zip',
-          },
-        }),
-      );
-      return;
-    }
-    if (req.url === '/package/1') {
+    if (req.url === '/api/custom-templates/1/package') {
       downloads++;
       res.setHeader('Content-Type', 'application/zip');
+      res.setHeader('Content-Disposition', "attachment; filename*=UTF-8''finance.zip");
       res.end(archive);
       return;
     }
@@ -182,19 +152,12 @@ test('定制化模板详情下载 ZIP，冻结目录在 render 阶段原样复�
     });
     const renderLease = (await h.q.claim('worker'))!;
     const renderWorkspace = await h.workspaces.prepare(renderLease, h.t);
-    assert.equal(details, 1);
+    assert.equal(details, 0);
     assert.equal(downloads, 1);
     assert.equal(
       await readFile(path.join(renderWorkspace.root, template.root + '/assets/guide.txt'), 'utf8'),
       '布局示意',
     );
-    const { TemplateProvider } = await import('../src/infrastructure/template-provider.js');
-    await assert.rejects(
-      new TemplateProvider(h.c).read('2', path.join(h.root, 'foreign-template')),
-      { code: 'TEMPLATE_INVALID' },
-    );
-    assert.equal(details, 2);
-    assert.equal(downloads, 1);
   } finally {
     await new Promise<void>((resolve, reject) =>
       server.close((error) => (error ? reject(error) : resolve())),

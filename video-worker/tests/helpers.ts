@@ -83,7 +83,6 @@ export function config(overrides: Partial<Config> = {}): Config {
     timeoutSeconds: 14400,
     maxAttempts: 3,
     hostFingerprint: 'test-host',
-    customTemplatePackageOrigins: [],
     ttsVoice: 'test',
     ttsResourceId: 'seed-tts-2.0',
     python: process.env.PYTHON ?? 'python3',

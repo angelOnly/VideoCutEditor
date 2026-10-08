@@ -18,8 +18,6 @@ export interface Config {
   executor: 'host';
   executionProtocol?: 'video-pipeline-io/1' | 'video-two-stage/1';
   customTemplateApiBaseUrl?: string;
-  customTemplateApiBearerToken?: string;
-  customTemplatePackageOrigins: string[];
   codexPath: string;
   codexHome: string;
   hostBrowser: string;
@@ -152,12 +150,6 @@ export function loadConfig(envFile = path.resolve(serviceRoot, '../.env')): Conf
       .transform(() => 'video-pipeline-io/1' as const)
       .parse(process.env.WORKER_PROTOCOL ?? 'video-pipeline-io/1'),
     customTemplateApiBaseUrl: process.env.CUSTOM_TEMPLATE_API_BASE_URL || undefined,
-    customTemplateApiBearerToken: process.env.CUSTOM_TEMPLATE_API_BEARER_TOKEN || undefined,
-    customTemplatePackageOrigins: (process.env.CUSTOM_TEMPLATE_PACKAGE_ORIGINS ?? '')
-      .split(',')
-      .map((origin) => origin.trim())
-      .filter(Boolean)
-      .map((origin) => new URL(z.string().url().parse(origin)).origin),
     hostBrowser:
       process.env.REMOTION_BROWSER_EXECUTABLE || hostRuntime.browser || '/usr/bin/chromium',
     executor: z.literal('host').parse(process.env.WORKER_EXECUTOR ?? 'host'),
@@ -172,7 +164,12 @@ export function loadConfig(envFile = path.resolve(serviceRoot, '../.env')): Conf
     hostRenderMemory: memory('HOST_RENDER_TASK_MEMORY', hostMemory),
     hostRenderCpus: cpus('HOST_RENDER_TASK_CPUS', hostCpus),
     hostRenderTasksMax: pids('HOST_RENDER_TASK_PIDS', hostTasksMax),
-    renderSlots: z.coerce.number().int().min(1).max(5).parse(process.env.RENDER_TASK_SLOTS ?? 5),
+    renderSlots: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(5)
+      .parse(process.env.RENDER_TASK_SLOTS ?? 5),
     databaseUrl,
     port: Number(process.env.PORT ?? 8080),
     mediaRoot,

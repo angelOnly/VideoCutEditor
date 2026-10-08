@@ -123,7 +123,7 @@ systemctl --user start videocut-worker
 
 ### 模板来源
 
-只支持 `CUSTOM_TEMPLATE_API_BASE_URL` 定制化 ZIP 接口和 `config/templates.json` 显式本地 ZIP。旧 `TEMPLATE_API_URL` 配置会失败，不做 README/Markdown 或远端失败回退。本地联调模板为 `finance_dialogue_v1`。完整相对目录与素材随 ZIP 冻结，Render 恢复同一快照，不重新获取模板。
+只支持 `CUSTOM_TEMPLATE_API_BASE_URL` 下的 `GET /api/custom-templates/{id}/package` 定制化 ZIP 下载接口和 `config/templates.json` 显式本地 ZIP。Worker 不请求定制化模板详情接口，也不使用其中的 `package_url` 或 `package_local_path`；旧 `TEMPLATE_API_URL` 配置会失败。本地联调模板为 `finance_dialogue_v1`。完整相对目录与素材随 ZIP 冻结，Render 恢复同一快照，不重新获取模板。
 
 ### 提交与确认
 

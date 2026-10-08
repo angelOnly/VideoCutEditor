@@ -11,34 +11,12 @@ const MAX_ARCHIVE_BYTES = 64 * 1024 * 1024;
 const MAX_ENTRY_COUNT = 512;
 const MAX_ENTRY_BYTES = 64 * 1024 * 1024;
 const MAX_EXPANDED_BYTES = 256 * 1024 * 1024;
-const MAX_DETAIL_BYTES = 64 * 1024;
 
 const attachmentSchema = z.object({
   assetId: z.string(),
   url: z.string(),
   kind: z.enum(['image', 'video', 'audio', 'reference', 'source', 'font']),
 });
-const customTemplateResponseSchema = z
-  .object({
-    code: z.number(),
-    message: z.string(),
-    data: z
-      .object({
-        id: z.number().int().positive(),
-        name: z.string().optional().default(''),
-        description: z
-          .string()
-          .nullable()
-          .optional()
-          .transform((v) => v ?? ''),
-        package_name: z.string().min(1).max(512),
-        package_url: z.string().url().max(4096),
-        updated_at: z.string().optional(),
-      })
-      .optional(),
-  })
-  .passthrough();
-
 type TemplateFile = { path: string; sha256: string; size: number };
 export type FrozenTemplate = {
   id: string;
@@ -242,29 +220,18 @@ async function extractArchive(
     zip?.close();
   }
 }
-async function readText(response: Response, limit: number) {
-  const header = Number(response.headers.get('content-length'));
-  if (Number.isFinite(header) && header > limit)
-    throw templateError('TEMPLATE_UNAVAILABLE', '模板服务响应过大');
-  if (!response.body) throw templateError('TEMPLATE_UNAVAILABLE', '模板服务响应为空');
-  const reader = response.body.getReader();
-  const chunks: Uint8Array[] = [];
-  let bytes = 0;
-  try {
-    for (;;) {
-      const result = await reader.read();
-      if (result.done) break;
-      bytes += result.value.byteLength;
-      if (bytes > limit) {
-        await reader.cancel();
-        throw templateError('TEMPLATE_UNAVAILABLE', '模板服务响应过大');
-      }
-      chunks.push(result.value);
+function packageNameFromDisposition(header: string | null) {
+  if (!header) return undefined;
+  const utf8 = /filename\*=UTF-8''([^;]+)/i.exec(header)?.[1];
+  if (utf8) {
+    try {
+      return decodeURIComponent(utf8).slice(0, 512);
+    } catch {
+      return undefined;
     }
-  } finally {
-    reader.releaseLock();
   }
-  return new TextDecoder().decode(Buffer.concat(chunks));
+  const plain = /filename=(?:"([^"]+)"|([^;\s]+))/i.exec(header);
+  return (plain?.[1] ?? plain?.[2])?.slice(0, 512);
 }
 async function downloadArchive(url: URL, target: string) {
   let response: Response;
@@ -300,74 +267,37 @@ async function downloadArchive(url: URL, target: string) {
     reader.releaseLock();
     await file.close();
   }
+  return packageNameFromDisposition(response.headers.get('content-disposition'));
 }
 
 export class TemplateProvider {
   constructor(private config: Config) {}
-  private packageUrl(url: string) {
-    let packageUrl: URL;
-    try {
-      packageUrl = new URL(url);
-    } catch {
-      throw templateError('TEMPLATE_INVALID', '模板压缩包地址无效');
-    }
-    if (!['http:', 'https:'].includes(packageUrl.protocol))
-      throw templateError('TEMPLATE_INVALID', '模板压缩包地址协议不支持');
-    const allowed = new Set<string>(this.config.customTemplatePackageOrigins);
-    allowed.add(new URL(this.config.customTemplateApiBaseUrl!).origin);
-    if (!allowed.has(packageUrl.origin))
-      throw templateError('TEMPLATE_INVALID', '模板压缩包地址不在允许来源内');
-    return packageUrl;
-  }
   private async custom(id: string, frozenPath: string): Promise<FrozenTemplate> {
     if (!/^[1-9]\d*$/.test(id))
       throw templateError('TEMPLATE_INVALID', '定制化模板 ID 必须为正整数');
-    const endpoint = new URL(
-      `/api/custom-templates/${encodeURIComponent(id)}`,
-      this.config.customTemplateApiBaseUrl,
-    );
-    let response: Response;
+    let endpoint: URL;
     try {
-      response = await fetch(endpoint, {
-        signal: AbortSignal.timeout(15000),
-        redirect: 'error',
-        // 模板详情仍由平台鉴权；令牌只从受保护的部署配置读取。
-        headers: this.config.customTemplateApiBearerToken
-          ? { authorization: `Bearer ${this.config.customTemplateApiBearerToken}` }
-          : undefined,
-      });
-    } catch {
-      throw templateError('TEMPLATE_UNAVAILABLE', '定制化模板详情请求失败');
-    }
-    if (!response.ok)
-      throw templateError('TEMPLATE_UNAVAILABLE', `定制化模板详情返回 ${response.status}`);
-    let raw: unknown;
-    try {
-      raw = JSON.parse(await readText(response, MAX_DETAIL_BYTES));
+      endpoint = new URL(
+        `/api/custom-templates/${encodeURIComponent(id)}/package`,
+        this.config.customTemplateApiBaseUrl,
+      );
+      if (!['http:', 'https:'].includes(endpoint.protocol))
+        throw templateError('TEMPLATE_INVALID', '定制化模板服务地址协议不支持');
     } catch (error) {
       if (error instanceof AppError) throw error;
-      throw templateError('TEMPLATE_INVALID', '定制化模板详情不是有效 JSON');
+      throw templateError('TEMPLATE_UNAVAILABLE', '定制化模板压缩包下载失败');
     }
-    const parsed = customTemplateResponseSchema.safeParse(raw);
-    if (!parsed.success) throw templateError('TEMPLATE_INVALID', '定制化模板详情字段无效');
-    if (parsed.data.code !== 0 || !parsed.data.data)
-      throw templateError('TEMPLATE_UNAVAILABLE', '定制化模板详情返回业务失败');
-    const detail = parsed.data.data;
-    if (detail.id !== Number(id)) throw templateError('TEMPLATE_INVALID', '定制化模板 ID 不一致');
     const archive = `${frozenPath}.download-${randomUUID()}.zip`;
     try {
-      const packageUrl = this.packageUrl(detail.package_url);
-      await downloadArchive(packageUrl, archive);
-      const extracted = await extractArchive(archive, frozenPath, undefined, detail.package_name);
+      // 只从部署配置指定的资源服务下载，不能信任详情接口返回的服务器本地路径。
+      const packageName = await downloadArchive(endpoint, archive);
+      const extracted = await extractArchive(archive, frozenPath, undefined, packageName);
       return {
         id,
         version: `sha256:${extracted.archiveSha256}`,
         source: 'custom_template_api',
         attachments: [],
-        name: detail.name,
-        description: detail.description,
-        updatedAt: detail.updated_at,
-        packageName: detail.package_name,
+        packageName,
         ...extracted,
       };
     } finally {
@@ -376,7 +306,10 @@ export class TemplateProvider {
   }
   async read(id: string, frozenPath?: string): Promise<FrozenTemplate> {
     const entry = this.config.templates[id];
-    // 已人工冻结的定制模板优先使用本地归档，避免上游临时鉴权故障阻断已验证版本的任务。
+    if (this.config.customTemplateApiBaseUrl) {
+      if (!frozenPath) throw templateError('TEMPLATE_UNAVAILABLE', '缺少模板冻结目录');
+      return this.custom(id, frozenPath);
+    }
     if (entry?.archivePath) {
       if (!frozenPath) throw templateError('TEMPLATE_UNAVAILABLE', '缺少模板冻结目录');
       const archive = await safeFile(this.config.toolkitRoot, entry.archivePath);
@@ -389,10 +322,6 @@ export class TemplateProvider {
         packageName: path.basename(entry.archivePath),
         ...extracted,
       };
-    }
-    if (this.config.customTemplateApiBaseUrl) {
-      if (!frozenPath) throw templateError('TEMPLATE_UNAVAILABLE', '缺少模板冻结目录');
-      return this.custom(id, frozenPath);
     }
     if (!entry) throw new AppError('TEMPLATE_UNAVAILABLE', '未配置模板文件');
     throw new AppError('TEMPLATE_UNAVAILABLE', '模板必须显式配置 ZIP');
