@@ -5,10 +5,10 @@
 
 | 需求 | 共用入口 | Worker适配 |
 | --- | --- | --- |
-| 正文构图与连续讲解 | video-pipeline/references/motion-design.md及motion-reference-cases.md | 根据本期内容创作，不以组件名称代替设计 |
+| 正文构图与连续讲解 | video-pipeline/references/motion-design.md；需要借鉴时再读motion-reference-cases.md | 根据本期内容创作，不以组件名称代替设计 |
 | Remotion工程、时间与转场 | remotion-best-practices/SKILL.md，按需timing、sequencing、transitions、audio | 使用当前依赖，不启动Studio、不安装软件 |
 | 数据图与数值变化 | remotion-best-practices/rules/data-animation.md | 使用本期数据、实际音频窗口和当前依赖 |
-| 关系、结构与布局重排 | remotion-best-practices/rules/diagram-animation.md | 在任务工程实现，通过visualExtensions接入 |
+| 关系、结构与布局重排 | remotion-best-practices/rules/diagram-animation.md | 在任务工程实现，使用当前模板的接入方式；有visualExtensions时通过它接入 |
 | 中文标题与关键词强调 | remotion-best-practices/rules/text-animations.md、measuring-text.md | 使用当前中文字体，字幕独立 |
 | 栏目人物与字幕骨架 | 冻结模板renderer及renderer-manifest.json | 复制到project后实际导入复用 |
 | 探测、混音、解码 | ffmpeg/SKILL.md、FFprobe/FFmpeg | 通过原生命令工具，按实际时长制作 |
