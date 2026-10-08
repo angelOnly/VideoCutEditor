@@ -396,10 +396,36 @@ class MediaTests(Fixture):
                 'captions':[{'text':scene['text'],'startSeconds':0,'endSeconds':1}], 'evidence':evidence})
             self.review['scenes'].append({'id':scene['id'],'videoSha256':digest(video),'viewedFrames':[0,5,9],
                                          'passed':True,'notes':'仅用于机械校验的测试审查记录，不是人眼验收'})
+        timeline = {'fps': 10, 'scenes': []}
+        for i, (scene, viewed) in enumerate(zip(self.manifest['scenes'], self.review['scenes'])):
+            uid = scene['id'] + '_u1'
+            timeline['scenes'].append({'id': scene['id'], 'startFrame': i * 10, 'endFrameExclusive': (i + 1) * 10,
+                'utterances': [{'id': uid, 'text': scene['text'], 'startFrame': 0, 'endFrameExclusive': 10}]})
+            viewed['narrationChecks'] = [{'utteranceIds': [uid], 'mode': 'hold', 'startFrame': 0,
+                'endFrameExclusive': 10, 'expected': '合成测试保持纯色背景', 'observed': '区间两端背景一致',
+                'viewedFrames': [0, 9], 'passed': True}]
+        write(self.render.parent/'timeline.json', timeline)
+        self.review['timelineSha256'] = digest(self.render.parent/'timeline.json')
         write(self.job/self.manifest['quality'],self.review)
     def test_complete_manifest_checks_real_media(self):
         result=validate_delivery(self.job,self.req,self.manifest)
         self.assertEqual(result['sceneCount'],2);self.assertEqual(result['frames'],20)
+    def test_changed_timeline_requires_new_review(self):
+        timeline = read(self.render.parent/'timeline.json')
+        timeline['scenes'][0]['utterances'][0]['endFrameExclusive'] = 9
+        write(self.render.parent/'timeline.json', timeline)
+        with self.assertRaisesRegex(StageError, '时间轴已变化'):
+            validate_delivery(self.job, self.req, self.manifest)
+
+    def test_unreviewed_or_failed_narration_cannot_deliver(self):
+        for checks in ([], [{**self.review['scenes'][0]['narrationChecks'][0], 'passed': False}]):
+            changed = copy.deepcopy(self.review)
+            changed['scenes'][0]['narrationChecks'] = checks
+            write(self.job/self.manifest['quality'], changed)
+            with self.assertRaises(StageError) as error:
+                validate_delivery(self.job, self.req, self.manifest)
+            self.assertEqual(error.exception.code, 'VISUAL_REVIEW_REQUIRED')
+
     def test_whole_video_preserves_scene_boundaries_and_audio(self):
         manifest_path=self.render.parent/'manifest.json';write(manifest_path,self.manifest)
         whole=assemble(self.render,manifest_path)

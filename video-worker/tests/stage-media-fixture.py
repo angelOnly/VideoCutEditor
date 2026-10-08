@@ -21,13 +21,16 @@ for i,s in enumerate(plan['scenes']):
  'resolvedVisualBlocks':[{'id':'block','startFrame':0,'endFrameExclusive':10}],
  'audio':{'text':s['text'],'path':str(wav.relative_to(root)),'sha256':digest(wav)},'captions':[{'text':s['text'],'startSeconds':0,'endSeconds':1}], 'evidence':evidence})
  review['scenes'].append({'id':s['id'],'videoSha256':digest(video),'viewedFrames':[0,5,9],'passed':True,'notes':'测试证据'})
-write(root/m['quality'],review);write(root/'output/manifest.json',m)
-
 timeline={'fps':r['outputSpec']['fps'],'scenes':[]}
 for index,scene in enumerate(m['scenes']):
  timeline['scenes'].append({'id':scene['id'],'startFrame':index*10,'endFrameExclusive':(index+1)*10,
   'utterances':[{'id':scene['id']+'_tts','text':scene['text'],'src':scene['audio']['path'],'startFrame':0,'endFrameExclusive':10}],
   'captions':[{'utteranceId':scene['id']+'_tts','text':scene['text'],'startFrame':0,'endFrameExclusive':10}]})
 write(root/'render'/r['runId']/'timeline.json',timeline)
+review['timelineSha256']=digest(root/'render'/r['runId']/'timeline.json')
+for scene in review['scenes']:
+ scene['narrationChecks']=[{'utteranceIds':[scene['id']+'_tts'],'mode':'hold','startFrame':0,
+  'endFrameExclusive':10,'expected':'合成色块保持','observed':'首尾颜色一致','viewedFrames':[0,9],'passed':True}]
+write(root/m['quality'],review);write(root/'output/manifest.json',m)
 (root/'project').mkdir(exist_ok=True)
 (root/'project/fixture.ts').write_text('// 合成媒体测试工程；不代表真实模板效果。\n')

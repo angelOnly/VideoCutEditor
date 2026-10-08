@@ -156,6 +156,32 @@ Render根据本期口播创作正文画面。
 模板提供visualExtensions时，通过它注册组件及参数检查；不要求其他模板提供同名入口。
 组件接收本次已确定的触发点和动作时间，不自行猜口播。
 
+先设计开始、推进、结果，再为承担不同含义的对象分别计算动作进度。
+例如“现状→变化→影响”：保留现状作为参照，在变化语句到来时改变数据或关系，
+到影响语句时再建立结果；不要让结果与现状共用一次淡入。
+同一对象连续演变优先保留身份和位置参照；不是每句话都替换一张完整图片。
+
+以下为组件局部帧示例，使用已有时间轴，不要求模板新增公共接口：
+```tsx
+// scene.utterances 已包含实际配音及转场偏移；只转换一次局部原点。
+const speech = scene.utterances.find((u) => u.id === selectedUtteranceId);
+if (!speech) throw new Error('缺少对应的实际发言');
+const start = speech.startFrame - block.startFrame;
+const end = Math.min(speech.endFrameExclusive - block.startFrame,
+                     block.endFrameExclusive - block.startFrame);
+if (start < 0 || end <= start) throw new Error('对象与发言区间不匹配，需调整本期编排');
+const duration = Math.min(chosenDurationFrames, end - start);
+// chosenDurationFrames 根据运动距离和阅读节奏选择正整数，不延长配音等待动画。
+const progress = interpolate(frame, [start, start + duration], [0, 1], {
+  extrapolateLeft: 'clamp', extrapolateRight: 'clamp',
+});
+```
+为不同语义对象分别选对应 ID。时间可在构建 props 时派生或在组件中读取，
+不要复制成互不关联的固定数字。需要稍提前建立背景或跨句连续运动时按内容设计，
+并在审片中说明；不能让关键结论在讲解前已完成变化而无人检查。
+跨镜章节按下文转换到章节/组件时间；不要把上述镜内示例直接套给章节组件。
+
+
 所有状态由传入帧决定。
 使用位置、尺寸、路径、角度、颜色和透明度计算画面，
 不依赖浏览器实时动画。

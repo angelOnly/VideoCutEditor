@@ -955,6 +955,12 @@
               },
               "passed": {
                 "const": true
+              },
+              "narrationChecks": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/narrationCheck"
+                }
               }
             },
             "required": [
@@ -962,11 +968,16 @@
               "videoSha256",
               "viewedFrames",
               "notes",
-              "passed"
+              "passed",
+              "narrationChecks"
             ],
             "additionalProperties": false
           },
           "minItems": 1
+        },
+        "timelineSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
         }
       },
       "required": [
@@ -978,9 +989,110 @@
         "passed",
         "humanListeningPerformed",
         "limitations",
-        "scenes"
+        "scenes",
+        "timelineSha256"
       ],
       "additionalProperties": false
+    },
+    "narrationCheck": {
+      "type": "object",
+      "properties": {
+        "utteranceIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "mode": {
+          "enum": [
+            "change",
+            "hold"
+          ]
+        },
+        "startFrame": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "endFrameExclusive": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "changeStartFrame": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "changeEndFrameExclusive": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "expected": {
+          "type": "string",
+          "minLength": 1
+        },
+        "observed": {
+          "type": "string",
+          "minLength": 1
+        },
+        "viewedFrames": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "passed": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "utteranceIds",
+        "mode",
+        "startFrame",
+        "endFrameExclusive",
+        "expected",
+        "observed",
+        "viewedFrames",
+        "passed"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "mode": {
+                "const": "change"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "changeStartFrame",
+              "changeEndFrameExclusive"
+            ]
+          },
+          "else": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "changeStartFrame"
+                  ]
+                },
+                {
+                  "required": [
+                    "changeEndFrameExclusive"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ]
     }
   }
 }

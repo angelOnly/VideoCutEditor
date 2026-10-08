@@ -311,6 +311,66 @@ def frame_rgb(path, index):
                   '-frames:v', '1', '-pix_fmt', 'rgb24', '-f', 'rawvideo', '-')
 
 
+def validate_narration_review(timeline, request, manifest, review):
+    """核对讲解覆盖与成片证据；不以记录齐全冒充审美或音画语义通过。"""
+    def check(value, message):
+        require(value, message + '；修订本期工程或审片记录后重验', 'VISUAL_REVIEW_REQUIRED')
+
+    check(isinstance(timeline, dict), '审片时间轴无效')
+    check(timeline.get('fps') == request['outputSpec']['fps'], '审片时间轴帧率不符')
+    scenes = timeline.get('scenes', [])
+    check(isinstance(scenes, list) and all(isinstance(s, dict) for s in scenes), '审片镜头列表无效')
+    check([s.get('id') for s in scenes] == [s['id'] for s in manifest['scenes']], '审片时间轴镜头不符')
+    offset = 0
+    for source, actual, viewed in zip(scenes, manifest['scenes'], review['scenes']):
+        frames = actual['frames']
+        check(source.get('startFrame') == offset and source.get('endFrameExclusive') == offset + frames,
+              f"{actual['id']} 时间轴与成片长度不符")
+        offset += frames
+        utterances = source.get('utterances', [])
+        check(isinstance(utterances, list), '发言列表无效')
+        by_id, end = {}, 0
+        for utterance in utterances:
+            check(isinstance(utterance, dict), '发言记录无效')
+            uid = utterance.get('id')
+            start, stop = utterance.get('startFrame'), utterance.get('endFrameExclusive')
+            check(isinstance(uid, str) and uid and uid not in by_id, '发言 ID 缺失或重复')
+            check(type(start) is int and type(stop) is int and end <= start < stop <= frames,
+                  f'{uid} 发言边界无效')
+            check(isinstance(utterance.get('text'), str), f'{uid} 发言文本缺失')
+            by_id[uid] = utterance
+            end = stop
+        normalize = lambda value: ''.join(value.split())
+        check(normalize(''.join(u['text'] for u in utterances)) == normalize(actual['text']),
+              f"{actual['id']} 审片时间轴未覆盖确认口播")
+        covered = set()
+        evidence = {item['frame'] for item in actual['evidence']}
+        for item in viewed['narrationChecks']:
+            ids = item['utteranceIds']
+            check(set(ids).issubset(by_id), '审片引用不存在的发言')
+            start, stop = item['startFrame'], item['endFrameExclusive']
+            check(0 <= start < stop <= frames, '讲解检查区间越界')
+            check(all(start <= by_id[uid]['startFrame'] and by_id[uid]['endFrameExclusive'] <= stop for uid in ids),
+                  '检查区间未覆盖所引用的完整发言')
+            check(item['passed'], '仍有未解决的讲解画面问题')
+            check(all(item[key].strip() for key in ('expected', 'observed')), '讲解检查说明为空')
+            samples = item['viewedFrames']
+            check(all(start <= f < stop for f in samples), '讲解检查帧超出检查区间')
+            check(set(samples).issubset(evidence) and set(samples).issubset(viewed['viewedFrames']),
+                  '缺少讲解检查对应的成片抽帧')
+            # 保持画面也要检查区间两端，不能只用一张图证明整段效果。
+            needed = {start, stop - 1}
+            if item['mode'] == 'change':
+                action_start, action_end = item['changeStartFrame'], item['changeEndFrameExclusive']
+                check(start <= action_start < action_end <= stop, '动作区间不在讲解检查范围内')
+                needed.update({max(start, action_start - 1), action_start,
+                               (action_start + action_end - 1) // 2, action_end - 1,
+                               min(stop - 1, action_end)})
+            check(needed.issubset(samples), '缺少讲解区间边界或动作前中后画面')
+            covered.update(ids)
+        check(covered == set(by_id), f"{actual['id']} 存在未检查的口播；可合并同一语义并说明保持理由")
+
+
 def validate_delivery(root, request, manifest):
     schema(manifest, 'manifest')
     for key in ('taskId', 'runId', 'stage', 'contractVersion'):
@@ -320,10 +380,17 @@ def validate_delivery(root, request, manifest):
     plan = read(local(root, confirmation['planFile']))
     require([s['id'] for s in manifest['scenes']] == [s['id'] for s in plan['scenes']], '镜头缺失、重复或乱序')
     assets = {a['id']: a for a in read(local(root, request['input']['assetsManifest']))['assets']}
-    review = read(local(root, manifest['quality'])); schema(review, 'review')
+    review = read(local(root, manifest['quality']))
+    try:
+        schema(review, 'review')
+    except StageError as exc:
+        raise StageError('VISUAL_REVIEW_REQUIRED', f'补齐或修订本期审片记录后重验：{exc}') from exc
     for key in ('taskId', 'runId', 'stage', 'contractVersion', 'confirmedPlanSha256'):
         require(review[key] == manifest[key], '视觉审查版本不符')
     require([s['id'] for s in review['scenes']] == [s['id'] for s in plan['scenes']], '视觉审查未覆盖全部镜头')
+    timeline_path = local(root, f"render/{request['runId']}/timeline.json")
+    require(digest(timeline_path) == review['timelineSha256'], '时间轴已变化，请重新检查讲解对应', 'VISUAL_REVIEW_REQUIRED')
+    validate_narration_review(read(timeline_path), request, manifest, review)
     reports, paths, total = [], set(), 0
     for expected, actual, viewed in zip(plan['scenes'], manifest['scenes'], review['scenes']):
         require(expected['text'] == actual['text'] == actual['audio']['text'], '正文/音频文本与确认不一致')
@@ -1076,7 +1143,7 @@ def main():
         result = failure(getattr(a, 'request', None), a.command, exc)
         if result['status'] != 'adjustment_required':
             current_project = {'RENDER_BATCH_FAILED', 'TASK_LAYOUT_INVALID', 'RENDER_FAILED', 'RENDER_TIMEOUT', 'MEDIA_INVALID', 'AUDIO_MISMATCH',
-                               'CAPTION_MISSING', 'INVALID_CONTRACT', 'MISSING_INPUT', 'TIMELINE_STALE'}
+                               'CAPTION_MISSING', 'INVALID_CONTRACT', 'MISSING_INPUT', 'TIMELINE_STALE', 'VISUAL_REVIEW_REQUIRED'}
             result['status'] = 'repair_required' if result['error']['code'] in current_project else 'human_required'
             result['scope'] = 'task_project' if result['status'] == 'repair_required' else 'shared_pipeline'
         print(json.dumps(result, ensure_ascii=False))

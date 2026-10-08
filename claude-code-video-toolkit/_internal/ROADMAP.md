@@ -25,6 +25,13 @@ An open-source, AI-native video production workspace for Claude Code, featuring:
 
 ## Current Status
 
+### 2026-10-08：讲解动效与审片闭环
+
+- Render 按语义编排对象变化，从实际发言派生时间；同一含义可保持，不固定模板。
+- 现有 review 补充讲解覆盖及动作前中后证据；交付核对当前时间轴、确认文本与实际 MP4。
+- 审片未通过返回本期修订，保留原有预算；不把记录齐全当作审美通过。
+- 详见仓库 `docs/Render讲解动效与审片优化开发记录.md`；本轮未部署或重生成线上视频。
+
 ### 2026-10-08：Render 制作指令优化
 
 - Render 入口明确本期创作、真实配音驱动画面和实际预览修订；通用 Skill 从当前任务读取动态模板。

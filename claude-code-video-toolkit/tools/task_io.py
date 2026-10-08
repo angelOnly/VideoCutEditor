@@ -218,7 +218,10 @@ def main():
             value = finish(args.task, args.command, error={'code': args.code, 'message': args.message})
         print(json.dumps(value, ensure_ascii=False)); return 0
     except (StageError, OSError, ValueError, KeyError, TypeError, ImportError) as exc:
-        print(json.dumps({'error': {'code': getattr(exc, 'code', 'TASK_IO_ERROR'), 'message': str(exc)}}, ensure_ascii=False)); return 1
+        result = {'error': {'code': getattr(exc, 'code', 'TASK_IO_ERROR'), 'message': str(exc)}}
+        if getattr(exc, 'code', '') == 'VISUAL_REVIEW_REQUIRED':
+            result.update(status='repair_required', scope='task_project')
+        print(json.dumps(result, ensure_ascii=False)); return 1
 
 
 if __name__ == '__main__': sys.exit(main())

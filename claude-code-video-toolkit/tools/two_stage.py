@@ -155,6 +155,9 @@ def failure(request_path, step, exc):
         payload['status'] = 'adjustment_required'
         payload['nextAction'] = {'TIMELINE_EXTEND_REQUIRED':'adjust_project_coverage',
                                 'CONTENT_TIMELINE_REQUIRED':'adjust_project_timing', 'MIX_REBUILD_REQUIRED':'render_new_mix'}[exc.code]
+    if getattr(exc, 'code', '') == 'VISUAL_REVIEW_REQUIRED':
+        # 审片未通过仍是本期制作修订，不请求人工处理公共服务。
+        payload.update(status='repair_required', scope='task_project')
     if request_path:
         try:
             request = read(request_path); schema(request, 'request')
