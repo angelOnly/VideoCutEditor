@@ -407,6 +407,20 @@ class MediaTests(Fixture):
         report=validate(self.render,manifest_path)
         self.assertEqual(report['status'],'candidate')
 
+    def test_whole_video_accepts_different_mp4_video_time_bases(self):
+        # 正文与追加片尾的MP4可能使用不同时间基，直拼不能改变播放速度。
+        for scene,review,timescale in zip(self.manifest['scenes'],self.review['scenes'],(90000,15360)):
+            video=self.job/scene['path']; remuxed=video.with_name(video.stem+'-remux.mp4')
+            ffmpeg('-i',video,'-map','0','-c','copy','-video_track_timescale',str(timescale),remuxed)
+            remuxed.replace(video)
+            scene['sha256']=digest(video);review['videoSha256']=scene['sha256']
+        write(self.job/self.manifest['quality'],self.review)
+        manifest_path=self.render.parent/'manifest.json';write(manifest_path,self.manifest)
+        whole=assemble(self.render,manifest_path)
+        self.assertEqual(whole['frames'],20)
+        self.assertEqual(whole['durationSeconds'],2)
+        self.assertEqual(validate(self.render,manifest_path)['status'],'candidate')
+
     def test_creation_blocks_can_change(self):
         self.manifest['scenes'][0]['resolvedVisualBlocks'][0]['id'] = 'new_creative_block'
         self.assertEqual(validate_delivery(self.job,self.req,self.manifest)['sceneCount'],2)

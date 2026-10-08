@@ -935,7 +935,9 @@ def assemble(request_path, manifest_path):
         with tempfile.TemporaryDirectory(prefix='assemble-', dir=folder) as t:
             temp = Path(t); lines = []; audio_lines = []
             for i, scene in enumerate(manifest['scenes']):
-                (temp / f'{i}.mp4').symlink_to(local(root, scene['path']))
+                # 正文与片尾可能使用不同MP4时间基；只重封装视频，避免直拼后时间戳错位。
+                ffmpeg('-i', local(root, scene['path']), '-map', '0:v:0', '-an', '-c:v', 'copy',
+                       '-video_track_timescale', '90000', temp / f'{i}.mp4', timeout=budget)
                 lines.append(f"file '{i}.mp4'")
                 # 按确认镜头的实际帧数归一化采样数，避免累积 AAC 编码填充。
                 samples = round(scene['frames'] / request['outputSpec']['fps'] * 48000)
