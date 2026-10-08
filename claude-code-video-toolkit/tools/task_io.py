@@ -2,6 +2,7 @@
 """独立 video-pipeline 输入输出适配；Worker 不参与文本和制作结果转换。"""
 from __future__ import annotations
 import argparse
+from contextlib import nullcontext
 from copy import deepcopy
 from pathlib import Path
 import sys
@@ -9,7 +10,7 @@ import json
 import hashlib
 from two_stage import (VERSION, StageError, read, write, local, require, identifier, digest,
                        json_digest, schema, storyboard, validate, validate_plan, active_execution,
-                       active_processes)
+                       active_processes, lock)
 
 PROTOCOL = 'video-pipeline-io/1'
 
@@ -148,13 +149,15 @@ def finish(entry_path, status, result=None, files=None, error=None):
     root, entry, _, _ = load(entry_path)
     require(status in ('completed', 'needs_input', 'failed'), '状态无效')
     require((status == 'completed' and result is not None and error is None) or (status != 'completed' and error), '结果状态不一致')
-    ensure_render_is_idle(root, entry_path, entry)
-    files = files or []
-    require(len({f['id'] for f in files}) == len(files), '文件 ID 重复')
-    for file in files: identifier(file['id']); local(root, file['path'])
-    identity = {k: entry[k] for k in ('protocol', 'taskId', 'requestId', 'stage')}
-    write(local(root, entry['resultFile'], exists=False), {**identity, 'status': status, 'result': result, 'files': files, 'error': error})
-    return {**identity, 'resultFile': entry['resultFile']}
+    # 隔离命令的PID不可互见；共享执行锁才是媒体仍在运行的可靠凭据。
+    with lock(root / '.execution.lock') if entry['stage'] == 'render' else nullcontext():
+        ensure_render_is_idle(root, entry_path, entry)
+        files = files or []
+        require(len({f['id'] for f in files}) == len(files), '文件 ID 重复')
+        for file in files: identifier(file['id']); local(root, file['path'])
+        identity = {k: entry[k] for k in ('protocol', 'taskId', 'requestId', 'stage')}
+        write(local(root, entry['resultFile'], exists=False), {**identity, 'status': status, 'result': result, 'files': files, 'error': error})
+        return {**identity, 'resultFile': entry['resultFile']}
 
 
 def complete_analysis(entry_path, text_result):
@@ -171,7 +174,8 @@ def complete_analysis(entry_path, text_result):
 def complete_render(entry_path, manifest_path):
     root, entry, raw, _ = load(entry_path)
     require(entry['stage'] == 'render', '当前不是制作阶段')
-    ensure_render_is_idle(root, entry_path, entry)
+    with lock(root / '.execution.lock'):
+        ensure_render_is_idle(root, entry_path, entry)
     saved = read(binding(root, entry_path))
     request_path = local(root, saved['request'])
     manifest_file = local(root, manifest_path)

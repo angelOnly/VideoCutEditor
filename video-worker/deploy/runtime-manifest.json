@@ -5,7 +5,7 @@
   "defaultExecutor": "host-app-server",
   "taskIsolation": "codex-native-systemd-user",
   "remotionVersion": "4.0.425",
-  "runtimeSourceSha256": "5e5ed66fa25d713d5ca46533f8ad9ca9f9b4bfdfad266308e60f522a7778cef4",
+  "runtimeSourceSha256": "1e4c935674ce335586c62742fc2d50e0f09efdfad99cfd0ba2dad4b3b0275111",
   "files": {
     "claude-code-video-toolkit/.agents/skills/remotion-best-practices/SKILL.md": "a24dd5f933b7394a1cb14b8b31c3bcc467189db4792713fe9a714e762df7c934",
     "claude-code-video-toolkit/.agents/skills/remotion-best-practices/rules/3d.md": "42cef6d68fb4a266ab495d35df0c60e03672b0d85c043f9b567f6aa7ff00dd0d",
@@ -85,7 +85,7 @@
     "claude-code-video-toolkit/tools/render_scene.cjs": "e2fc5b386f82811430d36324a0f890a4969b1af940b115b225b815d996996ef4",
     "claude-code-video-toolkit/tools/stage_media.py": "c0a93893864f5fb648bf03c538518699b837c8c0645896c4b48c4f13f16e4e04",
     "claude-code-video-toolkit/tools/stage_tts.py": "46ac3af5b04470bb27008f73f85fc4a3415512c8f9d402f9edac85029b6262ce",
-    "claude-code-video-toolkit/tools/task_io.py": "e5e1ba7a9f7a7d9b2e328081559e2411102d639cb4ff051ffc75d8e2b71b769a",
+    "claude-code-video-toolkit/tools/task_io.py": "90e658fda3c1be74a482b58a6e8643892edee04a6d68d270d2d7803516cc0ebc",
     "claude-code-video-toolkit/tools/two_stage.py": "57b9810ee5bda6bde47dbf83ec56d362b6eb41f03a44476a0e3bd42cf184db06",
     "claude-code-video-toolkit/tools/voiceover.py": "8aa120b0099e7b4bf757e93f1f9250990d910ac67e79fae97302c0587a4d4c9d",
     "claude-code-video-toolkit/tools/worker_stage.py": "f088d586b67d28f0437a2ebe70fc0f9438dc50d199690538643ab745fac6fafa",
@@ -131,6 +131,6 @@
     "video-worker/src/infrastructure/workspace.ts": "5e729840f85b5dc03548dc20232616ba2c82dc0801eadbacf578a2fc989dd078",
     "video-worker/src/integrations/ifeng/mapper.ts": "9f5eb93dd94b07ed93d0aa9d184217de7e9a307a3a7c3029d1ee99846dcd81a7",
     "video-worker/src/runner/codex-host.ts": "45b1daa5badd4fa234da4783d9e0cfcdf4b771cf0449b2fe37889a0209b01130",
-    "video-worker/src/runner/prompts.ts": "3bc6fa49f805c32d49aa0ec4432cb5303425fb77009b15806ea2c8146a75d31c"
+    "video-worker/src/runner/prompts.ts": "6e44dbefdb5cd9d06798755ba67bc2ed93d89ce8eaf38cfce0582339f98e82b7"
   }
 }

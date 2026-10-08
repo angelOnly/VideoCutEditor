@@ -135,4 +135,24 @@ class TaskIOTests(unittest.TestCase):
    media_child.terminate();media_child.wait(timeout=3)
   ref=finish(entry,'needs_input',error={'code':'RENDER_FAILED','message':'进程已结束'})
   self.assertEqual(read(self.root/ref['resultFile'])['status'],'needs_input')
+ def test_render_terminal_status_uses_shared_lock_when_media_pid_is_not_visible(self):
+  entry=self.message('isolated','render',{'dataList':[{'id':'scene_001','content':'确认。'}]},self.analysis)
+  prepare(entry)
+  # 用独立进程持有真实目录锁，模拟隔离命令看不到媒体PID的生产环境。
+  code='import fcntl,os,sys,time; fd=os.open(sys.argv[1],os.O_RDONLY|os.O_DIRECTORY); fcntl.flock(fd,fcntl.LOCK_EX); print("ready",flush=True); time.sleep(30)'
+  child=subprocess.Popen([sys.executable,'-c',code,str(self.root)],stdout=subprocess.PIPE,text=True)
+  self.addCleanup(lambda: child.poll() is None and child.kill())
+  try:
+   self.assertEqual(child.stdout.readline().strip(),'ready')
+   with patch('task_io.active_execution',return_value=None),patch('task_io.active_processes',return_value=[]):
+    for status,kwargs in [('completed',{'result':{}}),('needs_input',{'error':{'code':'TEST','message':'误判'}}),('failed',{'error':{'code':'TEST','message':'误判'}})]:
+     with self.assertRaises(StageError) as error:finish(entry,status,**kwargs)
+     self.assertEqual(error.exception.code,'TASK_BUSY')
+    with self.assertRaises(StageError) as error:complete_render(entry,'不存在的清单.json')
+    self.assertEqual(error.exception.code,'TASK_BUSY')
+   self.assertFalse((self.root/'output/isolated/result.json').exists())
+  finally:
+   child.terminate();child.wait(timeout=3);child.stdout.close()
+  ref=finish(entry,'failed',error={'code':'TEST','message':'媒体已停止'})
+  self.assertEqual(read(self.root/ref['resultFile'])['status'],'failed')
 if __name__=='__main__':unittest.main()
