@@ -19,7 +19,24 @@ await mkdir(path.dirname(destination), { recursive: true });
 if (!existsSync(destination)) await packagePlugin(destination);
 await verifyProductionPlugin({ ...config, pluginRoot: packagedRoot });
 const env = { ...process.env, CODEX_HOME: config.codexHome };
-await command(config.codexPath, ['plugin', 'marketplace', 'add', destination, '--json'], { env });
+const marketplaces = JSON.parse(
+  await command(config.codexPath, ['plugin', 'marketplace', 'list', '--json'], { env }),
+);
+const previous = marketplaces.marketplaces.find((item) => item.name === 'videocut-internal');
+const previousSource = previous?.marketplaceSource;
+// 同名市场切换到新版本目录前先解除注册，旧版本目录保留用于回退。
+if (previous && previousSource?.source !== destination) {
+  if (previousSource?.sourceType !== 'local') throw Error('内部插件市场不是本地来源，无法自动切换');
+  await command(config.codexPath, ['plugin', 'marketplace', 'remove', 'videocut-internal', '--json'], { env });
+}
+try {
+  await command(config.codexPath, ['plugin', 'marketplace', 'add', destination, '--json'], { env });
+} catch (error) {
+  if (previousSource?.sourceType === 'local' && previousSource.source !== destination) {
+    await command(config.codexPath, ['plugin', 'marketplace', 'add', previousSource.source, '--json'], { env });
+  }
+  throw error;
+}
 const installed = JSON.parse(
   await command(
     config.codexPath,

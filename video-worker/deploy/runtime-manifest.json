@@ -5,7 +5,7 @@
   "defaultExecutor": "host-app-server",
   "taskIsolation": "codex-native-systemd-user",
   "remotionVersion": "4.0.425",
-  "runtimeSourceSha256": "184a0cce284e5437dbf094120b2a09b04cb9871b254a965e30edcde78513fe49",
+  "runtimeSourceSha256": "b57c7ca34f3518c2905cedb06d5956f6ce871bc3a59a034bc4d070ee50ebbba4",
   "productionPlugin": {
     "name": "videocut-production",
     "version": "1.0.1",
@@ -98,7 +98,7 @@
     "claude-code-video-toolkit/tools/voiceover.py": "8aa120b0099e7b4bf757e93f1f9250990d910ac67e79fae97302c0587a4d4c9d",
     "claude-code-video-toolkit/tools/worker_stage.py": "f088d586b67d28f0437a2ebe70fc0f9438dc50d199690538643ab745fac6fafa",
     "video-worker/config/templates.json": "1d465e074912c1c4460db53bed1b7e6ee905b4941fe1c8518e52f6bf38221e48",
-    "video-worker/deploy/install-plugin.mjs": "7d9b4b1e592dd14cd8e24e7b7ecd724cd7ceb79fe5c0f3c19e7ece34d3893128",
+    "video-worker/deploy/install-plugin.mjs": "8f9f5b2757b6d352ceec9f02907f1c8b3fdb90e8e58cd1abc9f872d96530931d",
     "video-worker/migrations/001_initial.sql": "8386ff41be228076b781df12b1f3923dc460aea2a25eea7e07e143289338e240",
     "video-worker/migrations/002_pipeline_liveness.sql": "e1cce5b2be240013d960ce10195ce5ca5f00516bd907fe16d952a40bbed28356",
     "video-worker/migrations/003_render_recovery.sql": "5e1990d2726e7514a6d8adf582ab3e3a76f5759ee685f271d73432d41ca949d1",
