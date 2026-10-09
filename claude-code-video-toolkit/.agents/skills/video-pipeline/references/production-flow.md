@@ -111,7 +111,7 @@ src使用工程public/template-assets内本地片尾的相对路径。
 不使用结束语时省去保持阶段，剩余口播完整结束后再接已选片尾。
 
 ```bash
-python3 "$TOOLKIT_ROOT/tools/stage_tts.py" --request "$REQUEST" --script "$JOB_DIR/render/dialogue.json"
+"$VIDEOCUT_PYTHON" "$TOOLKIT_ROOT/tools/stage_tts.py" --request "$REQUEST" --script "$JOB_DIR/render/dialogue.json"
 ```
 
 独立工具读取授权环境中的供应商配置；原生任务不加载仓库 `.env`，不复制凭据。缓存按精确文本、实际音色、资源模型及生成格式匹配，成功音频还需校验摘要和解码。请求状态保存在 `cache/tts/<key>/request.json`，结果未知会返回 `EXTERNAL_RESULT_UNKNOWN`；不得删账本或另换 ID 来盲目重发。普通任务恢复只读本任务缓存。已有供应商之外的能力，仍需按部署授权使用，不自动购买新服务。
@@ -228,10 +228,10 @@ MIX_REBUILD_REQUIRED 表示全局 BGM 起点或声音编排改变，旧混音不
 通用 Remotion 执行器接受 Codex 选定的入口、Composition、props 和实测总帧数，PNG、单并发为当前保守默认。它不会生成图解、选择角色或重新切分分镜。
 
 ```bash
-python3 "$TOOLKIT_ROOT/tools/stage_media.py" preflight --node /absolute/node \
+"$VIDEOCUT_PYTHON" "$TOOLKIT_ROOT/tools/stage_media.py" preflight --node /absolute/node \
   --modules /absolute/node_modules --browser /absolute/chrome
 
-python3 "$TOOLKIT_ROOT/tools/stage_media.py" render --request "$REQUEST" \
+"$VIDEOCUT_PYTHON" "$TOOLKIT_ROOT/tools/stage_media.py" render --request "$REQUEST" \
   --scene scene_001 --project project --entry project/src/index.tsx \
   --composition Scene001 --props render/scene-001-props.json --frames 90 \
   --node /absolute/node --modules /absolute/node_modules --browser /absolute/chrome
@@ -342,13 +342,13 @@ usedResources登记本地片尾与摘要。
 `wholeVideo` 默认 `null`；请求要求整片时使用通用拼接入口（先准备全部分镜清单和视觉审查）：
 
 ```bash
-python3 "$TOOLKIT_ROOT/tools/stage_media.py" assemble --request "$REQUEST" --manifest "$JOB_DIR/render/render_001/manifest.json"
+"$VIDEOCUT_PYTHON" "$TOOLKIT_ROOT/tools/stage_media.py" assemble --request "$REQUEST" --manifest "$JOB_DIR/render/render_001/manifest.json"
 ```
 
 拼接工具逐镜检查后保留视频编码，按本镜帧长归一化原始混音 PCM、拼接并只编码一次 AAC，写回 `wholeVideo`。整片不能占分镜列表第 0 项。所有  N 镜的音轨须全部包含，拼接后重新校验音视频时间戳、整片声音和边界。结果提供全部确认镜头，不只提供重做子集。
 
 ```bash
-python3 "$TOOLKIT_ROOT/tools/two_stage.py" validate --request "$REQUEST" --artifact "$JOB_DIR/render/render_001/manifest.json"
+"$VIDEOCUT_PYTHON" "$TOOLKIT_ROOT/tools/two_stage.py" validate --request "$REQUEST" --artifact "$JOB_DIR/render/render_001/manifest.json"
 ```
 
 通过后输出该 run 的 `result.json`。这是内部工具检查结果；服务消息再用 task_io.py render 返回 completed，不代表上传或回调已成功。失败返回明确阶段/错误码，保留此前合格产物。技术工具不自动证明所有业务描述已满足；Codex 的视觉审查与固定技术验证都要完成。

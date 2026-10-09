@@ -33,6 +33,8 @@ except OSError: pass
 else: raise RuntimeError('输入目录可写')
 pathlib.Path('output/probe').write_text('ok')
 import jsonschema
+import dotenv
+import requests
 import socket
 import tempfile
 with tempfile.TemporaryDirectory() as temporary:

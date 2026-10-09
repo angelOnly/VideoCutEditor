@@ -2,7 +2,7 @@
 
 ## 本轮范围
 
-将当前制作能力部署为 `videocut-production 1.0.0`，保持既有制作要求、音频同步、片尾流程及定制化模板不变。暂不接入新的导演、美术动效 Skill。代码回退基线为 `render-narration-baseline-20261009`（`c3bb796`）。
+将当前制作能力部署为 `videocut-production 1.0.1`（首轮为 1.0.0），保持既有制作要求、音频同步、片尾流程及定制化模板不变。暂不接入新的导演、美术动效 Skill。代码回退基线为 `render-narration-baseline-20261009`（`c3bb796`）。
 
 ## 实际调用链
 
@@ -44,9 +44,33 @@
 - 本地 Worker 回归：37 项通过，1 项仅 Linux 隔离测试在 macOS 跳过。
 - 新增测试覆盖：插件未启用、错误插件身份、旧源码路径、缺失插件配置、版本不符、文件篡改，以及任务使用明确的插件 Skill 输入。
 - 服务器已通过 CLI 安装，app-server 实际发现三个带 `videocut-production@videocut-internal` 身份的 Skill。
-- 服务器权限检查、短片渲染和网页两阶段测试：部署后补充实际结果。
+- 服务器 host-check 通过：插件发现、数据库、登录、原生命令、只读输入、跨任务隔离及媒体依赖。
+- Linux 隔离集成测试 1 项通过，验证取消能回收脱离子进程且不影响另一个任务。
+- 使用安装副本中的 render_scene.cjs，在实际任务权限下生成 60 帧、2 秒的带声短片：H.264/AAC、640×360、30fps。
+- 三个 Skill 的格式检查全部通过。
+- 网页 analysis 已完成，返回 18 条分镜；拼接文本与原稿逐字一致（忽略原稿段落换行）。首轮 render 因系统 Python 缺少 dotenv 停止，修复明确的解释器入口后重新验收。
 
 网页测试使用先前同一黄仁勋稿件及同一财经定制化模板，保持模型、音色和输出规格。核对原文、分镜顺序、口播同步、栏目元素、固定结束语后的完整片尾、媒体格式与网页交付。重新生成不能要求逐帧一致；本轮验证插件化未破坏既有能力，不把艺术质量提高作为迁移成功的证明。
+
+### 本次网页任务
+
+- 标题：黄仁勋与AI落地｜Codex插件部署验收｜20261009。
+- 平台任务 ID：`6530602366a047ccb7a2a92d0f97665c`。
+- Worker 任务 ID：`6cd604f9-4b0b-489f-83b7-3bc6479bf7ef`。
+- analysis：`1232fb03-3cd7-45ac-83b8-9d8ff461d70a`，北京时间 10:15:50 开始、10:18:28 完成。
+- render：`08558ff3-64da-4804-8733-a402153ac56a`，北京时间 10:19:29 开始。
+- 插件摘要：`811cae01e39f7367652c6af44405356641506842eba6936caa913104eda894b9`。
+- 模板 ID 为 5，包摘要 `2c4815f0ff71190ff62be2c2fd794a7af8f163aa4cdc77a50a9c80fc5fe13173`，与上一版测试一致。
+- 实际安装路径：`/home/ops/.codex/plugins/cache/videocut-internal/videocut-production/1.0.0`。
+- 本地测试证据：`artifacts/deployment-validation/2026-10-09/plugin/`。
+
+### 首轮发现与修复
+
+首轮 render 显式调用 `/usr/bin/python3`，未使用已经安装依赖的虚拟环境。供应商音频已成功结束并保存到 audio.partial.mp3，但客户端随后导入 voiceover 中的 dotenv 失败，缓存保守保留 pending，重试被判为 EXTERNAL_RESULT_UNKNOWN。
+
+本轮修复限于部署环境适配：Worker 注入 VIDEOCUT_PYTHON，提示和插件命令示例统一使用该解释器；启动检查补充导入 dotenv 和 requests。插件版本递增到 1.0.1，配音、动画、片尾算法不变。修复相关 9 项回归通过。
+
+已核对客户端写盘位置仅在供应商成功结束后执行，并完整解码该音频。原 pending 记录保存为 request.before-recovery.json；将已有 2.832 秒音频恢复为完成缓存，摘要 b267eaea66cfcfc90fa179f5c3fda0b3c938b7c0e230c3335fad9de9f9b1c3e7，未重发该请求。
 
 ## 失败处理与回退
 

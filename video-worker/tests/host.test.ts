@@ -83,6 +83,7 @@ test('原生命令和看图可用，文件限定任务和只读工具，环境�
   assert.equal(env.IFENG_CALLBACK_SECRET, undefined);
   assert.equal(env.VIDEOCUT_RENDER_SANDBOX, 'native');
   assert.equal(env.VIDEOCUT_RENDER_SLOTS, '5');
+  assert.equal(env.VIDEOCUT_PYTHON, '/opt/venv/bin/python3');
 });
 test('Analysis 与 Render 使用独立的 systemd 资源档位', () => {
   const c = config({

@@ -10,10 +10,12 @@
 
 ## 复用现有工具
 
+Python 工具统一通过 `"$VIDEOCUT_PYTHON"` 调用已配置依赖的虚拟环境解释器，不依赖登录 shell 的 python3 搜索顺序。
+
 `TOOLKIT_ROOT` 指向当前已安装制作插件的只读根目录，`REMOTION_MODULES_ROOT` 指向服务器提供的渲染依赖目录。输入目录只读，工程、音频和工具记录保存在当前任务目录；本任务后续修改沿用资料，不能清空音频或收费记录。
 
 ```bash
-python3 "$TOOLKIT_ROOT/tools/task_io.py" prepare --task input/message-<内部ID>/task.json
+"$VIDEOCUT_PYTHON" "$TOOLKIT_ROOT/tools/task_io.py" prepare --task input/message-<内部ID>/task.json
 ```
 
 该命令返回内部两阶段 `request` 路径，供 stage_tts.py、stage_media.py、render_batch.py 等现有工具使用。转换和文本检查在 toolkit 内完成，Worker 不加工正文。重试同一消息使用已保存的内部请求；后续消息建立新请求，但沿用 project 和 cache/tts。
@@ -21,13 +23,13 @@ python3 "$TOOLKIT_ROOT/tools/task_io.py" prepare --task input/message-<内部ID>
 Analysis 按 text-storyboard 生成文本结果文件（如 `work/text-result.json`），再执行：
 
 ```bash
-python3 "$TOOLKIT_ROOT/tools/task_io.py" analysis --task input/message-<内部ID>/task.json --result work/text-result.json
+"$VIDEOCUT_PYTHON" "$TOOLKIT_ROOT/tools/task_io.py" analysis --task input/message-<内部ID>/task.json --result work/text-result.json
 ```
 
 Render 按 production-flow 完成全部确认分镜、检查和修改，再执行：
 
 ```bash
-python3 "$TOOLKIT_ROOT/tools/task_io.py" render --task input/message-<内部ID>/task.json --manifest render/<内部制作ID>/manifest.json
+"$VIDEOCUT_PYTHON" "$TOOLKIT_ROOT/tools/task_io.py" render --task input/message-<内部ID>/task.json --manifest render/<内部制作ID>/manifest.json
 ```
 
 此转换器显式调用 toolkit 的制作检查，再生成客户端 dataList；检查报错由 Codex 判断和处理，Worker 不调用它。也可由 Codex 按同一字段约定直接生成结果，但不能跳过 production-flow 的制作检查。

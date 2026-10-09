@@ -1,6 +1,6 @@
 {
   "name": "videocut-production",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "视频制作：文本分镜、配音、口播同步动画、审片与整片交付。模板由当前任务提供。",
   "author": { "name": "VideoCutEditor" },
   "skills": "./.agents/skills/"

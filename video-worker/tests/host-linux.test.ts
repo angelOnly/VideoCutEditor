@@ -6,6 +6,7 @@ import { setTimeout } from 'node:timers/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { config } from './helpers.js';
+import { loadConfig } from '../src/config.js';
 import { HostProcesses } from '../src/infrastructure/host-processes.js';
 import { AppServer } from '../src/infrastructure/app-server.js';
 import { checkNativeIsolation } from '../src/infrastructure/native-preflight.js';
@@ -15,12 +16,17 @@ test(
   { skip: process.env.RUN_HOST_TESTS !== '1', timeout: 120000 },
   async () => {
     const root = await mkdtemp(path.join(os.tmpdir(), 'native-cgroup-'));
+    // 集成测试使用服务器真正安装的插件；临时源码包不会被 Codex 发现为插件。
+    const installed = loadConfig();
     const c = config({
       dataRoot: root,
       python: path.resolve('.venv/bin/python3'),
       codexPath: path.resolve('node_modules/.bin/codex'),
       codexHome: process.env.CODEX_HOME ?? path.join(os.homedir(), '.codex'),
-      hostBrowser: process.env.REMOTION_BROWSER_EXECUTABLE ?? '/usr/bin/chromium',
+      hostBrowser: installed.hostBrowser,
+      pluginRoot: installed.pluginRoot,
+      pluginSha256: installed.pluginSha256,
+      renderModules: installed.renderModules,
     });
     const processes = new HostProcesses(c),
       one = new AppServer(),
