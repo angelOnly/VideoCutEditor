@@ -17,8 +17,8 @@
 
 ## 按需读取
 
-1. 输入表达关系，搜索轻量索引：`node scripts/find.mjs 趋势 比较`。最多返回 5 个候选。
-2. 选定编号：`node scripts/find.mjs radar-morph`。仅返回该项文件位置。
+1. 输入表达关系，使用统一入口：`node ../scripts/find.mjs 趋势 比较`。默认返回 3 项，最多 5 项；不输出全库。
+2. 选定编号：`node ../scripts/find.mjs typemotion-tables/radar-morph`。仅返回该项文件位置。
 3. 先读该项 README 确认适用条件，再看分镜拼图，必要时放大单张分镜；需要确认运动细节才看视频。选中后按需读取入口、对应绘制文件和 `core.tsx`。其他 42 项不加载。
 4. 将适合的运动移入本期工程，改数据、尺寸、视觉风格及真实口播落点；在完整模板里试作。
 

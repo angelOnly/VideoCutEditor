@@ -1,0 +1,1664 @@
+{
+  "schema_version": 1,
+  "type": "selected-motion-reference-package",
+  "created_at": "2026-10-09T22:19:49.876794+08:00",
+  "description": "前两批推荐清单合并，移除用户指定的7条机制；保留对应完整原片，每个原片只存一份。",
+  "source_library_sha256": "d992c114a212faf13eff2e57c2e9ff18c0f614069cc56480757a701dcea3a9d2",
+  "mechanism_count": 23,
+  "video_count": 20,
+  "excluded_ids": [
+    "115-m07",
+    "081-m03",
+    "118-m05",
+    "062-m01",
+    "103-m01",
+    "106-m01",
+    "052-m05"
+  ],
+  "selection_order": [
+    "056-m01",
+    "054-m03",
+    "051-m03",
+    "107-m04",
+    "053-m03",
+    "097-m04",
+    "068-m02",
+    "094-m04",
+    "098-m01",
+    "100-m01",
+    "110-m02",
+    "119-m01",
+    "036-m02",
+    "006-m03",
+    "010-m06",
+    "086-m02",
+    "014-m02",
+    "003-m03",
+    "015-m05",
+    "014-m01",
+    "005-m03",
+    "015-m04",
+    "006-m07"
+  ],
+  "groups": [
+    {
+      "name": "数据与关系解释",
+      "ids": [
+        "056-m01",
+        "054-m03",
+        "051-m03",
+        "053-m03",
+        "097-m04",
+        "068-m02"
+      ]
+    },
+    {
+      "name": "科技结构与局部深入",
+      "ids": [
+        "094-m04",
+        "098-m01",
+        "100-m01"
+      ]
+    },
+    {
+      "name": "标题、文字与花字",
+      "ids": [
+        "110-m02",
+        "119-m01",
+        "036-m02"
+      ]
+    },
+    {
+      "name": "重点与强调",
+      "ids": [
+        "006-m03",
+        "010-m06",
+        "086-m02"
+      ]
+    },
+    {
+      "name": "多图并置与聚焦",
+      "ids": [
+        "014-m02",
+        "003-m03",
+        "015-m05"
+      ]
+    },
+    {
+      "name": "影像叠字与标注",
+      "ids": [
+        "107-m04",
+        "014-m01",
+        "005-m03"
+      ]
+    },
+    {
+      "name": "转场与处理进度",
+      "ids": [
+        "015-m04",
+        "006-m07"
+      ]
+    }
+  ],
+  "mechanisms": [
+    {
+      "id": "056-m01",
+      "title": "横条持续增长，整行随次序交换位置，末端数值跟随",
+      "case_number": 56,
+      "summary": "让多行横条共享固定左边界，条长持续增加，末端数值跟随条端更新。",
+      "purpose": "连续累积与重排",
+      "relation": "长度变化与纵向重排联动",
+      "start_state": "多行横条较短",
+      "end_state": "横条增长后到最终次序",
+      "tags": [
+        "横条增长",
+        "整行换位",
+        "数值跟随",
+        "阶段更新"
+      ],
+      "retrieval": {
+        "categories": [
+          "建立与累积",
+          "排列与重组"
+        ],
+        "actions": [
+          "填充",
+          "位移"
+        ],
+        "entry": [
+          "集合"
+        ],
+        "exit": [
+          "集合"
+        ],
+        "holds": [
+          "参照保持"
+        ],
+        "anchors": [
+          "对象延续",
+          "位置接点"
+        ]
+      },
+      "document": "cases/aylmerth-356252-original/mechanisms/m01.md",
+      "storyboard": "cases/aylmerth-356252-original/mechanisms/m01.jpg",
+      "case_slug": "aylmerth-356252",
+      "usage_group": "数据与关系解释",
+      "video": "cases/aylmerth-356252-original/video.mp4",
+      "source_url": "https://skillry.dev/ai-videos/opus-5-5/aylmerth-356252"
+    },
+    {
+      "id": "054-m03",
+      "title": "固定坐标内曲线逐段延长，旁轴高度与数值随之变化",
+      "case_number": 54,
+      "summary": "保留坐标区和旁轴，让曲线从左向右逐段延长。",
+      "purpose": "轨迹与局部指标联动",
+      "relation": "轨迹增长，旁轴更新",
+      "start_state": "坐标区为空，旁轴稳定",
+      "end_state": "曲线延到后端，旁值到新状态",
+      "tags": [
+        "曲线延长",
+        "轴内变化",
+        "数值接续"
+      ],
+      "retrieval": {
+        "categories": [
+          "路径与连接",
+          "触发与反馈"
+        ],
+        "actions": [
+          "描画",
+          "填充"
+        ],
+        "entry": [
+          "外框",
+          "轮廓"
+        ],
+        "exit": [
+          "外框",
+          "路径"
+        ],
+        "holds": [
+          "外框保持",
+          "参照保持"
+        ],
+        "anchors": [
+          "路径接点"
+        ]
+      },
+      "document": "cases/nikolajankovic-616097-original/mechanisms/m03.md",
+      "storyboard": "cases/nikolajankovic-616097-original/mechanisms/m03.jpg",
+      "case_slug": "nikolajankovic-616097",
+      "usage_group": "数据与关系解释",
+      "video": "cases/nikolajankovic-616097-original/video.mp4",
+      "source_url": "https://skillry.dev/ai-videos/opus-5-5/nikolajankovic-616097"
+    },
+    {
+      "id": "051-m03",
+      "title": "倾斜散条转正归队，再沿侧边连成纵列",
+      "case_number": 51,
+      "summary": "让分散且倾斜的条片各自移动到纵列位置，边移动边转正，使左右边逐步对齐；未归队的外围条片退去。",
+      "purpose": "散乱重排为秩序",
+      "relation": "条片各自位移转正，先完成排列，再逐行补连线。",
+      "start_state": "条片角度不同，分散在画面中。",
+      "end_state": "多行同宽条片纵向对齐，侧边竖线及短支线依次连接。",
+      "tags": [
+        "散开归队",
+        "转正对齐",
+        "连线增长"
+      ],
+      "retrieval": {
+        "categories": [
+          "排列与重组",
+          "路径与连接"
+        ],
+        "actions": [
+          "位移",
+          "旋转",
+          "显隐",
+          "描画",
+          "错开"
+        ],
+        "entry": [
+          "散置"
+        ],
+        "exit": [
+          "集合",
+          "路径"
+        ],
+        "holds": [
+          "结果保持"
+        ],
+        "anchors": [
+          "对象延续",
+          "路径接点"
+        ]
+      },
+      "document": "cases/l3d1c-632524-original/mechanisms/m03.md",
+      "storyboard": "cases/l3d1c-632524-original/mechanisms/m03.jpg",
+      "case_slug": "l3d1c-632524",
+      "usage_group": "数据与关系解释",
+      "video": "cases/l3d1c-632524-original/video.mp4",
+      "source_url": "https://skillry.dev/ai-videos/opus-5-5/l3d1c-632524"
+    },
+    {
+      "id": "107-m04",
+      "title": "大图片保持局部短线与标签分次派生",
+      "case_number": 107,
+      "summary": "图片接入后保持取景，先在一个局部建立短标，从局部向空处延出细线并接标签。",
+      "purpose": "把多个局部接到外围前层",
+      "relation": "局部指向后标签累积",
+      "start_state": "图片占据主要范围",
+      "end_state": "多个局部标签与小前框完整",
+      "tags": [
+        "图片保持",
+        "局部标线",
+        "标签累积"
+      ],
+      "retrieval": {
+        "categories": [
+          "路径与连接",
+          "建立与累积"
+        ],
+        "actions": [
+          "描画",
+          "错开",
+          "显隐"
+        ],
+        "entry": [
+          "平面"
+        ],
+        "exit": [
+          "平面",
+          "文字组",
+          "外框"
+        ],
+        "holds": [
+          "主体保持",
+          "结果保持"
+        ],
+        "anchors": [
+          "路径接点"
+        ]
+      },
+      "document": "cases/dheepanratnam-706454-original/mechanisms/m04.md",
+      "storyboard": "cases/dheepanratnam-706454-original/mechanisms/m04.jpg",
+      "case_slug": "dheepanratnam-706454",
+      "usage_group": "影像叠字与标注",
+      "video": "cases/dheepanratnam-706454-original/video.mp4",
+      "source_url": "https://skillry.dev/ai-videos/opus-5-5/dheepanratnam-706454"
+    },
+    {
+      "id": "053-m03",
+      "title": "点间局部传递，数值与尺度更新后突出一条分支",
+      "case_number": 53,
+      "summary": "在已有点群连接上让局部亮点或短反馈沿线推进，点内数值持续更新，主要点尺度逐渐增加。",
+      "purpose": "网络变化到局部聚焦",
+      "relation": "局部变化推进，最后收住重点",
+      "start_state": "点群有连接且数值较小",
+      "end_state": "一条分支突出，其他点退弱",
+      "tags": [
+        "沿线传递",
+        "数值更新",
+        "尺度变化",
+        "分支聚焦"
+      ],
+      "retrieval": {
+        "categories": [
+          "路径与连接",
+          "聚焦与展开"
+        ],
+        "actions": [
+          "位移",
+          "填充",
+          "缩放",
+          "显隐"
+        ],
+        "entry": [
+          "集合",
+          "路径"
+        ],
+        "exit": [
+          "集合",
+          "路径"
+        ],
+        "holds": [
+          "参照保持"
+        ],
+        "anchors": [
+          "路径接点"
+        ]
+      },
+      "document": "cases/stewchan2-369810-original/mechanisms/m03.md",
+      "storyboard": "cases/stewchan2-369810-original/mechanisms/m03.jpg",
+      "case_slug": "stewchan2-369810",
+      "usage_group": "数据与关系解释",
+      "video": "cases/stewchan2-369810-original/video.mp4",
+      "source_url": "https://skillry.dev/ai-videos/opus-5-5/stewchan2-369810"
+    },
+    {
+      "id": "097-m04",
+      "title": "路径推进时下方曲线逐段延长旁项更新",
+      "case_number": 97,
+      "summary": "主路径继续推进，下方从首短段开始延长另一条曲线，曲线向前时逐步降低并收小起伏。",
+      "purpose": "把两个范围的连续变化并行组织",
+      "relation": "主路径推进下线累积",
+      "start_state": "曲面路径开始推进且下方空线区",
+      "end_state": "下方曲线完整与旁项稳定",
+      "tags": [
+        "双区并行",
+        "曲线延长",
+        "原位更新"
+      ],
+      "retrieval": {
+        "categories": [
+          "路径与连接"
+        ],
+        "actions": [
+          "描画",
+          "起伏"
+        ],
+        "entry": [
+          "路径",
+          "平面"
+        ],
+        "exit": [
+          "路径",
+          "平面"
+        ],
+        "holds": [
+          "结果保持"
+        ],
+        "anchors": [
+          "路径接点"
+        ]
+      },
+      "document": "cases/anirockshady-032809-original/mechanisms/m04.md",
+      "storyboard": "cases/anirockshady-032809-original/mechanisms/m04.jpg",
+      "case_slug": "anirockshady-032809",
+      "usage_group": "数据与关系解释",
+      "video": "cases/anirockshady-032809-original/video.mp4",
+      "source_url": "https://skillry.dev/ai-videos/opus-5-5/anirockshady-032809"
+    },
+    {
+      "id": "068-m02",
+      "title": "宽条重分成更多窄条，高度变化贴近既有曲线",
+      "case_number": 68,
+      "summary": "保留既有曲线，把少量宽条重分成更多窄条，分别调整条高，使上缘逐渐贴近曲线。",
+      "purpose": "粗分到密集分段",
+      "relation": "曲线保持，条数增加并重调高度",
+      "start_state": "少量宽条与曲线完整",
+      "end_state": "更多窄条接近曲线上缘",
+      "tags": [
+        "条面重分",
+        "高度调整",
+        "上缘经过"
+      ],
+      "retrieval": {
+        "categories": [
+          "形变与分合",
+          "排列与重组"
+        ],
+        "actions": [
+          "分合",
+          "形变"
+        ],
+        "entry": [
+          "集合",
+          "路径"
+        ],
+        "exit": [
+          "集合",
+          "路径"
+        ],
+        "holds": [
+          "参照保持"
+        ],
+        "anchors": [
+          "对象延续"
+        ]
+      },
+      "document": "cases/doubleunplussed-181894-original/mechanisms/m02.md",
+      "storyboard": "cases/doubleunplussed-181894-original/mechanisms/m02.jpg",
+      "case_slug": "doubleunplussed-181894",
+      "usage_group": "数据与关系解释",
+      "video": "cases/doubleunplussed-181894-original/video.mp4",
+      "source_url": "https://skillry.dev/ai-videos/opus-5-5/doubleunplussed-181894"
+    },
+    {
+      "id": "094-m04",
+      "title": "多层沿同一纵向分离再向下层转移取景",
+      "case_number": 94,
+      "summary": "保持各层平面方向，先抬起最上层，再沿同一纵向拉开中间层，使内层逐步露出。",
+      "purpose": "把叠合组打开成可读间隙",
+      "relation": "同轴分离后逐层运镜",
+      "start_state": "多层叠合为一组",
+      "end_state": "分离层保持且下层成为主范围",
+      "tags": [
+        "分层分离",
+        "纵向间隙",
+        "逐层取景"
+      ],
+      "retrieval": {
+        "categories": [
+          "形变与分合",
+          "聚焦与展开"
+        ],
+        "actions": [
+          "位移",
+          "错开",
+          "取景变化"
+        ],
+        "entry": [
+          "堆叠"
+        ],
+        "exit": [
+          "展开"
+        ],
+        "holds": [
+          "参照保持"
+        ],
+        "anchors": [
+          "对象延续"
+        ]
+      },
+      "document": "cases/mdaman010-111079-original/mechanisms/m04.md",
+      "storyboard": "cases/mdaman010-111079-original/mechanisms/m04.jpg",
+      "case_slug": "mdaman010-111079",
+      "usage_group": "科技结构与局部深入",
+      "video": "cases/mdaman010-111079-original/video.mp4",
+      "source_url": "https://skillry.dev/ai-videos/opus-5-5/mdaman010-111079"
+    },
+    {
+      "id": "098-m01",
+      "title": "锁定局部逐级推近下一层承接再沿原路退回",
+      "case_number": 98,
+      "summary": "从完整结构中选定局部持续推近，旧边界逐步越界，内部下一层范围承接到相近中心。",
+      "purpose": "通过多个尺度维持连续观看",
+      "relation": "持续推进逐层承接",
+      "start_state": "完整结构在远处",
+      "end_state": "细小局部占幅后退回全貌",
+      "tags": [
+        "跨尺度推近",
+        "局部接续",
+        "反向退镜"
+      ],
+      "retrieval": {
+        "categories": [
+          "聚焦与展开"
+        ],
+        "actions": [
+          "缩放",
+          "取景变化"
+        ],
+        "entry": [
+          "集合"
+        ],
+        "exit": [
+          "集合"
+        ],
+        "holds": [
+          "内部连续"
+        ],
+        "anchors": [
+          "对象延续"
+        ]
+      },
+      "document": "cases/acoramaa-053577-original/mechanisms/m01.md",
+      "storyboard": "cases/acoramaa-053577-original/mechanisms/m01.jpg",
+      "case_slug": "acoramaa-053577",
+      "usage_group": "科技结构与局部深入",
+      "video": "cases/acoramaa-053577-original/video.mp4",
+      "source_url": "https://skillry.dev/ai-videos/opus-5-5/acoramaa-053577"
+    },
+    {
+      "id": "100-m01",
+      "title": "从并置全貌锁定一片连续推入多级局部",
+      "case_number": 100,
+      "summary": "从双片全貌中锁定一片持续靠近，外框逐步越界，内部小组接管取景。",
+      "purpose": "由完整并置进入细小范围",
+      "relation": "目标锁定逐级推近",
+      "start_state": "双片与旁小形位于远处",
+      "end_state": "密集小球局部占满画面",
+      "tags": [
+        "跨尺度推近",
+        "内部接续",
+        "局部锁定"
+      ],
+      "retrieval": {
+        "categories": [
+          "聚焦与展开"
+        ],
+        "actions": [
+          "缩放",
+          "取景变化"
+        ],
+        "entry": [
+          "并置"
+        ],
+        "exit": [
+          "集合"
+        ],
+        "holds": [
+          "内部连续"
+        ],
+        "anchors": [
+          "对象延续"
+        ]
+      },
+      "document": "cases/irinatoxi-962937-original/mechanisms/m01.md",
+      "storyboard": "cases/irinatoxi-962937-original/mechanisms/m01.jpg",
+      "case_slug": "irinatoxi-962937",
+      "usage_group": "科技结构与局部深入",
+      "video": "cases/irinatoxi-962937-original/video.mp4",
+      "source_url": "https://skillry.dev/ai-videos/opus-5-5/irinatoxi-962937"
+    },
+    {
+      "id": "110-m02",
+      "title": "字片错峰移入转正后整行缩定",
+      "case_number": 110,
+      "summary": "让字片错开进入，部分片带倾角或较大尺度，接近基线时逐步转正。",
+      "purpose": "让分离字片建立为稳定主行",
+      "relation": "错峰入场转正收势",
+      "start_state": "主行未完整",
+      "end_state": "完整字行停在稳定范围",
+      "tags": [
+        "字片错峰",
+        "转角",
+        "缩定"
+      ],
+      "retrieval": {
+        "categories": [
+          "建立与累积",
+          "排列与重组"
+        ],
+        "actions": [
+          "位移",
+          "旋转",
+          "缩放",
+          "错开"
+        ],
+        "entry": [
+          "文字组"
+        ],
+        "exit": [
+          "文字组"
+        ],
+        "holds": [
+          "结果保持"
+        ],
+        "anchors": [
+          "位置接点"
+        ]
+      },
+      "document": "cases/codestackr-328129-original/mechanisms/m02.md",
+      "storyboard": "cases/codestackr-328129-original/mechanisms/m02.jpg",
+      "case_slug": "codestackr-328129",
+      "usage_group": "标题、文字与花字",
+      "video": "cases/codestackr-328129-original/video.mp4",
+      "source_url": "https://skillry.dev/ai-videos/opus-5-5/codestackr-328129"
+    },
+    {
+      "id": "119-m01",
+      "title": "字片错开沿竖向进入落稳后下线延长",
+      "case_number": 119,
+      "summary": "先建立首行，字片从竖向错开进入目标格位，正在进入的片保留可见经过，已到位的片停住。",
+      "purpose": "由空区域建立多行排列",
+      "relation": "竖向进入错开落稳",
+      "start_state": "字片尚未齐全且下线已作参照",
+      "end_state": "多行字片齐全并保持",
+      "tags": [
+        "字片入场",
+        "竖向经过",
+        "逐片落稳"
+      ],
+      "retrieval": {
+        "categories": [
+          "建立与累积"
+        ],
+        "actions": [
+          "位移",
+          "错开"
+        ],
+        "entry": [
+          "文字组",
+          "路径"
+        ],
+        "exit": [
+          "文字组",
+          "路径"
+        ],
+        "holds": [
+          "参照保持",
+          "结果保持"
+        ],
+        "anchors": [
+          "位置接点"
+        ]
+      },
+      "document": "cases/techhalla-498547-original/mechanisms/m01.md",
+      "storyboard": "cases/techhalla-498547-original/mechanisms/m01.jpg",
+      "case_slug": "techhalla-498547",
+      "usage_group": "标题、文字与花字",
+      "video": "cases/techhalla-498547-original/video.mp4",
+      "source_url": "https://skillry.dev/ai-videos/opus-5-5/techhalla-498547"
+    },
+    {
+      "id": "036-m02",
+      "title": "中央实字保持，后层轮廓字铺满后退净",
+      "case_number": 36,
+      "summary": "保留中央实字，在后层加入重复轮廓字，逐排铺开到画面边缘。",
+      "purpose": "稳定前层与运动后层",
+      "relation": "前字不动，后字增多并退出",
+      "start_state": "中央实字完整",
+      "end_state": "外围重复字退去，主字仍在",
+      "tags": [
+        "重复铺满",
+        "前层保持",
+        "后层退出"
+      ],
+      "retrieval": {
+        "categories": [
+          "建立与累积",
+          "回收与退出"
+        ],
+        "actions": [
+          "错开",
+          "填充",
+          "显隐"
+        ],
+        "entry": [
+          "文字组"
+        ],
+        "exit": [
+          "文字组"
+        ],
+        "holds": [
+          "主体保持"
+        ],
+        "anchors": [
+          "位置接点"
+        ]
+      },
+      "document": "cases/sahildesigner23-307120-original/mechanisms/m02.md",
+      "storyboard": "cases/sahildesigner23-307120-original/mechanisms/m02.jpg",
+      "case_slug": "sahildesigner23-307120",
+      "usage_group": "标题、文字与花字",
+      "video": "cases/sahildesigner23-307120-original/video.mp4",
+      "source_url": "https://skillry.dev/ai-videos/opus-5-5/sahildesigner23-307120"
+    },
+    {
+      "id": "006-m03",
+      "title": "固定字组内强调块逐项迁移",
+      "case_number": 6,
+      "summary": "保持字组的整体位置，让小强调块逐项转移到不同词位，前一词恢复普通状态。",
+      "purpose": "依次转移局部重点",
+      "relation": "文字位置不动，仅局部强调块和内容组更新",
+      "start_state": "两行字组已在活动画面上",
+      "end_state": "强调移到后面的词，旧词恢复",
+      "tags": [
+        "逐词强调",
+        "局部替换",
+        "文字保持"
+      ],
+      "retrieval": {
+        "categories": [
+          "聚焦与展开",
+          "替换与接管"
+        ],
+        "actions": [
+          "替换",
+          "错开"
+        ],
+        "entry": [
+          "文字组"
+        ],
+        "exit": [
+          "文字组"
+        ],
+        "holds": [
+          "底层保持",
+          "主体保持",
+          "内部连续"
+        ],
+        "anchors": [
+          "位置接点",
+          "对象延续"
+        ]
+      },
+      "document": "cases/gautam-mer1-530003-original/mechanisms/m03.md",
+      "storyboard": "cases/gautam-mer1-530003-original/mechanisms/m03.jpg",
+      "case_slug": "gautam-mer1-530003",
+      "usage_group": "重点与强调",
+      "video": "cases/gautam-mer1-530003-original/video.mp4",
+      "source_url": "https://skillry.dev/ai-videos/opus-5-5/gautam-mer1-530003"
+    },
+    {
+      "id": "010-m06",
+      "title": "纵向句列上下经过，中央行清楚其余退淡",
+      "case_number": 10,
+      "summary": "让句列沿纵向经过中央区域，进入中部的句子清楚，离开中部的退淡。",
+      "purpose": "连续轮换文字重点",
+      "relation": "整列位移，中央区域控制观看重点",
+      "start_state": "中央句列已经建立",
+      "end_state": "下一句到中部清楚，前后句退淡",
+      "tags": [
+        "纵向轮换",
+        "中央聚焦"
+      ],
+      "retrieval": {
+        "categories": [
+          "替换与接管"
+        ],
+        "actions": [
+          "位移",
+          "显隐"
+        ],
+        "entry": [
+          "文字组"
+        ],
+        "exit": [
+          "文字组"
+        ],
+        "holds": [
+          "参照保持"
+        ],
+        "anchors": [
+          "方向接点",
+          "位置接点"
+        ]
+      },
+      "document": "cases/hsanat-012699-original/mechanisms/m06.md",
+      "storyboard": "cases/hsanat-012699-original/mechanisms/m06.jpg",
+      "case_slug": "hsanat-012699",
+      "usage_group": "重点与强调",
+      "video": "cases/hsanat-012699-original/video.mp4",
+      "source_url": "https://skillry.dev/ai-videos/opus-5-5/hsanat-012699"
+    },
+    {
+      "id": "086-m02",
+      "title": "全幅短条高低起伏上行建立后圈线划过",
+      "case_number": 86,
+      "summary": "让横向短条列在固定基线附近改变高度，不整体横移。",
+      "purpose": "把连续条列变化与上层指向组合",
+      "relation": "条列持续上层建立划圈",
+      "start_state": "横向短条列先出现",
+      "end_state": "短条持续变化且上行被圈定",
+      "tags": [
+        "条列起伏",
+        "圈线",
+        "上下分工"
+      ],
+      "retrieval": {
+        "categories": [
+          "环绕与往复",
+          "路径与连接"
+        ],
+        "actions": [
+          "起伏",
+          "形变",
+          "描画"
+        ],
+        "entry": [
+          "集合"
+        ],
+        "exit": [
+          "集合",
+          "文字组"
+        ],
+        "holds": [
+          "参照保持",
+          "内部连续"
+        ],
+        "anchors": [
+          "位置接点"
+        ]
+      },
+      "document": "cases/localjulius-625706-original/mechanisms/m02.md",
+      "storyboard": "cases/localjulius-625706-original/mechanisms/m02.jpg",
+      "case_slug": "localjulius-625706",
+      "usage_group": "重点与强调",
+      "video": "cases/localjulius-625706-original/video.mp4",
+      "source_url": "https://skillry.dev/ai-videos/opus-5-5/localjulius-625706"
+    },
+    {
+      "id": "014-m02",
+      "title": "图块按左右空位逐项建立，配套字随后接入",
+      "case_number": 14,
+      "summary": "从左端首块开始，在旁侧空位逐项接入图块，随后补该块下面的主字与小行。",
+      "purpose": "逐项建立并列集合",
+      "relation": "一项先完整，下一项再补入，先到者保持",
+      "start_state": "首个图块已经显出",
+      "end_state": "多个并列图块及下字齐全",
+      "tags": [
+        "横排累积",
+        "配套文字"
+      ],
+      "retrieval": {
+        "categories": [
+          "建立与累积"
+        ],
+        "actions": [
+          "错开",
+          "显隐"
+        ],
+        "entry": [
+          "单项"
+        ],
+        "exit": [
+          "并置",
+          "文字组"
+        ],
+        "holds": [
+          "结果保持"
+        ],
+        "anchors": [
+          "位置接点"
+        ]
+      },
+      "document": "cases/amitsingha89-780553-original/mechanisms/m02.md",
+      "storyboard": "cases/amitsingha89-780553-original/mechanisms/m02.jpg",
+      "case_slug": "amitsingha89-780553",
+      "usage_group": "多图并置与聚焦",
+      "video": "cases/amitsingha89-780553-original/video.mp4",
+      "source_url": "https://skillry.dev/ai-videos/opus-5-5/amitsingha89-780553"
+    },
+    {
+      "id": "003-m03",
+      "title": "集合中少量片突出，其余退淡后共同离场",
+      "case_number": 3,
+      "summary": "从已存在阵列里突出少量竖片，使它们更清楚并略向前，其余片退淡。",
+      "purpose": "从集合强调少量",
+      "relation": "前片从原阵列突出，其余留作暗后层",
+      "start_state": "竖片阵列已完整",
+      "end_state": "突出片与旧集合退出，空位交给下一组",
+      "tags": [
+        "集合选中",
+        "前景突出",
+        "退场"
+      ],
+      "retrieval": {
+        "categories": [
+          "聚焦与展开",
+          "回收与退出"
+        ],
+        "actions": [
+          "缩放",
+          "显隐",
+          "位移"
+        ],
+        "entry": [
+          "集合",
+          "网格"
+        ],
+        "exit": [
+          "文字组"
+        ],
+        "holds": [],
+        "anchors": [
+          "位置接点",
+          "对象延续"
+        ]
+      },
+      "document": "cases/twoclipping-000267-original/mechanisms/m03.md",
+      "storyboard": "cases/twoclipping-000267-original/mechanisms/m03.jpg",
+      "case_slug": "twoclipping-000267",
+      "usage_group": "多图并置与聚焦",
+      "video": "cases/twoclipping-000267-original/video.mp4",
+      "source_url": "https://skillry.dev/ai-videos/opus-5-5/twoclipping-000267"
+    },
+    {
+      "id": "015-m05",
+      "title": "全幅收成并列竖片，圆层接管后缩为锚点",
+      "case_number": 15,
+      "summary": "将多个全幅各自收成并列竖片，集合建立后保持。",
+      "purpose": "集合收束到小形",
+      "relation": "先收全幅为集合，再以圆层集中观看",
+      "start_state": "末层占满画面",
+      "end_state": "小圆点成为标记起点",
+      "tags": [
+        "缩回",
+        "并列集合",
+        "圆形收束"
+      ],
+      "retrieval": {
+        "categories": [
+          "排列与重组",
+          "聚焦与展开"
+        ],
+        "actions": [
+          "缩放",
+          "错开",
+          "遮挡"
+        ],
+        "entry": [
+          "平面"
+        ],
+        "exit": [
+          "单项"
+        ],
+        "holds": [],
+        "anchors": [
+          "轮廓接点",
+          "对象延续"
+        ]
+      },
+      "document": "cases/thismacapital-375808-original/mechanisms/m05.md",
+      "storyboard": "cases/thismacapital-375808-original/mechanisms/m05.jpg",
+      "case_slug": "thismacapital-375808",
+      "usage_group": "多图并置与聚焦",
+      "video": "cases/thismacapital-375808-original/video.mp4",
+      "source_url": "https://skillry.dev/ai-videos/opus-5-5/thismacapital-375808"
+    },
+    {
+      "id": "014-m01",
+      "title": "后层缓慢移动，前方字组逐行显出",
+      "case_number": 14,
+      "summary": "保留后层缓慢移动，先显出主行，再补下一行与附属小字。",
+      "purpose": "在持续底层建立文字",
+      "relation": "文字固定建立，后层继续小幅运动",
+      "start_state": "底层已经在场",
+      "end_state": "主副行及附属字完整",
+      "tags": [
+        "逐行显现",
+        "前后分层"
+      ],
+      "retrieval": {
+        "categories": [
+          "建立与累积"
+        ],
+        "actions": [
+          "显隐",
+          "错开"
+        ],
+        "entry": [
+          "平面"
+        ],
+        "exit": [
+          "文字组",
+          "平面"
+        ],
+        "holds": [
+          "底层保持",
+          "内部连续"
+        ],
+        "anchors": [
+          "位置接点"
+        ]
+      },
+      "document": "cases/amitsingha89-780553-original/mechanisms/m01.md",
+      "storyboard": "cases/amitsingha89-780553-original/mechanisms/m01.jpg",
+      "case_slug": "amitsingha89-780553",
+      "usage_group": "影像叠字与标注",
+      "video": "cases/amitsingha89-780553-original/video.mp4",
+      "source_url": "https://skillry.dev/ai-videos/opus-5-5/amitsingha89-780553"
+    },
+    {
+      "id": "005-m03",
+      "title": "活动横框稳定，角落标签错开补入",
+      "case_number": 5,
+      "summary": "先保留横框内持续活动，再在上角、侧边、下角错开补入短标签。",
+      "purpose": "固定画面追加说明",
+      "relation": "活动内容持续，附属标记按位置错开建立",
+      "start_state": "横向活动框已建立",
+      "end_state": "角落与侧边标签齐全",
+      "tags": [
+        "活动保持",
+        "角标",
+        "错峰补入"
+      ],
+      "retrieval": {
+        "categories": [
+          "建立与累积"
+        ],
+        "actions": [
+          "错开",
+          "显隐"
+        ],
+        "entry": [
+          "外框"
+        ],
+        "exit": [
+          "外框",
+          "文字组"
+        ],
+        "holds": [
+          "外框保持",
+          "结果保持",
+          "内部连续"
+        ],
+        "anchors": [
+          "位置接点"
+        ]
+      },
+      "document": "cases/drrickio-009558-original/mechanisms/m03.md",
+      "storyboard": "cases/drrickio-009558-original/mechanisms/m03.jpg",
+      "case_slug": "drrickio-009558",
+      "usage_group": "影像叠字与标注",
+      "video": "cases/drrickio-009558-original/video.mp4",
+      "source_url": "https://skillry.dev/ai-videos/opus-5-5/drrickio-009558"
+    },
+    {
+      "id": "015-m04",
+      "title": "斜向带经过，后缘揭出下一全幅与字组",
+      "case_number": 15,
+      "summary": "让斜向宽带从边缘经过，先遮住旧层，再由后缘揭出新全幅。",
+      "purpose": "斜向覆盖换场",
+      "relation": "斜带负责遮蔽，后缘露出下一层",
+      "start_state": "当前全幅已经清楚",
+      "end_state": "新全幅接管，下字接入",
+      "tags": [
+        "斜向擦过",
+        "全屏替换"
+      ],
+      "retrieval": {
+        "categories": [
+          "覆盖与揭示",
+          "替换与接管"
+        ],
+        "actions": [
+          "位移",
+          "遮挡"
+        ],
+        "entry": [
+          "平面"
+        ],
+        "exit": [
+          "平面",
+          "文字组"
+        ],
+        "holds": [],
+        "anchors": [
+          "方向接点"
+        ]
+      },
+      "document": "cases/thismacapital-375808-original/mechanisms/m04.md",
+      "storyboard": "cases/thismacapital-375808-original/mechanisms/m04.jpg",
+      "case_slug": "thismacapital-375808",
+      "usage_group": "转场与处理进度",
+      "video": "cases/thismacapital-375808-original/video.mp4",
+      "source_url": "https://skillry.dev/ai-videos/opus-5-5/thismacapital-375808"
+    },
+    {
+      "id": "006-m07",
+      "title": "内部片收小，进度环增长后接入完成标记",
+      "case_number": 6,
+      "summary": "保持竖框，将内部图像收成较小竖片，周围进度环逐步增长，数值持续更换。",
+      "purpose": "从处理中交出结果",
+      "relation": "内部内容缩小让出进度区，外框保持",
+      "start_state": "竖框内大图与下方行文可见",
+      "end_state": "内部小片完成，环与勾形留场",
+      "tags": [
+        "缩小",
+        "环形进度",
+        "结果接管"
+      ],
+      "retrieval": {
+        "categories": [
+          "聚焦与展开",
+          "替换与接管"
+        ],
+        "actions": [
+          "缩放",
+          "填充",
+          "替换"
+        ],
+        "entry": [
+          "外框",
+          "内层"
+        ],
+        "exit": [
+          "外框",
+          "并置"
+        ],
+        "holds": [
+          "外框保持",
+          "内部连续"
+        ],
+        "anchors": [
+          "对象延续",
+          "位置接点"
+        ]
+      },
+      "document": "cases/gautam-mer1-530003-original/mechanisms/m07.md",
+      "storyboard": "cases/gautam-mer1-530003-original/mechanisms/m07.jpg",
+      "case_slug": "gautam-mer1-530003",
+      "usage_group": "转场与处理进度",
+      "video": "cases/gautam-mer1-530003-original/video.mp4",
+      "source_url": "https://skillry.dev/ai-videos/opus-5-5/gautam-mer1-530003"
+    }
+  ],
+  "videos": [
+    {
+      "case_number": 56,
+      "slug": "aylmerth-356252",
+      "title": "资讯数据与排名图表",
+      "author": "AylmerTH",
+      "duration": 50.09,
+      "media": "cases/aylmerth-356252-original/video.mp4",
+      "media_sha256": "2d3494a8e8a2a1c671719955a5dd0f4a2e2a7efa8fdaf51448abbcb525e1886e",
+      "source_url": "https://skillry.dev/ai-videos/opus-5-5/aylmerth-356252"
+    },
+    {
+      "case_number": 54,
+      "slug": "nikolajankovic-616097",
+      "title": "手绘图表与故事解释",
+      "author": "_nikolajankovic",
+      "duration": 58.0,
+      "media": "cases/nikolajankovic-616097-original/video.mp4",
+      "media_sha256": "17cf0553534b93728a3ba8ff5580a44effdc60325e00bb6a037e3c6f677d9fec",
+      "source_url": "https://skillry.dev/ai-videos/opus-5-5/nikolajankovic-616097"
+    },
+    {
+      "case_number": 51,
+      "slug": "l3d1c-632524",
+      "title": "新闻产品与文章排版",
+      "author": "l3d1c",
+      "duration": 34.087007,
+      "media": "cases/l3d1c-632524-original/video.mp4",
+      "media_sha256": "4a881e28a9bb5f3f83fe5f1b5bc9b0b7ef40823d8c198216352d5c9e2fc0567d",
+      "source_url": "https://skillry.dev/ai-videos/opus-5-5/l3d1c-632524"
+    },
+    {
+      "case_number": 107,
+      "slug": "dheepanratnam-706454",
+      "title": "品牌能力巡览与港湾影像标注",
+      "author": "Dheepanratnam",
+      "duration": 58.048,
+      "media": "cases/dheepanratnam-706454-original/video.mp4",
+      "media_sha256": "0c8b109f96f4f1463b34bedd508e187e94ed7d380aadf4a86d016ba9c4db738c",
+      "source_url": "https://skillry.dev/ai-videos/opus-5-5/dheepanratnam-706454"
+    },
+    {
+      "case_number": 53,
+      "slug": "stewchan2-369810",
+      "title": "关系网络与层级展开",
+      "author": "stewchan2",
+      "duration": 114.048,
+      "media": "cases/stewchan2-369810-original/video.mp4",
+      "media_sha256": "5c8c05324861c0dbd2fbdfa3be6aa649143b9b70b2f16c6ede447e09a5f99001",
+      "source_url": "https://skillry.dev/ai-videos/opus-5-5/stewchan2-369810"
+    },
+    {
+      "case_number": 97,
+      "slug": "anirockshady-032809",
+      "title": "曲面空间与学习过程",
+      "author": "anirockshady",
+      "duration": 56.966667,
+      "media": "cases/anirockshady-032809-original/video.mp4",
+      "media_sha256": "747d0ea218cfc723f0ca07b1ee4c28dfc2c3e868ee3d7dcb7df6a4fa234eb3ef",
+      "source_url": "https://skillry.dev/ai-videos/opus-5-5/anirockshady-032809"
+    },
+    {
+      "case_number": 68,
+      "slug": "doubleunplussed-181894",
+      "title": "AI与线性代数文化音乐动画",
+      "author": "doubleunplussed",
+      "duration": 262.06,
+      "media": "cases/doubleunplussed-181894-original/video.mp4",
+      "media_sha256": "043a7014f924e7b05cdbdbf5678e6fd8a3ba02450e55faf43b1d6a01f0b75f59",
+      "source_url": "https://skillry.dev/ai-videos/opus-5-5/doubleunplussed-181894"
+    },
+    {
+      "case_number": 94,
+      "slug": "mdaman010-111079",
+      "title": "数据中心三维系统与设备层级交互演示",
+      "author": "mdaman010",
+      "duration": 97.962,
+      "media": "cases/mdaman010-111079-original/video.mp4",
+      "media_sha256": "1e3bfcfdb7bc82ff583f32511bbdc0681daec942a918f761017219f74996911b",
+      "source_url": "https://skillry.dev/ai-videos/opus-5-5/mdaman010-111079"
+    },
+    {
+      "case_number": 98,
+      "slug": "acoramaa-053577",
+      "title": "电脑结构与微观推进",
+      "author": "Acoramaa",
+      "duration": 44.0,
+      "media": "cases/acoramaa-053577-original/video.mp4",
+      "media_sha256": "031c5973d5f79f52efaf320e58444ac8fd8d8279d17034a5a4f2bd3978826498",
+      "source_url": "https://skillry.dev/ai-videos/opus-5-5/acoramaa-053577"
+    },
+    {
+      "case_number": 100,
+      "slug": "irinatoxi-962937",
+      "title": "手机到芯片与原子尺度",
+      "author": "irinatoxi",
+      "duration": 22.43,
+      "media": "cases/irinatoxi-962937-original/video.mp4",
+      "media_sha256": "58967b83135d9c84d73386e4f9c813b6fcf4c5291af469d2d1e41d2f66023b71",
+      "source_url": "https://skillry.dev/ai-videos/opus-5-5/irinatoxi-962937"
+    },
+    {
+      "case_number": 110,
+      "slug": "codestackr-328129",
+      "title": "字体、空间与曲线示意",
+      "author": "codeSTACKr",
+      "duration": 15.061,
+      "media": "cases/codestackr-328129-original/video.mp4",
+      "media_sha256": "f4945eac8445706d1bbadf208ff0c51d3d85447af3db0e0354c248f77df8955f",
+      "source_url": "https://skillry.dev/ai-videos/opus-5-5/codestackr-328129"
+    },
+    {
+      "case_number": 119,
+      "slug": "techhalla-498547",
+      "title": "荧光色动态文字海报",
+      "author": "techhalla",
+      "duration": 20.053,
+      "media": "cases/techhalla-498547-original/video.mp4",
+      "media_sha256": "266fc697daa4c9a9280d806687513c1d545d950ebcc8a0ca5deca94b9c776540",
+      "source_url": "https://skillry.dev/ai-videos/opus-5-5/techhalla-498547"
+    },
+    {
+      "case_number": 36,
+      "slug": "sahildesigner23-307120",
+      "title": "金属物体与手机画面",
+      "author": "sahildesigner23",
+      "duration": 14.93,
+      "media": "cases/sahildesigner23-307120-original/video.mp4",
+      "media_sha256": "755a9c8bff380e9ed9b01b286de0289f05bb159f2296c636c7f73a83580133a6",
+      "source_url": "https://skillry.dev/ai-videos/opus-5-5/sahildesigner23-307120"
+    },
+    {
+      "case_number": 6,
+      "slug": "gautam-mer1-530003",
+      "title": "手机中的人物与数字人展示",
+      "author": "gautam_mer1",
+      "duration": 30.07,
+      "media": "cases/gautam-mer1-530003-original/video.mp4",
+      "media_sha256": "97ff59026114713b24865f9bd66d58050a48c44970d7e25aa2a929f56ec7eb4d",
+      "source_url": "https://skillry.dev/ai-videos/opus-5-5/gautam-mer1-530003"
+    },
+    {
+      "case_number": 10,
+      "slug": "hsanat-012699",
+      "title": "手机录音与人物视频窗口",
+      "author": "hSanat",
+      "duration": 70.8,
+      "media": "cases/hsanat-012699-original/video.mp4",
+      "media_sha256": "e04846abbb6e2ad648a94e5beff04142117c326df7d804885ea6d60ee3a95b00",
+      "source_url": "https://skillry.dev/ai-videos/opus-5-5/hsanat-012699"
+    },
+    {
+      "case_number": 86,
+      "slug": "localjulius-625706",
+      "title": "角色插画、音频与画面窗口",
+      "author": "localjulius",
+      "duration": 52.6,
+      "media": "cases/localjulius-625706-original/video.mp4",
+      "media_sha256": "6357c03ce55289d21de9857c2a25967d09264d6c713d875f222dec3054ca7972",
+      "source_url": "https://skillry.dev/ai-videos/opus-5-5/localjulius-625706"
+    },
+    {
+      "case_number": 14,
+      "slug": "amitsingha89-780553",
+      "title": "织物照片与品牌叙事",
+      "author": "AmitSingha89",
+      "duration": 54.0,
+      "media": "cases/amitsingha89-780553-original/video.mp4",
+      "media_sha256": "415d9df551acaf67fbc33a14d98d77154e55be86ae26ff949a1fe49716c6603b",
+      "source_url": "https://skillry.dev/ai-videos/opus-5-5/amitsingha89-780553"
+    },
+    {
+      "case_number": 3,
+      "slug": "twoclipping-000267",
+      "title": "人物视频墙与手机展示",
+      "author": "twoclipping",
+      "duration": 20.061995,
+      "media": "cases/twoclipping-000267-original/video.mp4",
+      "media_sha256": "9e23af174735ebd4ff1a9c4551fe6a01c8bc82bf013e662e1f29f67b72eba764",
+      "source_url": "https://skillry.dev/ai-videos/opus-5-5/twoclipping-000267"
+    },
+    {
+      "case_number": 15,
+      "slug": "thismacapital-375808",
+      "title": "旅行影像与品牌排版",
+      "author": "thismacapital",
+      "duration": 15.061,
+      "media": "cases/thismacapital-375808-original/video.mp4",
+      "media_sha256": "0c01f0e8745891818f39dc91027c48abf6a81785426cbd6fc557e89261c77f0e",
+      "source_url": "https://skillry.dev/ai-videos/opus-5-5/thismacapital-375808"
+    },
+    {
+      "case_number": 5,
+      "slug": "drrickio-009558",
+      "title": "数字人画面与产品介绍",
+      "author": "drrickio",
+      "duration": 60.053,
+      "media": "cases/drrickio-009558-original/video.mp4",
+      "media_sha256": "61cf6bd985d5b540d24e7e01285fe7e1dabae38c7fbbebbf4fa12a1ff646fa6a",
+      "source_url": "https://skillry.dev/ai-videos/opus-5-5/drrickio-009558"
+    }
+  ],
+  "files": [
+    {
+      "path": "cases/aylmerth-356252-original/video.mp4",
+      "bytes": 1501838,
+      "sha256": "2d3494a8e8a2a1c671719955a5dd0f4a2e2a7efa8fdaf51448abbcb525e1886e"
+    },
+    {
+      "path": "cases/nikolajankovic-616097-original/video.mp4",
+      "bytes": 5923045,
+      "sha256": "17cf0553534b93728a3ba8ff5580a44effdc60325e00bb6a037e3c6f677d9fec"
+    },
+    {
+      "path": "cases/l3d1c-632524-original/video.mp4",
+      "bytes": 1880905,
+      "sha256": "4a881e28a9bb5f3f83fe5f1b5bc9b0b7ef40823d8c198216352d5c9e2fc0567d"
+    },
+    {
+      "path": "cases/dheepanratnam-706454-original/video.mp4",
+      "bytes": 3111056,
+      "sha256": "0c8b109f96f4f1463b34bedd508e187e94ed7d380aadf4a86d016ba9c4db738c"
+    },
+    {
+      "path": "cases/stewchan2-369810-original/video.mp4",
+      "bytes": 4443198,
+      "sha256": "5c8c05324861c0dbd2fbdfa3be6aa649143b9b70b2f16c6ede447e09a5f99001"
+    },
+    {
+      "path": "cases/anirockshady-032809-original/video.mp4",
+      "bytes": 1781043,
+      "sha256": "747d0ea218cfc723f0ca07b1ee4c28dfc2c3e868ee3d7dcb7df6a4fa234eb3ef"
+    },
+    {
+      "path": "cases/doubleunplussed-181894-original/video.mp4",
+      "bytes": 43844458,
+      "sha256": "043a7014f924e7b05cdbdbf5678e6fd8a3ba02450e55faf43b1d6a01f0b75f59"
+    },
+    {
+      "path": "cases/mdaman010-111079-original/video.mp4",
+      "bytes": 10432665,
+      "sha256": "1e3bfcfdb7bc82ff583f32511bbdc0681daec942a918f761017219f74996911b"
+    },
+    {
+      "path": "cases/acoramaa-053577-original/video.mp4",
+      "bytes": 8367804,
+      "sha256": "031c5973d5f79f52efaf320e58444ac8fd8d8279d17034a5a4f2bd3978826498"
+    },
+    {
+      "path": "cases/irinatoxi-962937-original/video.mp4",
+      "bytes": 4971733,
+      "sha256": "58967b83135d9c84d73386e4f9c813b6fcf4c5291af469d2d1e41d2f66023b71"
+    },
+    {
+      "path": "cases/codestackr-328129-original/video.mp4",
+      "bytes": 2568727,
+      "sha256": "f4945eac8445706d1bbadf208ff0c51d3d85447af3db0e0354c248f77df8955f"
+    },
+    {
+      "path": "cases/techhalla-498547-original/video.mp4",
+      "bytes": 1163960,
+      "sha256": "266fc697daa4c9a9280d806687513c1d545d950ebcc8a0ca5deca94b9c776540"
+    },
+    {
+      "path": "cases/sahildesigner23-307120-original/video.mp4",
+      "bytes": 2151937,
+      "sha256": "755a9c8bff380e9ed9b01b286de0289f05bb159f2296c636c7f73a83580133a6"
+    },
+    {
+      "path": "cases/gautam-mer1-530003-original/video.mp4",
+      "bytes": 2073352,
+      "sha256": "97ff59026114713b24865f9bd66d58050a48c44970d7e25aa2a929f56ec7eb4d"
+    },
+    {
+      "path": "cases/hsanat-012699-original/video.mp4",
+      "bytes": 4666282,
+      "sha256": "e04846abbb6e2ad648a94e5beff04142117c326df7d804885ea6d60ee3a95b00"
+    },
+    {
+      "path": "cases/localjulius-625706-original/video.mp4",
+      "bytes": 4107632,
+      "sha256": "6357c03ce55289d21de9857c2a25967d09264d6c713d875f222dec3054ca7972"
+    },
+    {
+      "path": "cases/amitsingha89-780553-original/video.mp4",
+      "bytes": 2198624,
+      "sha256": "415d9df551acaf67fbc33a14d98d77154e55be86ae26ff949a1fe49716c6603b"
+    },
+    {
+      "path": "cases/twoclipping-000267-original/video.mp4",
+      "bytes": 1891538,
+      "sha256": "9e23af174735ebd4ff1a9c4551fe6a01c8bc82bf013e662e1f29f67b72eba764"
+    },
+    {
+      "path": "cases/thismacapital-375808-original/video.mp4",
+      "bytes": 1812002,
+      "sha256": "0c01f0e8745891818f39dc91027c48abf6a81785426cbd6fc557e89261c77f0e"
+    },
+    {
+      "path": "cases/drrickio-009558-original/video.mp4",
+      "bytes": 4686788,
+      "sha256": "61cf6bd985d5b540d24e7e01285fe7e1dabae38c7fbbebbf4fa12a1ff646fa6a"
+    },
+    {
+      "path": "cases/aylmerth-356252-original/mechanisms/m01.md",
+      "bytes": 1397,
+      "sha256": "6bfe8ac1e0b8b01d8e56a6d46d7e1b7c8824f76890187bacfc143a0c7977b8d8"
+    },
+    {
+      "path": "cases/aylmerth-356252-original/mechanisms/m01.jpg",
+      "bytes": 159586,
+      "sha256": "c29b593100776b6bd995d199051c102b4bbdafcecbc9caab76c57ddcdced379d"
+    },
+    {
+      "path": "cases/nikolajankovic-616097-original/mechanisms/m03.md",
+      "bytes": 1180,
+      "sha256": "6a6574ae10b59e081b50ed6184ff422ede2f5e70f21d44fb37cfc97e15b723af"
+    },
+    {
+      "path": "cases/nikolajankovic-616097-original/mechanisms/m03.jpg",
+      "bytes": 157665,
+      "sha256": "f701ce040c15497a923595af280076466f7bbe681a6ce976576c2281a3ba8973"
+    },
+    {
+      "path": "cases/l3d1c-632524-original/mechanisms/m03.md",
+      "bytes": 1432,
+      "sha256": "7f04a14cfa58bca0672ab9881081465d5453ae040f02194797f12e6a64f92a99"
+    },
+    {
+      "path": "cases/l3d1c-632524-original/mechanisms/m03.jpg",
+      "bytes": 224194,
+      "sha256": "6ba8f75e668f28b915de98bb1c6932df8cff9aa980f4115c7ff378588f29f722"
+    },
+    {
+      "path": "cases/dheepanratnam-706454-original/mechanisms/m04.md",
+      "bytes": 1214,
+      "sha256": "d9c65c62fd56f8d5e0225886883f47da2b9180f494a4154e6fabda1dc37e1617"
+    },
+    {
+      "path": "cases/dheepanratnam-706454-original/mechanisms/m04.jpg",
+      "bytes": 208154,
+      "sha256": "e1570cbd3ac60fa0ffcec22a1da5c4a663c7259478ce936f515448b48b97d77c"
+    },
+    {
+      "path": "cases/stewchan2-369810-original/mechanisms/m03.md",
+      "bytes": 1262,
+      "sha256": "f7004b8758cdd259beaece2a48637087df87fb41e2ece08b92d99097e87b2ffc"
+    },
+    {
+      "path": "cases/stewchan2-369810-original/mechanisms/m03.jpg",
+      "bytes": 147876,
+      "sha256": "c55c16c30dc07e55a1b8d1f549a8c882db5303a26fed888b54cc5a83f09507ff"
+    },
+    {
+      "path": "cases/anirockshady-032809-original/mechanisms/m04.md",
+      "bytes": 1207,
+      "sha256": "a17175b923d234793b6c9d06cdbccd1ad0a44f10b55aefd239b69d4870112419"
+    },
+    {
+      "path": "cases/anirockshady-032809-original/mechanisms/m04.jpg",
+      "bytes": 232443,
+      "sha256": "7377fee8946ef2b513bb704613bf5a76d5f3f55e88a70a845cbcc47b971104b1"
+    },
+    {
+      "path": "cases/doubleunplussed-181894-original/mechanisms/m02.md",
+      "bytes": 1201,
+      "sha256": "6ff57b6980f61a72e2617f4aa514b94212019bdaef58f87df834cdc9f88a7536"
+    },
+    {
+      "path": "cases/doubleunplussed-181894-original/mechanisms/m02.jpg",
+      "bytes": 211990,
+      "sha256": "7b60518891d1f598e7b95dc41d8658b43fb889881c536312ce5abddd77aa00fb"
+    },
+    {
+      "path": "cases/mdaman010-111079-original/mechanisms/m04.md",
+      "bytes": 1216,
+      "sha256": "ab8ba9576a9ddd1b8d14e4b0e26720db8ce02ea4ef6f07dcbbae17db35bdd68f"
+    },
+    {
+      "path": "cases/mdaman010-111079-original/mechanisms/m04.jpg",
+      "bytes": 155251,
+      "sha256": "1dc49470a3cd8b59c7c94ed4adf1c15d788d9caacaff9f30d47a171767ca6b4a"
+    },
+    {
+      "path": "cases/acoramaa-053577-original/mechanisms/m01.md",
+      "bytes": 1216,
+      "sha256": "d033f81aff730a84ce7971ee41249f4cffdfafa1b366776151ae15f7fa373552"
+    },
+    {
+      "path": "cases/acoramaa-053577-original/mechanisms/m01.jpg",
+      "bytes": 352730,
+      "sha256": "e1e693283d1c91b1c45d4ad2ebc821da71c4ca1c1e4166b9eaef5a2ae89b1450"
+    },
+    {
+      "path": "cases/irinatoxi-962937-original/mechanisms/m01.md",
+      "bytes": 1160,
+      "sha256": "49814d4ab4a1d6d1cf3c7de66bc388ead216dc5d31f6baac85347625eecdb692"
+    },
+    {
+      "path": "cases/irinatoxi-962937-original/mechanisms/m01.jpg",
+      "bytes": 305028,
+      "sha256": "437b84663f2019207469b220bbe416ca702caf4cc5535031ed03f967bdc3b3d8"
+    },
+    {
+      "path": "cases/codestackr-328129-original/mechanisms/m02.md",
+      "bytes": 1094,
+      "sha256": "bf0d6eb8004c58fb63dab0ee78a19b97969059e24f44bc5c34b985058a6bf490"
+    },
+    {
+      "path": "cases/codestackr-328129-original/mechanisms/m02.jpg",
+      "bytes": 110162,
+      "sha256": "0672942cd83beaf35798d0f91fcb6b87277b2ea0dbd1c985970cd59f6ed27c85"
+    },
+    {
+      "path": "cases/techhalla-498547-original/mechanisms/m01.md",
+      "bytes": 1217,
+      "sha256": "a8ffd5b6aa5a703a8768d514510c77b225c405ba2957227844cce145217e6524"
+    },
+    {
+      "path": "cases/techhalla-498547-original/mechanisms/m01.jpg",
+      "bytes": 163973,
+      "sha256": "3dcbe4b0e4df36ee3d9c33828f88bdcbe2896712bda4434367a91958e8a36683"
+    },
+    {
+      "path": "cases/sahildesigner23-307120-original/mechanisms/m02.md",
+      "bytes": 1138,
+      "sha256": "7c8c36d9ce56f9b48931cbc0c38ccd00bd165785c70eb5ff83ad89cae66fac09"
+    },
+    {
+      "path": "cases/sahildesigner23-307120-original/mechanisms/m02.jpg",
+      "bytes": 166488,
+      "sha256": "cf54e1e00c866f9473a34b3d11c8cb8883c5ad45a6ca5606840f9158a0d4a84e"
+    },
+    {
+      "path": "cases/gautam-mer1-530003-original/mechanisms/m03.md",
+      "bytes": 1167,
+      "sha256": "24e4b33ae2f65c326c0ae7b9ac01027d3e093b87ce4103e2f70ce6d5bd45a884"
+    },
+    {
+      "path": "cases/gautam-mer1-530003-original/mechanisms/m03.jpg",
+      "bytes": 283383,
+      "sha256": "876048f64112a0097cf4aae16d5d4478722ab2c43e9ab7e04cd425f1e0ab96e3"
+    },
+    {
+      "path": "cases/hsanat-012699-original/mechanisms/m06.md",
+      "bytes": 1104,
+      "sha256": "b194e2bf4b786b6c76f1a454705547bf880d6415ba7386db7ac35222ba7f6e81"
+    },
+    {
+      "path": "cases/hsanat-012699-original/mechanisms/m06.jpg",
+      "bytes": 116498,
+      "sha256": "7ba39d9b3de92300718f5c1affb11db7f7065596d834b76e440a5fc482e5ee08"
+    },
+    {
+      "path": "cases/localjulius-625706-original/mechanisms/m02.md",
+      "bytes": 1192,
+      "sha256": "7269b713d6f7bcd570c2fd2ffcf8c9c241c46e29debd279d09aa42cdc6d0946c"
+    },
+    {
+      "path": "cases/localjulius-625706-original/mechanisms/m02.jpg",
+      "bytes": 95249,
+      "sha256": "5fbdb0e01b8b0c783777ddaac68ad94029ae0b8093b005917b9d3d2c76caca00"
+    },
+    {
+      "path": "cases/amitsingha89-780553-original/mechanisms/m02.md",
+      "bytes": 1155,
+      "sha256": "3dd46564036dc9469e29f96434a903bc2f944eb911d4022a9d2fafc8ea6b0e34"
+    },
+    {
+      "path": "cases/amitsingha89-780553-original/mechanisms/m02.jpg",
+      "bytes": 107272,
+      "sha256": "f30b581e2f9f42520881167edacaef77a97f6b152ae85dadcf05aa96ee6c0633"
+    },
+    {
+      "path": "cases/twoclipping-000267-original/mechanisms/m03.md",
+      "bytes": 1156,
+      "sha256": "8cb5223ca44f0155a364e3dce8e834f430ee9a567f12c942413e764d66605957"
+    },
+    {
+      "path": "cases/twoclipping-000267-original/mechanisms/m03.jpg",
+      "bytes": 147405,
+      "sha256": "ed8df67b53fcc598124f53c5b8b71aae08db0e2094b38a95678778b4f9fee5eb"
+    },
+    {
+      "path": "cases/thismacapital-375808-original/mechanisms/m05.md",
+      "bytes": 1073,
+      "sha256": "031d47bb57a6861f51aafe2f258e8cb5a811577f4ca566c439606d89807c3e84"
+    },
+    {
+      "path": "cases/thismacapital-375808-original/mechanisms/m05.jpg",
+      "bytes": 155171,
+      "sha256": "eaa6bd5908fb2230a938c22509a04b95ea3058d44d116f90a4697c3424138ad7"
+    },
+    {
+      "path": "cases/amitsingha89-780553-original/mechanisms/m01.md",
+      "bytes": 1017,
+      "sha256": "59d2e82f5ffc94f86707d0c3ffc4ef079a625853d607aa764da096abc8967855"
+    },
+    {
+      "path": "cases/amitsingha89-780553-original/mechanisms/m01.jpg",
+      "bytes": 92720,
+      "sha256": "d4144bae7cadeb2eb767033214f445e30352bed8bb7423f23552e99293c904ce"
+    },
+    {
+      "path": "cases/drrickio-009558-original/mechanisms/m03.md",
+      "bytes": 1101,
+      "sha256": "4690f05acb6c896cbd29ed547a4c4299c35f36fd468afdf1dd05b9dd6f12f835"
+    },
+    {
+      "path": "cases/drrickio-009558-original/mechanisms/m03.jpg",
+      "bytes": 88916,
+      "sha256": "f0a6419641384164a1fe902f914f6b40df84d60a29991eb05e89713cadad44dd"
+    },
+    {
+      "path": "cases/thismacapital-375808-original/mechanisms/m04.md",
+      "bytes": 1027,
+      "sha256": "3f958973be0b9aa0aaaa0df1e8b88619193280df93157ae12fc002b9ae3f2eed"
+    },
+    {
+      "path": "cases/thismacapital-375808-original/mechanisms/m04.jpg",
+      "bytes": 151786,
+      "sha256": "bd5a862791eaee34a2dea31d8b813fc80302925a1c68b82c1c7fdac4d28d2b32"
+    },
+    {
+      "path": "cases/gautam-mer1-530003-original/mechanisms/m07.md",
+      "bytes": 1215,
+      "sha256": "11c2be25d9246dfdde3b9c6d752592d1c530466e639ac4f9a91016e35708c95d"
+    },
+    {
+      "path": "cases/gautam-mer1-530003-original/mechanisms/m07.jpg",
+      "bytes": 169689,
+      "sha256": "40af96b1ab1ba39cb0124bff3e526e1a5e5323da529128edf5eaeb4191fa47ff"
+    }
+  ]
+}

@@ -32,7 +32,9 @@ Render 先读取本任务下载并冻结的模板、完整原稿及确认内容�
 
 按 references/production-flow.md 组织工作，
 按 references/motion-design.md 接入本期工程与真实配音时间轴。
-需要本地动效参考时，按导演 Skill 的按需入口检索；
+需要本地动效参考时，按导演 Skill 的统一入口检索少量文字候选；
+带源码案例与动作拆解按各自方式采用，入围后才读说明、看图，必要时看视频或源码；
+不在任务开始时加载全库清单、案例正文或媒体，也不强制每段采用参考。
 需要补充外站案例时再查 references/motion-reference-cases.md；
 实现技术按 references/technical-routing.md 选择。
 

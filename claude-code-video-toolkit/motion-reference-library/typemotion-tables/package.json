@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "render": "node scripts/render.mjs",
-    "find": "node scripts/find.mjs",
+    "find": "node ../scripts/find.mjs",
     "check": "tsc --noEmit"
   },
   "dependencies": {
