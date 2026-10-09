@@ -24,15 +24,16 @@ Render 先读取本任务下载并冻结的模板、完整原稿及确认内容�
 再结合本次任务要求确定创作边界。不得沿用其他模板的元素或布局，
 也不得把参考片所有画面自动视为锁定；创作区域可以是局部或全屏。
 
-设计正文前读取 ../directing-motion-art/SKILL.md，
-将内容写成具体观看过程，保存完整当前导演指令。
-深化和实现前读取 ../motion-design-production/SKILL.md，
-完成主体造型、美术、构图、连续运动和实际预览修订。
-两步由当前 Render 执行，不自动新增 Agent 或用户审批。
+设计正文前读取 ../directing-motion-art/SKILL.md 与
+../motion-design-production/SKILL.md，结合导演和美术两个视角理解内容、
+确定主体与观看过程。候选参考共同评估后再深化实现，
+将结论与修订保存到同一份当前导演指令或章节 brief。
+由当前 Render 连贯完成设计、试作和修订，不新增 Agent、调用轮次或用户审批。
 
 按 references/production-flow.md 组织工作，
 按 references/motion-design.md 接入本期工程与真实配音时间轴。
-需要参考时查 references/motion-reference-cases.md；
+需要本地动效参考时，按导演 Skill 的按需入口检索；
+需要补充外站案例时再查 references/motion-reference-cases.md；
 实现技术按 references/technical-routing.md 选择。
 
 组件选择服从演出，不把完整导演指令压缩成布局名称。
@@ -47,4 +48,4 @@ Render 先读取本任务下载并冻结的模板、完整原稿及确认内容�
 
 当前任务动画代码、布局、字幕和时间轴问题应在 project 中自行调整并重验，不能第一次报错就结束整个制作。共享工具、公共校验、依赖或协议存在缺陷时只读诊断并保存证据，返回 needs_input，交给人管理；不放宽检查求通过。收费账本由 toolkit 维护，未知收费结果不得自动重发。工具的一次退出和一轮回复结束都不代表视频完成，后续制作动作由 Codex 按共用制作流程决定。
 
-不进入交互式 /video、/scene-review、/generate-voiceover 或发布流程。音色使用当前授权配置或模板有效默认，缺失则请求人工补齐；不新增试听或静帧人工审批。截图检查不等于播放，音频测量不等于试听，记录真实检查范围。
+不进入交互式 /video、/scene-review、/generate-voiceover 或发布流程。音色必须使用已配置角色音色：先读角色映射，清单 role 使用配置键，speaker 与对应配置完全一致，禁止自行换音色或采用模板默认覆盖配置。调用前音色校验失败时修正清单后继续，只有配置确实缺失才请求人工补齐；不新增试听或静帧人工审批。截图检查不等于播放，音频测量不等于试听，记录真实检查范围。

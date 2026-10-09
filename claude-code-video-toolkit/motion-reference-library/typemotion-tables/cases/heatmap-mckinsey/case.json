@@ -1,0 +1,42 @@
+{
+  "id": "heatmap-mckinsey",
+  "title": "商务热力图",
+  "component": "Matrix",
+  "module": "matrix",
+  "theme": "consulting",
+  "tags": [
+    "矩阵",
+    "商务",
+    "分布"
+  ],
+  "beats": [
+    "低对比网格",
+    "蓝色强度递进",
+    "标尺补齐"
+  ],
+  "limit": "相同强度必须表示相同数值",
+  "source": "https://typemotion.art/templates/tables/heatmap-mckinsey",
+  "sourceStatus": "依据公开预览独立重写，非原站源码，未声明逐像素复刻",
+  "duration": 5.9,
+  "fps": 30,
+  "frames": [
+    35,
+    80,
+    124,
+    159
+  ],
+  "files": {
+    "source": "cases/heatmap-mckinsey/Scene.tsx",
+    "guide": "cases/heatmap-mckinsey/README.md",
+    "video": "cases/heatmap-mckinsey/preview.mp4",
+    "storyboard": "cases/heatmap-mckinsey/storyboard.jpg",
+    "dependencies": [
+      "shared/matrix.tsx",
+      "shared/core.tsx"
+    ]
+  },
+  "motionEndFrame": 159,
+  "durationInFrames": 177,
+  "summary": "六行五列单元格按行列错开显露，以颜色透明度表达值；随后逐格切换数字粗细以转移关注。",
+  "purpose": "比较二维分类下的强弱分布。"
+}

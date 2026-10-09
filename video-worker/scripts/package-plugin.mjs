@@ -9,6 +9,10 @@ export const toolkitSource = fileURLToPath(
 );
 export const packageEntries = [
   '.codex-plugin/plugin.json',
+  // 参考资源只安装到磁盘，模型按需检索；不递归打包库的开发环境。
+  ...['INDEX.md', 'catalog.json', 'shared', 'cases', 'scripts/find.mjs'].map(
+    (entry) => `motion-reference-library/typemotion-tables/${entry}`,
+  ),
   ...[
     'video-pipeline',
     'remotion-best-practices',

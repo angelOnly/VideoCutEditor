@@ -1,0 +1,4 @@
+node_modules
+.bundle/
+# 参考样片属于库交付物，覆盖工具包对普通成片的忽略规则。
+!cases/*/preview.mp4

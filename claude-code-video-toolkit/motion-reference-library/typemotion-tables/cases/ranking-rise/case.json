@@ -1,0 +1,42 @@
+{
+  "id": "ranking-rise",
+  "title": "动态榜单",
+  "component": "Bars",
+  "module": "cartesian",
+  "theme": "clean",
+  "tags": [
+    "排名",
+    "超越",
+    "榜单"
+  ],
+  "beats": [
+    "初始榜单显露",
+    "数值和位置联动",
+    "新名次稳定"
+  ],
+  "limit": "名次、名称、数值应属于同一对象",
+  "source": "https://typemotion.art/templates/tables/ranking-rise",
+  "sourceStatus": "依据公开预览独立重写，非原站源码，未声明逐像素复刻",
+  "duration": 5.8,
+  "fps": 30,
+  "frames": [
+    34,
+    78,
+    122,
+    156
+  ],
+  "files": {
+    "source": "cases/ranking-rise/Scene.tsx",
+    "guide": "cases/ranking-rise/README.md",
+    "video": "cases/ranking-rise/preview.mp4",
+    "storyboard": "cases/ranking-rise/storyboard.jpg",
+    "dependencies": [
+      "shared/cartesian.tsx",
+      "shared/core.tsx"
+    ]
+  },
+  "motionEndFrame": 156,
+  "durationInFrames": 174,
+  "summary": "建立完成后，start 逐渐过渡到 end；横条长度、数字与行位置随 change 同步改变。",
+  "purpose": "表现同一组对象数值变化后发生的名次交换。"
+}

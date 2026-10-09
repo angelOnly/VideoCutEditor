@@ -1,0 +1,42 @@
+{
+  "id": "treemap-market",
+  "title": "市场矩形树图",
+  "component": "Matrix",
+  "module": "matrix",
+  "theme": "clean",
+  "tags": [
+    "市场",
+    "面积",
+    "涨跌"
+  ],
+  "beats": [
+    "面积块建立",
+    "份额显露",
+    "涨跌颜色和读数"
+  ],
+  "limit": "面积与涨跌是两个不同编码",
+  "source": "https://typemotion.art/templates/tables/treemap-market",
+  "sourceStatus": "依据公开预览独立重写，非原站源码，未声明逐像素复刻",
+  "duration": 5.9,
+  "fps": 30,
+  "frames": [
+    35,
+    80,
+    124,
+    159
+  ],
+  "files": {
+    "source": "cases/treemap-market/Scene.tsx",
+    "guide": "cases/treemap-market/README.md",
+    "video": "cases/treemap-market/preview.mp4",
+    "storyboard": "cases/treemap-market/storyboard.jpg",
+    "dependencies": [
+      "shared/matrix.tsx",
+      "shared/core.tsx"
+    ]
+  },
+  "motionEndFrame": 159,
+  "durationInFrames": 177,
+  "summary": "五块矩形缩放显露后，scan 阶段补充涨跌百分数。块颜色按示例索引设置，并未按真实涨跌值计算。",
+  "purpose": "用矩形面积表现构成，或在面积之上补充涨跌信息。"
+}

@@ -1,0 +1,42 @@
+{
+  "id": "sleep-tracker",
+  "title": "分段日记录",
+  "component": "Bars",
+  "module": "cartesian",
+  "theme": "clean",
+  "tags": [
+    "时间",
+    "分段",
+    "日记录"
+  ],
+  "beats": [
+    "每日外形",
+    "内部阶段堆叠",
+    "一周节奏成立"
+  ],
+  "limit": "实际睡眠场景要替换为真实阶段时长",
+  "source": "https://typemotion.art/templates/tables/sleep-tracker",
+  "sourceStatus": "依据公开预览独立重写，非原站源码，未声明逐像素复刻",
+  "duration": 3.6,
+  "fps": 30,
+  "frames": [
+    20,
+    45,
+    70,
+    90
+  ],
+  "files": {
+    "source": "cases/sleep-tracker/Scene.tsx",
+    "guide": "cases/sleep-tracker/README.md",
+    "video": "cases/sleep-tracker/preview.mp4",
+    "storyboard": "cases/sleep-tracker/storyboard.jpg",
+    "dependencies": [
+      "shared/cartesian.tsx",
+      "shared/core.tsx"
+    ]
+  },
+  "motionEndFrame": 90,
+  "durationInFrames": 108,
+  "summary": "各天、各组成部分依次错开从底部增长，上层基线随下层当前高度累计；窗口裁切为圆角形状。",
+  "purpose": "比较按日记录中多个部分的组成。"
+}

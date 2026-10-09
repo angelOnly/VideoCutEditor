@@ -1,0 +1,222 @@
+{
+  "总数": 43,
+  "技术检查通过": 43,
+  "检查范围": "文件齐全、720p/30fps/按案例清单核对时长与帧数、完整解码、分镜尺寸与变化；不自动评判美感",
+  "cases": [
+    {
+      "id": "cell-highlight",
+      "通过": true,
+      "问题": []
+    },
+    {
+      "id": "line-trend",
+      "通过": true,
+      "问题": []
+    },
+    {
+      "id": "comparison-lines",
+      "通过": true,
+      "问题": []
+    },
+    {
+      "id": "clustered-column",
+      "通过": true,
+      "问题": []
+    },
+    {
+      "id": "stacked-column",
+      "通过": true,
+      "问题": []
+    },
+    {
+      "id": "bar-race",
+      "通过": true,
+      "问题": []
+    },
+    {
+      "id": "ranking-rise",
+      "通过": true,
+      "问题": []
+    },
+    {
+      "id": "sankey-flow",
+      "通过": true,
+      "问题": []
+    },
+    {
+      "id": "sankey-mckinsey",
+      "通过": true,
+      "问题": []
+    },
+    {
+      "id": "sankey-retro",
+      "通过": true,
+      "问题": []
+    },
+    {
+      "id": "pie-basic",
+      "通过": true,
+      "问题": []
+    },
+    {
+      "id": "pie-symbol",
+      "通过": true,
+      "问题": []
+    },
+    {
+      "id": "percent-stacked",
+      "通过": true,
+      "问题": []
+    },
+    {
+      "id": "butterfly-bar",
+      "通过": true,
+      "问题": []
+    },
+    {
+      "id": "progress-bars",
+      "通过": true,
+      "问题": []
+    },
+    {
+      "id": "cartesian-heatmap",
+      "通过": true,
+      "问题": []
+    },
+    {
+      "id": "heatmap-mckinsey",
+      "通过": true,
+      "问题": []
+    },
+    {
+      "id": "heatmap-retro",
+      "通过": true,
+      "问题": []
+    },
+    {
+      "id": "treemap-single",
+      "通过": true,
+      "问题": []
+    },
+    {
+      "id": "polar-rose",
+      "通过": true,
+      "问题": []
+    },
+    {
+      "id": "jade-ring",
+      "通过": true,
+      "问题": []
+    },
+    {
+      "id": "chord-flow",
+      "通过": true,
+      "问题": []
+    },
+    {
+      "id": "chord-retro",
+      "通过": true,
+      "问题": []
+    },
+    {
+      "id": "number-count",
+      "通过": true,
+      "问题": []
+    },
+    {
+      "id": "dashboard-snapshot",
+      "通过": true,
+      "问题": []
+    },
+    {
+      "id": "area-chart",
+      "通过": true,
+      "问题": []
+    },
+    {
+      "id": "scatter-plot",
+      "通过": true,
+      "问题": []
+    },
+    {
+      "id": "funnel-flow",
+      "通过": true,
+      "问题": []
+    },
+    {
+      "id": "treemap-market",
+      "通过": true,
+      "问题": []
+    },
+    {
+      "id": "pie-slice",
+      "通过": true,
+      "问题": []
+    },
+    {
+      "id": "share-donut",
+      "通过": true,
+      "问题": []
+    },
+    {
+      "id": "waterfall-bridge",
+      "通过": true,
+      "问题": []
+    },
+    {
+      "id": "combo-chart",
+      "通过": true,
+      "问题": []
+    },
+    {
+      "id": "horizontal-bar-metrics",
+      "通过": true,
+      "问题": []
+    },
+    {
+      "id": "bar-skyline",
+      "通过": true,
+      "问题": []
+    },
+    {
+      "id": "sleep-tracker",
+      "通过": true,
+      "问题": []
+    },
+    {
+      "id": "radar-morph",
+      "通过": true,
+      "问题": []
+    },
+    {
+      "id": "grid-chart-split",
+      "通过": true,
+      "问题": []
+    },
+    {
+      "id": "stacked-cascade",
+      "通过": true,
+      "问题": []
+    },
+    {
+      "id": "stacked-donut",
+      "通过": true,
+      "问题": []
+    },
+    {
+      "id": "network-map",
+      "通过": true,
+      "问题": []
+    },
+    {
+      "id": "data-story-board",
+      "通过": true,
+      "问题": []
+    },
+    {
+      "id": "grid-build",
+      "通过": true,
+      "问题": []
+    }
+  ]
+}

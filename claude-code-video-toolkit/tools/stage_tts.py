@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import sys
 from cached_tts import synthesize_cached
+from config import get_tts_role_voices
 from two_stage import StageError, execution, identifier, local, read, require, write, failure
 
 
@@ -16,11 +17,22 @@ def generate(request_path, script_path, cache_root=None):
         require(isinstance(items, list) and items, '配音清单不能为空')
         plan = read(local(root, request['confirmation']['planFile']))
         scenes = {s['id']: s for s in plan['scenes']}
+        try:
+            voices = get_tts_role_voices()
+        except ValueError as exc:
+            raise StageError('TTS_CONFIGURATION_INVALID', str(exc)) from exc
         ids, texts = set(), {s: '' for s in scenes}
+        # 先校验整份清单，后面的错误音色不能导致前面的条目已经付费。
         for item in items:
             identifier(item['id']); require(item['id'] not in ids, '配音 ID 重复'); ids.add(item['id'])
             require(item['sceneId'] in scenes and isinstance(item['text'], str) and item['text'].strip(), '配音内容无效')
             require(isinstance(item['speaker'], str) and item['speaker'], '必须显式指定实际音色')
+            role = item.get('role')
+            require(isinstance(role, str) and role in voices,
+                    f'角色 {role!r} 未配置音色；可用角色：{", ".join(voices)}', 'TTS_ROLE_NOT_CONFIGURED')
+            require(item['speaker'] == voices[role],
+                    f'角色 {role} 必须使用配置音色 {voices[role]}，不能使用 {item["speaker"]}；请修正配音清单后继续',
+                    'TTS_VOICE_MISMATCH')
             texts[item['sceneId']] += item['text']
         # 支持一镜多人发言；本次清单可以只包含需要制作的镜头，但每镜必须全文。
         for scene_id in {i['sceneId'] for i in items}:

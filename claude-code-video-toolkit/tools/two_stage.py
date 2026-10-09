@@ -158,6 +158,9 @@ def failure(request_path, step, exc):
     if getattr(exc, 'code', '') == 'VISUAL_REVIEW_REQUIRED':
         # 审片未通过仍是本期制作修订，不请求人工处理公共服务。
         payload.update(status='repair_required', scope='task_project')
+    if getattr(exc, 'code', '') in ('TTS_ROLE_NOT_CONFIGURED', 'TTS_VOICE_MISMATCH'):
+        # 调用前的清单错误由制作阶段修正，不归为供应商故障或未知收费。
+        payload.update(status='repair_required', scope='task_project', nextAction='correct_tts_manifest')
     if request_path:
         try:
             request = read(request_path); schema(request, 'request')

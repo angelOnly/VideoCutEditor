@@ -48,13 +48,15 @@ files.push(
   'video-worker/config/templates.json',
   'claude-code-video-toolkit/deliverables/财经双人对话视频生成指令.zip',
 );
+// 与插件打包清单同源，参考媒体变化也必须生成新的运行版本。
+const { files: pluginFiles, ...plugin } = await pluginRelease();
+files.push(...Object.keys(pluginFiles).map((f) => 'claude-code-video-toolkit/' + f));
 const hashes = {};
-for (const f of files.sort())
+for (const f of [...new Set(files)].sort())
   hashes[f] = createHash('sha256')
     .update(await readFile(path.join(root, f)))
     .digest('hex');
 const version = createHash('sha256').update(JSON.stringify(hashes)).digest('hex');
-const { files: pluginFiles, ...plugin } = await pluginRelease();
 await writeFile('config/plugin-release.json', JSON.stringify(plugin, null, 2) + '\n');
 await writeFile('config/runtime-version.json', JSON.stringify({ version }, null, 2) + '\n');
 await writeFile(

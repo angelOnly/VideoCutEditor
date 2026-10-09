@@ -1,0 +1,42 @@
+{
+  "id": "treemap-single",
+  "title": "矩形树图",
+  "component": "Matrix",
+  "module": "matrix",
+  "theme": "clean",
+  "tags": [
+    "面积",
+    "构成",
+    "份额"
+  ],
+  "beats": [
+    "面积分块",
+    "块内名称比例出现",
+    "整体关系稳定"
+  ],
+  "limit": "矩形面积按权重计算，不能等面积假装比例",
+  "source": "https://typemotion.art/templates/tables/treemap-single",
+  "sourceStatus": "依据公开预览独立重写，非原站源码，未声明逐像素复刻",
+  "duration": 3.3,
+  "fps": 30,
+  "frames": [
+    18,
+    40,
+    63,
+    81
+  ],
+  "files": {
+    "source": "cases/treemap-single/Scene.tsx",
+    "guide": "cases/treemap-single/README.md",
+    "video": "cases/treemap-single/preview.mp4",
+    "storyboard": "cases/treemap-single/storyboard.jpg",
+    "dependencies": [
+      "shared/matrix.tsx",
+      "shared/core.tsx"
+    ]
+  },
+  "motionEndFrame": 81,
+  "durationInFrames": 99,
+  "summary": "各矩形围绕自身中心从85%比例放大至完整大小，同时渐显，类别和占比随矩形一起进入。",
+  "purpose": "用矩形面积表现构成，或在面积之上补充涨跌信息。"
+}

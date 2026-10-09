@@ -124,17 +124,18 @@ class WorkerBridgeTests(Fixture):
         after={str(p.relative_to(self.job)):digest(p) for p in self.job.rglob('*') if p.is_file()}
         self.assertTrue(report['passed']);self.assertEqual(before,after)
 
-    def test_trusted_cache_is_outside_workspace_and_role_is_not_fixed(self):
+    def test_trusted_cache_is_outside_workspace_and_voices_follow_role_config(self):
         request=self.render_request();script=self.job/'dialogue.json';cache=self.base/'trusted-ledger'
         cache.mkdir();audio=cache/'audio.mp3';audio.write_bytes(b'test-provider-audio')
-        write(script,[{'id':'a','sceneId':'scene_1','text':'第一句。','speaker':'male-choice'},
-                      {'id':'b','sceneId':'scene_2','text':'第二句。','speaker':'female-choice'}])
+        write(script,[{'id':'a','sceneId':'scene_1','text':'第一句。','role':'male','speaker':'male-choice'},
+                      {'id':'b','sceneId':'scene_2','text':'第二句。','role':'female','speaker':'female-choice'}])
         calls=[]
         def fake(text,speaker,resource,directory):
             calls.append((text,speaker,directory))
             return {'path':str(audio),'cacheKey':speaker,'requestId':speaker,'reused':False,
                     'audio':{'sha256':digest(audio),'durationSeconds':1}}
-        with patch('stage_tts.synthesize_cached',side_effect=fake):
+        with patch('stage_tts.get_tts_role_voices',return_value={'male':'male-choice','female':'female-choice'}), \
+             patch('stage_tts.synthesize_cached',side_effect=fake):
             result=generate(request,script,cache_root=cache)
         self.assertEqual([x[1] for x in calls],['male-choice','female-choice'])
         self.assertTrue(all(x[2]==cache for x in calls))

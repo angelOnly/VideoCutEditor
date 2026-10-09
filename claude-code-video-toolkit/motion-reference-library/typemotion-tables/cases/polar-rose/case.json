@@ -1,0 +1,42 @@
+{
+  "id": "polar-rose",
+  "title": "玫瑰图",
+  "component": "Radial",
+  "module": "radial",
+  "theme": "clean",
+  "tags": [
+    "极坐标",
+    "周期",
+    "强弱"
+  ],
+  "beats": [
+    "扇区按角排列",
+    "半径生长",
+    "旁侧读数补齐"
+  ],
+  "limit": "本例面积随数值，半径取平方根",
+  "source": "https://typemotion.art/templates/tables/polar-rose",
+  "sourceStatus": "依据公开预览独立重写，非原站源码，未声明逐像素复刻",
+  "duration": 3.7,
+  "fps": 30,
+  "frames": [
+    20,
+    46,
+    73,
+    93
+  ],
+  "files": {
+    "source": "cases/polar-rose/Scene.tsx",
+    "guide": "cases/polar-rose/README.md",
+    "video": "cases/polar-rose/preview.mp4",
+    "storyboard": "cases/polar-rose/storyboard.jpg",
+    "dependencies": [
+      "shared/radial.tsx",
+      "shared/core.tsx"
+    ]
+  },
+  "motionEndFrame": 93,
+  "durationInFrames": 111,
+  "summary": "五个等角扇区依次增长半径，目标半径按数值平方根计算，使面积随值变化；右侧图例逐行显露。",
+  "purpose": "呈现构成占比或多个目标完成度；角度、半径与环长的含义取决于具体分支。"
+}

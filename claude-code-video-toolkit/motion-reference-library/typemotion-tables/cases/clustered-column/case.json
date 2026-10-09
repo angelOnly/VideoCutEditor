@@ -1,0 +1,42 @@
+{
+  "id": "clustered-column",
+  "title": "分组柱状图",
+  "component": "Cartesian",
+  "module": "cartesian",
+  "theme": "clean",
+  "tags": [
+    "类别",
+    "多系列",
+    "比较"
+  ],
+  "beats": [
+    "坐标建立",
+    "同组各系列交错生长",
+    "留出组间间隔"
+  ],
+  "limit": "颜色固定对应同一系列",
+  "source": "https://typemotion.art/templates/tables/clustered-column",
+  "sourceStatus": "依据公开预览独立重写，非原站源码，未声明逐像素复刻",
+  "duration": 3.3666666666666667,
+  "fps": 30,
+  "frames": [
+    18,
+    42,
+    65,
+    83
+  ],
+  "files": {
+    "source": "cases/clustered-column/Scene.tsx",
+    "guide": "cases/clustered-column/README.md",
+    "video": "cases/clustered-column/preview.mp4",
+    "storyboard": "cases/clustered-column/storyboard.jpg",
+    "dependencies": [
+      "shared/cartesian.tsx",
+      "shared/core.tsx"
+    ]
+  },
+  "motionEndFrame": 83,
+  "durationInFrames": 101,
+  "summary": "各柱按类别错开增长；多系列再按系列错开。分组柱并列增长，堆叠柱以上一段当前高度为下一段基线。",
+  "purpose": "比较类别大小，或在共同基线上呈现构成和总量。"
+}

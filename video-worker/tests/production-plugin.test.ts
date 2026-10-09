@@ -92,6 +92,15 @@ test('发布包保留源码字节，文件篡改和发布版本不匹配均拒�
     await assert.rejects(verifyProductionPlugin({ ...c, pluginSha256: 'other-version' }), {
       code: 'PRODUCTION_PLUGIN_MISMATCH',
     });
+    // 参考媒体与指令一样进入发布哈希，损坏不能作为有效插件使用。
+    const media = path.join(
+      root,
+      'motion-reference-library/typemotion-tables/cases/chord-retro/preview.mp4',
+    );
+    const originalMedia = await readFile(media);
+    await writeFile(media, '损坏的参考视频');
+    await assert.rejects(verifyProductionPlugin(c), { code: 'PRODUCTION_PLUGIN_MISMATCH' });
+    await writeFile(media, originalMedia);
     await writeFile(path.join(root, script), '# changed');
     await assert.rejects(verifyProductionPlugin(c), { code: 'PRODUCTION_PLUGIN_MISMATCH' });
   } finally {

@@ -1,0 +1,42 @@
+{
+  "id": "percent-stacked",
+  "title": "百分比堆叠柱",
+  "component": "Cartesian",
+  "module": "cartesian",
+  "theme": "clean",
+  "tags": [
+    "占比",
+    "构成",
+    "比较"
+  ],
+  "beats": [
+    "列内逐层堆叠",
+    "各列归一到100%",
+    "对比结构"
+  ],
+  "limit": "需要各列分母，不与绝对总量混淆",
+  "source": "https://typemotion.art/templates/tables/percent-stacked",
+  "sourceStatus": "依据公开预览独立重写，非原站源码，未声明逐像素复刻",
+  "duration": 3.3666666666666667,
+  "fps": 30,
+  "frames": [
+    18,
+    42,
+    65,
+    83
+  ],
+  "files": {
+    "source": "cases/percent-stacked/Scene.tsx",
+    "guide": "cases/percent-stacked/README.md",
+    "video": "cases/percent-stacked/preview.mp4",
+    "storyboard": "cases/percent-stacked/storyboard.jpg",
+    "dependencies": [
+      "shared/cartesian.tsx",
+      "shared/core.tsx"
+    ]
+  },
+  "motionEndFrame": 83,
+  "durationInFrames": 101,
+  "summary": "每组 vals 除以本组 sum 归一为100%，三段按不同窗口自下而上累积。",
+  "purpose": "比较类别大小，或在共同基线上呈现构成和总量。"
+}

@@ -76,6 +76,25 @@ def get_doubao_tts_speaker() -> str:
     return os.getenv("DOUBAO_TTS_SPEAKER", "zh_female_xiaohe_uranus_bigtts")
 
 
+def get_tts_role_voices() -> dict[str, str]:
+    """读取已配置角色音色；任务注入值优先，不从模板或模型建议补齐。"""
+    load_environment()
+    raw = os.getenv('VIDEOCUT_TTS_VOICES')
+    if raw is None:
+        raw = os.getenv('TTS_VOICES', '{}')
+    try:
+        voices = json.loads(raw)
+    except (ValueError, TypeError) as exc:
+        raise ValueError('角色音色配置必须是有效 JSON 对象') from exc
+    if not isinstance(voices, dict) or not voices or any(
+        not isinstance(k, str) or not k.strip() or
+        not isinstance(v, str) or not v.strip()
+        for k, v in voices.items()
+    ):
+        raise ValueError('缺少有效角色音色配置，请设置 TTS_VOICES；任务使用注入的 VIDEOCUT_TTS_VOICES')
+    return voices
+
+
 def get_sixtydb_api_key() -> str | None:
     """Get 60db API key from environment."""
     load_environment()

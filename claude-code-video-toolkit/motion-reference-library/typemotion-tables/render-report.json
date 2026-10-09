@@ -1,0 +1,265 @@
+{
+  "createdAt": "2026-10-09T08:45:30.990Z",
+  "cases": [
+    {
+      "id": "cell-highlight",
+      "status": "完成",
+      "bytes": 610116,
+      "durationInFrames": 147
+    },
+    {
+      "id": "line-trend",
+      "status": "完成",
+      "bytes": 625543,
+      "durationInFrames": 174
+    },
+    {
+      "id": "comparison-lines",
+      "status": "完成",
+      "bytes": 783249,
+      "durationInFrames": 174
+    },
+    {
+      "id": "clustered-column",
+      "status": "完成",
+      "bytes": 436885,
+      "durationInFrames": 101
+    },
+    {
+      "id": "stacked-column",
+      "status": "完成",
+      "bytes": 433820,
+      "durationInFrames": 101
+    },
+    {
+      "id": "bar-race",
+      "status": "完成",
+      "bytes": 1228761,
+      "durationInFrames": 174
+    },
+    {
+      "id": "ranking-rise",
+      "status": "完成",
+      "bytes": 1291571,
+      "durationInFrames": 174
+    },
+    {
+      "id": "sankey-flow",
+      "status": "完成",
+      "bytes": 1073971,
+      "durationInFrames": 174
+    },
+    {
+      "id": "sankey-mckinsey",
+      "status": "完成",
+      "bytes": 1101604,
+      "durationInFrames": 174
+    },
+    {
+      "id": "sankey-retro",
+      "status": "完成",
+      "bytes": 1055141,
+      "durationInFrames": 174
+    },
+    {
+      "id": "pie-basic",
+      "status": "完成",
+      "bytes": 789400,
+      "durationInFrames": 117
+    },
+    {
+      "id": "pie-symbol",
+      "status": "完成",
+      "bytes": 694601,
+      "durationInFrames": 117
+    },
+    {
+      "id": "percent-stacked",
+      "status": "完成",
+      "bytes": 474009,
+      "durationInFrames": 101
+    },
+    {
+      "id": "butterfly-bar",
+      "status": "完成",
+      "bytes": 421520,
+      "durationInFrames": 69
+    },
+    {
+      "id": "progress-bars",
+      "status": "完成",
+      "bytes": 371064,
+      "durationInFrames": 69
+    },
+    {
+      "id": "cartesian-heatmap",
+      "status": "完成",
+      "bytes": 1266958,
+      "durationInFrames": 177
+    },
+    {
+      "id": "heatmap-mckinsey",
+      "status": "完成",
+      "bytes": 1237876,
+      "durationInFrames": 177
+    },
+    {
+      "id": "heatmap-retro",
+      "status": "完成",
+      "bytes": 1279159,
+      "durationInFrames": 177
+    },
+    {
+      "id": "treemap-single",
+      "status": "完成",
+      "bytes": 639095,
+      "durationInFrames": 99
+    },
+    {
+      "id": "polar-rose",
+      "status": "完成",
+      "bytes": 507614,
+      "durationInFrames": 111
+    },
+    {
+      "id": "jade-ring",
+      "status": "完成",
+      "bytes": 1221963,
+      "durationInFrames": 133
+    },
+    {
+      "id": "chord-flow",
+      "status": "完成",
+      "bytes": 744981,
+      "durationInFrames": 131
+    },
+    {
+      "id": "chord-retro",
+      "status": "完成",
+      "bytes": 730094,
+      "durationInFrames": 131
+    },
+    {
+      "id": "number-count",
+      "status": "完成",
+      "bytes": 925630,
+      "durationInFrames": 162
+    },
+    {
+      "id": "dashboard-snapshot",
+      "status": "完成",
+      "bytes": 646685,
+      "durationInFrames": 162
+    },
+    {
+      "id": "area-chart",
+      "status": "完成",
+      "bytes": 662023,
+      "durationInFrames": 174
+    },
+    {
+      "id": "scatter-plot",
+      "status": "完成",
+      "bytes": 659806,
+      "durationInFrames": 174
+    },
+    {
+      "id": "funnel-flow",
+      "status": "完成",
+      "bytes": 548376,
+      "durationInFrames": 111
+    },
+    {
+      "id": "treemap-market",
+      "status": "完成",
+      "bytes": 999434,
+      "durationInFrames": 177
+    },
+    {
+      "id": "pie-slice",
+      "status": "完成",
+      "bytes": 1312833,
+      "durationInFrames": 174
+    },
+    {
+      "id": "share-donut",
+      "status": "完成",
+      "bytes": 666945,
+      "durationInFrames": 120
+    },
+    {
+      "id": "waterfall-bridge",
+      "status": "完成",
+      "bytes": 419845,
+      "durationInFrames": 137
+    },
+    {
+      "id": "combo-chart",
+      "status": "完成",
+      "bytes": 679256,
+      "durationInFrames": 174
+    },
+    {
+      "id": "horizontal-bar-metrics",
+      "status": "完成",
+      "bytes": 376105,
+      "durationInFrames": 69
+    },
+    {
+      "id": "bar-skyline",
+      "status": "完成",
+      "bytes": 547175,
+      "durationInFrames": 140
+    },
+    {
+      "id": "sleep-tracker",
+      "status": "完成",
+      "bytes": 456870,
+      "durationInFrames": 108
+    },
+    {
+      "id": "radar-morph",
+      "status": "完成",
+      "bytes": 1280009,
+      "durationInFrames": 180
+    },
+    {
+      "id": "grid-chart-split",
+      "status": "完成",
+      "bytes": 670530,
+      "durationInFrames": 162
+    },
+    {
+      "id": "stacked-cascade",
+      "status": "完成",
+      "bytes": 500216,
+      "durationInFrames": 123
+    },
+    {
+      "id": "stacked-donut",
+      "status": "完成",
+      "bytes": 1044624,
+      "durationInFrames": 120
+    },
+    {
+      "id": "network-map",
+      "status": "完成",
+      "bytes": 916726,
+      "durationInFrames": 174
+    },
+    {
+      "id": "data-story-board",
+      "status": "完成",
+      "bytes": 693956,
+      "durationInFrames": 162
+    },
+    {
+      "id": "grid-build",
+      "status": "完成",
+      "bytes": 540128,
+      "durationInFrames": 147
+    }
+  ],
+  "updatedAt": "2026-10-09T09:03:07.145246+00:00",
+  "调整": "依据源码最后有效动作裁剪尾部，保留18帧阅读；同步重取分镜"
+}

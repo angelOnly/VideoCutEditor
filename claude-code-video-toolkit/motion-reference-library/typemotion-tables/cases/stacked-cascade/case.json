@@ -1,0 +1,42 @@
+{
+  "id": "stacked-cascade",
+  "title": "堆叠层叠",
+  "component": "Cascade",
+  "module": "matrix",
+  "theme": "clean",
+  "tags": [
+    "层次",
+    "顺序",
+    "构成"
+  ],
+  "beats": [
+    "底层进入",
+    "各层下落叠合",
+    "标签稳定阅读"
+  ],
+  "limit": "本例是等高分类层，不用层高表达比例",
+  "source": "https://typemotion.art/templates/tables/stacked-cascade",
+  "sourceStatus": "依据公开预览独立重写，非原站源码，未声明逐像素复刻",
+  "duration": 4.1,
+  "fps": 30,
+  "frames": [
+    23,
+    52,
+    82,
+    105
+  ],
+  "files": {
+    "source": "cases/stacked-cascade/Scene.tsx",
+    "guide": "cases/stacked-cascade/README.md",
+    "video": "cases/stacked-cascade/preview.mp4",
+    "storyboard": "cases/stacked-cascade/storyboard.jpg",
+    "dependencies": [
+      "shared/matrix.tsx",
+      "shared/core.tsx"
+    ]
+  },
+  "motionEndFrame": 105,
+  "durationInFrames": 123,
+  "summary": "按底层到顶层的顺序向上进入目标位置并渐显；标签、百分数与矩形共同移动。",
+  "purpose": "强调组成部分按顺序叠合及上下层关系。"
+}

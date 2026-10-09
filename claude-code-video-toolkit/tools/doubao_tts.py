@@ -9,13 +9,14 @@ from __future__ import annotations
 
 import base64
 import json
+import os
 import uuid
 from collections.abc import Iterable
 from pathlib import Path
 
 import requests
 
-from config import get_doubao_tts_api_key, get_doubao_tts_resource_id, get_doubao_tts_speaker
+from config import get_doubao_tts_api_key, get_doubao_tts_resource_id, get_doubao_tts_speaker, get_tts_role_voices
 
 
 TTS_ENDPOINT = "https://openspeech.bytedance.com/api/v3/tts/unidirectional"
@@ -137,6 +138,15 @@ def generate_audio(
     api_key = api_key or get_doubao_tts_api_key()
     resource_id = resource_id or get_doubao_tts_resource_id() or DEFAULT_RESOURCE_ID
     speaker = speaker or get_doubao_tts_speaker() or DEFAULT_SPEAKER
+    if os.getenv('VIDEOCUT_RENDER_SANDBOX') == 'native':
+        # 原生制作的其他配音入口也不能绕过已配置音色，在 HTTP 调用前拒绝。
+        try:
+            voices = get_tts_role_voices()
+        except ValueError as exc:
+            return {'success': False, 'submitted': False, 'error': str(exc)}
+        if speaker not in voices.values():
+            return {'success': False, 'submitted': False,
+                    'error': f'音色 {speaker} 不在已配置角色音色中，禁止调用 TTS；请按角色配置修正'}
     if not api_key:
         return {
             "success": False,
