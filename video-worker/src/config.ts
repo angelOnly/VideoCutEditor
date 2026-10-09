@@ -38,6 +38,10 @@ export interface Config {
   mediaPublicBaseUrl?: string;
   dataRoot: string;
   toolkitRoot: string;
+  /** 已安装制作插件的位置；仅制作进程要求配置，控制服务不加载插件。 */
+  pluginRoot?: string;
+  pluginSha256: string;
+  renderModules: string;
   tenants: Tenant[];
   leaseSeconds: number;
   timeoutSeconds: number;
@@ -107,6 +111,10 @@ export function loadConfig(envFile = path.resolve(serviceRoot, '../.env')): Conf
   const hostRuntimeFile = path.join(serviceRoot, 'config/host-runtime.json');
   const hostRuntime = existsSync(hostRuntimeFile)
     ? JSON.parse(readFileSync(hostRuntimeFile, 'utf8'))
+    : {};
+  const installedPluginFile = path.join(serviceRoot, 'config/installed-plugin.json');
+  const installedPlugin = existsSync(installedPluginFile)
+    ? JSON.parse(readFileSync(installedPluginFile, 'utf8'))
     : {};
   if (process.env.TEMPLATE_API_URL)
     throw Error('TEMPLATE_API_URL 已停用，请配置定制 ZIP 服务或本地 ZIP');
@@ -179,6 +187,13 @@ export function loadConfig(envFile = path.resolve(serviceRoot, '../.env')): Conf
     dataRoot: process.env.DATA_ROOT ?? '/home/ops/jiangzb/video-worker-data',
     toolkitRoot:
       process.env.TOOLKIT_ROOT ?? path.resolve(serviceRoot, '../claude-code-video-toolkit'),
+    pluginRoot: process.env.VIDEO_PLUGIN_ROOT || installedPlugin.root || undefined,
+    pluginSha256: JSON.parse(
+      readFileSync(path.join(serviceRoot, 'config/plugin-release.json'), 'utf8'),
+    ).sha256,
+    renderModules:
+      process.env.REMOTION_MODULES_ROOT ??
+      path.resolve(serviceRoot, '../claude-code-video-toolkit/templates/ifeng-scenes/node_modules'),
     tenants,
     leaseSeconds: 60,
     timeoutSeconds: 14400,

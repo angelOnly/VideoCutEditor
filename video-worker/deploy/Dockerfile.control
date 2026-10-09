@@ -15,7 +15,7 @@ WORKDIR /opt/video-worker
 COPY --from=build /build/video-worker/node_modules ./node_modules
 COPY --from=build /build/video-worker/dist ./dist
 COPY video-worker/package.json ./
-COPY video-worker/config/templates.json video-worker/config/runtime-version.json ./config/
+COPY video-worker/config/templates.json video-worker/config/runtime-version.json video-worker/config/plugin-release.json ./config/
 COPY video-worker/migrations ./migrations
 # Only the canonical internal contract is needed by the controller, not the toolkit source tree.
 COPY claude-code-video-toolkit/.agents/skills/video-pipeline/references/two-stage.schema.json /opt/toolkit/.agents/skills/video-pipeline/references/

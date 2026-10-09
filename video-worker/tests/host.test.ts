@@ -5,7 +5,7 @@ import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import { setTimeout } from 'node:timers/promises';
-import { config, database, analysis, tenant, writable } from './helpers.js';
+import { config, database, analysis, tenant, writable, pluginSkills } from './helpers.js';
 import {
   AppServer,
   codexEnvironment,
@@ -28,6 +28,7 @@ class FakeRpc extends EventEmitter implements Rpc {
   turn = 0;
   async request(method: string, params: any): Promise<any> {
     this.calls.push({ method, params });
+    if (method === 'skills/list') return pluginSkills(params.cwds[0]);
     if (method.startsWith('thread/'))
       return { thread: { id: 'thread' }, activePermissionProfile: { id: 'videocut' } };
     if (method === 'turn/start') {
@@ -142,6 +143,10 @@ test('仅收当前 turn 最终回复，接受原生事件、复用 thread，取�
       reference,
     );
     assert.equal(rpc.calls.find((x) => x.method === 'thread/start').params.dynamicTools, undefined);
+    const skillInput = rpc.calls.find((x) => x.method === 'turn/start').params.input[1];
+    assert.equal(skillInput.name, 'videocut-production:video-pipeline');
+    assert.ok(skillInput.path.startsWith(c.pluginRoot!));
+    assert.equal(threadConfig(c, w).permissions.videocut.filesystem[c.toolkitRoot], undefined);
     await assert.rejects(rpc.handleRequest!('item/tool/call', { tool: 'video_exec' }));
     const abort = new AbortController();
     running = host.run(l, w, abort.signal);

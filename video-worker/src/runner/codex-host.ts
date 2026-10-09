@@ -9,7 +9,8 @@ import type { Workspace } from '../infrastructure/workspace.js';
 import type { Queue } from '../infrastructure/queue.js';
 import type { Rpc } from '../infrastructure/app-server.js';
 import { codexOverrides } from '../infrastructure/app-server.js';
-import { admittedToolkit, type HostProcesses } from '../infrastructure/host-processes.js';
+import { productionPaths, type HostProcesses } from '../infrastructure/host-processes.js';
+import { productionRoot, productionSkill } from '../infrastructure/production-plugin.js';
 import { writeJson } from '../infrastructure/files.js';
 import { finalReference, finalReferenceSchema, matchIdentity } from '../contracts/pipeline-io.js';
 import { prompt, loadPipeline } from './prompts.js';
@@ -19,8 +20,7 @@ export function threadConfig(config: Config, w: Workspace) {
     [w.root]: 'write',
     [path.join(w.root, 'input')]: 'read',
   };
-  for (const relative of admittedToolkit)
-    filesystem[path.join(config.toolkitRoot, relative)] = 'read';
+  for (const directory of productionPaths(config)) filesystem[directory] = 'read';
   for (const file of [
     path.resolve(path.dirname(config.python), '..'),
     process.execPath,
@@ -204,8 +204,13 @@ export class HostCodex {
   };
   async run(lease: Lease, w: Workspace, signal: AbortSignal) {
     signal.throwIfAborted();
-    const rules = loadPipeline(w.task, this.config.toolkitRoot);
-    const inputPrompt = prompt(w.task, w.root, this.config.toolkitRoot, rules);
+    const plugin = await productionSkill(this.rpc, this.config, w.root);
+    const rules = loadPipeline(w.task, productionRoot(this.config));
+    const inputPrompt = prompt(w.task, w.root, productionRoot(this.config), rules);
+    await writeJson(
+      path.join(w.root, `output/${lease.run.id}/plugin-runtime.json`),
+      plugin.release,
+    );
     const args = {
       cwd: w.root,
       runtimeWorkspaceRoots: [w.root],
@@ -294,7 +299,7 @@ export class HostCodex {
       const start = await this.rpc.request('turn/start', {
         threadId,
         ...(this.config.codexReasoningEffort ? { effort: this.config.codexReasoningEffort } : {}),
-        input: [{ type: 'text', text: inputPrompt }],
+        input: [{ type: 'text', text: inputPrompt }, plugin.input],
         outputSchema,
       });
       if (state.turnId && state.turnId !== start.turn.id) throw new Error('Turn identity mismatch');

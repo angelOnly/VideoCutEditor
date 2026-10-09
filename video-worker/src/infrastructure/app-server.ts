@@ -4,6 +4,7 @@ import { jobUnit } from './host-processes.js';
 import { EventEmitter } from 'node:events';
 import { createInterface } from 'node:readline';
 import type { Config } from '../config.js';
+import { productionRoot } from './production-plugin.js';
 
 export interface HostTaskLimits {
   memory: string;
@@ -43,7 +44,8 @@ export function codexEnvironment(config: Config): NodeJS.ProcessEnv {
     DBUS_SESSION_BUS_ADDRESS: process.env.DBUS_SESSION_BUS_ADDRESS,
     LANG: 'C.UTF-8',
     CODEX_HOME: config.codexHome,
-    TOOLKIT_ROOT: config.toolkitRoot,
+    TOOLKIT_ROOT: productionRoot(config),
+    REMOTION_MODULES_ROOT: config.renderModules,
     REMOTION_BROWSER_EXECUTABLE: config.hostBrowser,
     PYTHONDONTWRITEBYTECODE: '1',
     VIDEOCUT_RENDER_SANDBOX: 'native',
@@ -70,6 +72,7 @@ export const codexOverrides: Record<string, unknown> = {
       'HOME',
       'LANG',
       'TOOLKIT_ROOT',
+      'REMOTION_MODULES_ROOT',
       'REMOTION_BROWSER_EXECUTABLE',
       'PYTHONDONTWRITEBYTECODE',
       'TMPDIR',

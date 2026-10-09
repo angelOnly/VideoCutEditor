@@ -1,7 +1,7 @@
-import path from 'node:path';
 import { access, realpath } from 'node:fs/promises';
 import type { Config } from '../config.js';
 import { command } from './process.js';
+import { productionRoot, verifyProductionPlugin } from './production-plugin.js';
 
 const unitPrefix = 'videocut-job-';
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -10,27 +10,7 @@ export function jobUnit(runId: string) {
   return `${unitPrefix}${runId}.service`;
 }
 // 原生权限只开放制作工具目录，不开放仓库根目录和登录凭据。
-export const admittedToolkit = [
-  '.agents/skills/video-pipeline',
-  '.agents/skills/remotion-best-practices',
-  '.agents/skills/ffmpeg',
-  'templates/ifeng-scenes/node_modules',
-  ...[
-    'generate_dialogue_audio.py',
-    'two_stage.py',
-    'task_io.py',
-    'stage_media.py',
-    'actual_timeline.py',
-    'finance_timeline.py',
-    'stage_tts.py',
-    'cached_tts.py',
-    'render_scene.cjs',
-    'render_batch.py',
-    'config.py',
-    'voiceover.py',
-    'doubao_tts.py',
-  ].map((f) => `tools/${f}`),
-];
+export const productionPaths = (config: Config) => [productionRoot(config), config.renderModules];
 export class HostProcesses {
   constructor(
     private config: Config,
@@ -77,10 +57,9 @@ export class HostProcesses {
     await this.exec('systemctl', ['--user', 'show-environment'], { timeout: 10000 });
     for (const p of ['/usr/bin/bwrap', this.config.hostBrowser, this.config.python])
       await access(p);
-    for (const relative of admittedToolkit) {
-      const p = path.join(this.config.toolkitRoot, relative);
-      if ((await realpath(p)) !== p)
-        throw new Error(`Admitted toolkit path must not be a symlink: ${relative}`);
+    await verifyProductionPlugin(this.config);
+    for (const p of productionPaths(this.config)) {
+      if ((await realpath(p)) !== p) throw new Error(`制作目录必须使用真实路径：${p}`);
     }
   }
 }

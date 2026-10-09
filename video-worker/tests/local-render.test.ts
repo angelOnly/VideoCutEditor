@@ -5,6 +5,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { command } from '../src/infrastructure/process.js';
 import { writeJson, readJson } from '../src/infrastructure/files.js';
+import { testPluginRoot } from './helpers.js';
 test('独立入口不启动 Worker，两条消息复用会话并直接接收结果引用', async () => {
   const temp = await mkdtemp(path.join(os.tmpdir(), 'native-local-'));
   try {
@@ -34,6 +35,7 @@ rl.createInterface({input:process.stdin}).on('line',line=>{
  fs.appendFileSync(${JSON.stringify(log)},JSON.stringify(m)+'\\n');
  let result={};
  if(m.method==='account/read')result={account:{type:'chatgpt'}};
+ if(m.method==='skills/list')result={data:[{cwd:m.params.cwds[0],skills:['video-pipeline','remotion-best-practices','ffmpeg'].map(name=>({name:'videocut-production:'+name,path:path.join(process.env.TOOLKIT_ROOT,'.agents/skills',name,'SKILL.md'),enabled:true,pluginId:'videocut-production@videocut-internal'})),errors:[]}]};
  if(m.method.startsWith('thread/')){root=m.params.cwd;result={thread:{id:'same-thread'},activePermissionProfile:{id:'videocut'}};if(m.params.dynamicTools)throw Error('不能注册制作工具');}
  if(m.method==='turn/start')result={turn:{id:'turn-'+(++turn)}};
  console.log(JSON.stringify({id:m.id,result}));
@@ -61,6 +63,8 @@ rl.createInterface({input:process.stdin}).on('line',line=>{
       '/usr/bin/true',
       '--codex',
       fake,
+      '--plugin',
+      testPluginRoot,
     ];
     const first = JSON.parse((await command(process.execPath, args, { timeout: 10000 })).trim());
     assert.equal(first.requestId, 'one');

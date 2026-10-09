@@ -1,9 +1,33 @@
 import { randomUUID } from 'node:crypto';
 import { Postgres, migrate } from '../src/infrastructure/postgres.js';
 import { PGlite } from '@electric-sql/pglite';
-import { chmod, readdir } from 'node:fs/promises';
+import { chmod, readdir, mkdtemp } from 'node:fs/promises';
+import { rmSync } from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { packagePlugin } from '../scripts/package-plugin.mjs';
 import type { Database, Sql } from '../src/infrastructure/postgres.js';
 import type { Config } from '../src/config.js';
+const pluginTemp = await mkdtemp(path.join(os.tmpdir(), 'videocut-test-plugin-'));
+export const testPlugin = await packagePlugin(path.join(pluginTemp, 'marketplace'));
+export const testPluginRoot = path.join(testPlugin.root, 'plugins', testPlugin.name);
+process.once('exit', () => rmSync(pluginTemp, { recursive: true, force: true }));
+export function pluginSkills(cwd: string, root = testPluginRoot) {
+  return {
+    data: [
+      {
+        cwd,
+        skills: ['video-pipeline', 'remotion-best-practices', 'ffmpeg'].map((name) => ({
+          name: `videocut-production:${name}`,
+          path: path.join(root, `.agents/skills/${name}/SKILL.md`),
+          enabled: true,
+          pluginId: 'videocut-production@videocut-internal',
+        })),
+        errors: [],
+      },
+    ],
+  };
+}
 export async function database() {
   if (process.env.TEST_DATABASE_URL) {
     const admin = new Postgres(process.env.TEST_DATABASE_URL),
@@ -78,6 +102,12 @@ export function config(overrides: Partial<Config> = {}): Config {
     mediaPublicBaseUrl: 'http://10.20.130.251:8080',
     dataRoot: '/tmp/video-worker-test',
     toolkitRoot: new URL('../../claude-code-video-toolkit', import.meta.url).pathname,
+    pluginRoot: testPluginRoot,
+    pluginSha256: testPlugin.sha256,
+    renderModules: new URL(
+      '../../claude-code-video-toolkit/templates/ifeng-scenes/node_modules',
+      import.meta.url,
+    ).pathname,
     tenants: [tenant],
     leaseSeconds: 60,
     timeoutSeconds: 14400,

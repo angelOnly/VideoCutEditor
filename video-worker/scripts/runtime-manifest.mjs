@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { readFile, writeFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
+import { pluginRelease } from './package-plugin.mjs';
 const root = path.resolve('..');
 const files = [];
 async function collect(relative) {
@@ -17,6 +18,8 @@ for (const directory of [
   'claude-code-video-toolkit/templates/ifeng-scenes',
   'claude-code-video-toolkit/.agents/skills/video-pipeline',
   'claude-code-video-toolkit/.agents/skills/remotion-best-practices',
+  'claude-code-video-toolkit/.agents/skills/ffmpeg',
+  'claude-code-video-toolkit/.codex-plugin',
 ])
   await collect(directory);
 for (const f of [
@@ -37,6 +40,8 @@ for (const f of [
 ])
   files.push('claude-code-video-toolkit/tools/' + f);
 files.push(
+  'video-worker/scripts/package-plugin.mjs',
+  'video-worker/deploy/install-plugin.mjs',
   'video-worker/pnpm-lock.yaml',
   'video-worker/config/templates.json',
   'claude-code-video-toolkit/deliverables/财经双人对话视频生成指令.zip',
@@ -47,6 +52,8 @@ for (const f of files.sort())
     .update(await readFile(path.join(root, f)))
     .digest('hex');
 const version = createHash('sha256').update(JSON.stringify(hashes)).digest('hex');
+const { files: pluginFiles, ...plugin } = await pluginRelease();
+await writeFile('config/plugin-release.json', JSON.stringify(plugin, null, 2) + '\n');
 await writeFile('config/runtime-version.json', JSON.stringify({ version }, null, 2) + '\n');
 await writeFile(
   'deploy/runtime-manifest.json',
@@ -59,6 +66,7 @@ await writeFile(
       taskIsolation: 'codex-native-systemd-user',
       remotionVersion: '4.0.425',
       runtimeSourceSha256: version,
+      productionPlugin: plugin,
       files: hashes,
     },
     null,

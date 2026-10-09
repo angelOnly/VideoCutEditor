@@ -57,6 +57,7 @@ node scripts/install-browser.mjs
 sudo apt-get install -y libnss3 libatk1.0-0 libatk-bridge2.0-0 libx11-xcb1 libxcomposite1 libxdamage1 libxrandr2 libgbm1 libpango-1.0-0 libcairo2 libasound2t64 || sudo apt-get install -y libnss3 libatk1.0-0 libatk-bridge2.0-0 libx11-xcb1 libxcomposite1 libxdamage1 libxrandr2 libgbm1 libpango-1.0-0 libcairo2 libasound2
 npm exec --yes --package=pnpm@11.19.0 -- pnpm runtime-manifest
 npm exec --yes --package=pnpm@11.19.0 -- pnpm build
+node deploy/install-plugin.mjs
 sudo loginctl enable-linger "$(id -un)"
 export XDG_RUNTIME_DIR="/run/user/$(id -u)"
 export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"

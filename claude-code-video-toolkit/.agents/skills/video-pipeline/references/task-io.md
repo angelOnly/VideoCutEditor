@@ -10,7 +10,7 @@
 
 ## 复用现有工具
 
-`TOOLKIT_ROOT` 指向只读 toolkit。输入目录只读，工程、音频和工具记录保存在当前任务目录；本任务后续修改沿用资料，不能清空音频或收费记录。
+`TOOLKIT_ROOT` 指向当前已安装制作插件的只读根目录，`REMOTION_MODULES_ROOT` 指向服务器提供的渲染依赖目录。输入目录只读，工程、音频和工具记录保存在当前任务目录；本任务后续修改沿用资料，不能清空音频或收费记录。
 
 ```bash
 python3 "$TOOLKIT_ROOT/tools/task_io.py" prepare --task input/message-<内部ID>/task.json

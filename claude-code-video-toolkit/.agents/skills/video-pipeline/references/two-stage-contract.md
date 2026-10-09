@@ -10,7 +10,7 @@ Worker 消息使用 [task-io.md](task-io.md)，不直接接收本文件的 candi
 
 ## 工具适配
 
-Codex 直接使用原生文件、命令和看图工具，调用 stage_tts.py、stage_media.py、render_batch.py 等现有 CLI。input 只读，制作资料保存在任务目录；通用依赖位于 toolkit/templates/ifeng-scenes/node_modules，浏览器使用 REMOTION_BROWSER_EXECUTABLE。收费账本由 toolkit 保留，结果未知时不重发。工具报告检查问题，Codex 决定修改和再次执行；Worker 不维护 .control 或制作恢复反馈。
+Codex 直接使用原生文件、命令和看图工具，调用 stage_tts.py、stage_media.py、render_batch.py 等现有 CLI。input 只读，制作资料保存在任务目录；制作脚本位于 TOOLKIT_ROOT/tools，通用依赖使用 REMOTION_MODULES_ROOT，浏览器使用 REMOTION_BROWSER_EXECUTABLE。收费账本由 toolkit 保留，结果未知时不重发。工具报告检查问题，Codex 决定修改和再次执行；Worker 不维护 .control 或制作恢复反馈。
 
 ## 独立本地任务
 

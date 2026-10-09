@@ -5,6 +5,7 @@ import type { Config } from '../config.js';
 import { AppServer } from './app-server.js';
 import { threadConfig } from '../runner/codex-host.js';
 import type { HostProcesses } from './host-processes.js';
+import { productionRoot, productionSkill } from './production-plugin.js';
 // 直接走 app-server 的原生命令权限；不再用旧 video_exec 沙箱冒充验证。
 export async function checkNativeIsolation(c: Config, processes?: HostProcesses) {
   await mkdir(c.dataRoot, { recursive: true });
@@ -20,6 +21,7 @@ export async function checkNativeIsolation(c: Config, processes?: HostProcesses)
     await writeFile(path.join(root, 'input/source.txt'), 'immutable');
     const w: any = { root, task: { stage: 'render' } };
     await rpc.start(c, processes ? id : undefined, threadConfig(c, w));
+    await productionSkill(rpc, c, root);
     const python = `import os,pathlib,sys
 assert not os.environ.get('POSTGRES_PASSWORD') and not os.environ.get('DATABASE_URL')
 for name in sys.argv[1:]:
@@ -45,12 +47,12 @@ print('native isolation passed')`;
       [c.hostBrowser, '--version'],
       [
         c.python,
-        path.join(c.toolkitRoot, 'tools/stage_media.py'),
+        path.join(productionRoot(c), 'tools/stage_media.py'),
         'preflight',
         '--node',
         process.execPath,
         '--modules',
-        path.join(c.toolkitRoot, 'templates/ifeng-scenes/node_modules'),
+        c.renderModules,
         '--browser',
         c.hostBrowser,
       ],

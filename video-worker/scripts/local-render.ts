@@ -13,17 +13,18 @@ import {
 } from '../src/contracts/pipeline-io.js';
 import { prompt } from '../src/runner/prompts.js';
 import type { Config } from '../src/config.js';
+import { productionSkill } from '../src/infrastructure/production-plugin.js';
 const { values: v } = parseArgs({
   options: Object.fromEntries(
-    ['request', 'python', 'modules', 'browser', 'codex', 'model', 'effort'].map((k) => [
+    ['request', 'python', 'modules', 'browser', 'codex', 'model', 'effort', 'plugin'].map((k) => [
       k,
       { type: 'string' as const },
     ]),
   ),
 });
-if (!v.request || !v.python || !v.browser || !v.codex)
+if (!v.request || !v.python || !v.browser || !v.codex || !v.plugin)
   throw Error(
-    '需要 --request task.json --python 路径 --browser 路径 --codex 路径；可选 --modules --model --effort',
+    '需要 --request task.json --python 路径 --browser 路径 --codex 路径 --plugin 已安装插件路径；可选 --modules --model --effort',
   );
 const file = await realpath(v.request),
   root = path.resolve(file, '../../..');
@@ -34,6 +35,11 @@ const config = {
   // 保留虚拟环境入口，否则解析符号链接后会丢失其 site-packages。
   python: path.resolve(v.python),
   toolkitRoot: await realpath(path.resolve('../claude-code-video-toolkit')),
+  pluginRoot: await realpath(v.plugin),
+  pluginSha256: (await readJson(path.resolve('config/plugin-release.json'))).sha256,
+  renderModules: await realpath(
+    v.modules ?? path.resolve('../claude-code-video-toolkit/templates/ifeng-scenes/node_modules'),
+  ),
   hostBrowser: await realpath(v.browser),
   codexPath: await realpath(v.codex),
   codexHome: process.env.CODEX_HOME ?? path.join(os.homedir(), '.codex'),
@@ -79,6 +85,7 @@ try {
   const configuration = threadConfig(config, { root, task } as any);
   if (v.modules) configuration.permissions.videocut.filesystem[await realpath(v.modules)] = 'read';
   await rpc.start(config, undefined, configuration);
+  const plugin = await productionSkill(rpc, config, root);
   const sessionFile = path.join(root, 'work/local-session.json');
   let previous: any;
   try {
@@ -104,7 +111,7 @@ try {
   await writeJson(sessionFile, { taskId: task.taskId, threadId });
   const turn = await rpc.request('turn/start', {
     threadId,
-    input: [{ type: 'text', text: prompt(task, root, config.toolkitRoot) }],
+    input: [{ type: 'text', text: prompt(task, root, config.pluginRoot) }, plugin.input],
     outputSchema: finalReferenceSchema,
     ...(v.effort ? { effort: v.effort } : {}),
   });
