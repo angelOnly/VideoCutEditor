@@ -6,6 +6,13 @@ This document tracks the development of claude-code-video-toolkit.
 
 ---
 
+## 2026-10-09：插件中的导演与美术动效能力
+
+- 制作插件升级为 1.1.0，加入去除教学案例的导演与美术 Skill；同一个 Render 显式启用，Analysis 职责不变。
+- 通用制作流程读取任务模板自身的创作边界，项目适配文档保留时间和组件接入，删除重复通用教学。
+- 财经模板 1.3.2 仅整理边界说明与版本信息；动画源码和媒体素材保持原样，本期组件仍由任务生成。
+- 部署与真实网页验收结果见仓库 docs 中的本轮记录；固定结束语缺失涉及确认稿输入，独立记录，不能用插件加载成功代替效果通过。
+
 ## Vision
 
 An open-source, AI-native video production workspace for Claude Code, featuring:

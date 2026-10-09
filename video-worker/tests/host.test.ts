@@ -150,9 +150,24 @@ test('仅收当前 turn 最终回复，接受原生事件、复用 thread，取�
     assert.equal(threadConfig(c, w).permissions.videocut.filesystem[c.toolkitRoot], undefined);
     await assert.rejects(rpc.handleRequest!('item/tool/call', { tool: 'video_exec' }));
     const abort = new AbortController();
-    running = host.run(l, w, abort.signal);
+    running = host.run(
+      { ...l, run: { ...l.run, stage: 'render' } },
+      { ...w, task: { ...w.task, stage: 'render' } },
+      abort.signal,
+    );
     void running.catch(() => {});
     await until(() => rpc.turn === 2);
+    assert.deepEqual(
+      rpc.calls
+        .filter((x) => x.method === 'turn/start')[1]
+        .params.input.filter((item: any) => item.type === 'skill')
+        .map((item: any) => item.name),
+      [
+        'videocut-production:video-pipeline',
+        'videocut-production:directing-motion-art',
+        'videocut-production:motion-design-production',
+      ],
+    );
     abort.abort();
     await assert.rejects(running, { code: 'CANCELLED' });
     assert.ok(

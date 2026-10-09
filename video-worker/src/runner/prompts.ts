@@ -16,7 +16,7 @@ export function prompt(task: any, _job = '', toolkit = '/opt/toolkit', _rules?: 
   // 先交代本期创作目标，再交代导出协议；模板始终从当前任务输入读取。
   const renderCreation =
     task.stage === 'render'
-      ? '\n本次由你负责创作完整视频。读取完整稿件、确认文本、制作要求和本任务已下载的模板，按 references/production-flow.md 完成讲解编排、真实配音驱动的组件实现、讲解对应审片及修订。模板决定栏目样式，本期内容决定正文表达；在任务工程中实现。审片须从完整口播检查变化或合理保持，不能仅凭入场动画和首中尾截图通过。发现问题修订后重验，再交付。\n'
+      ? '\n本次由你负责创作完整视频。读取完整原稿、确认文本、制作要求与本任务下载冻结的模板，按 references/production-flow.md 执行。先读取模板自己的保护范围、可创作区域及接入方式；使用 directing-motion-art 形成完整观看过程，再使用 motion-design-production 深化主体、美术、构图与连续运动，并在任务工程实现。以真实配音校准变化，设计说明不能代替组件中的实际演出。先预览代表性连续段落，按问题返回设计或实现修订，再批量导出并完成既有交付检查。保持确认口播、时间轴和栏目约束；不得从其他模板继承人物或布局清单。\n'
       : '';
   // 当前 Render 的交付协议优先于参考资料中的旧版“仅 N 个分镜”示例。
   const renderDelivery =

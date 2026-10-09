@@ -17,7 +17,13 @@ export function pluginSkills(cwd: string, root = testPluginRoot) {
     data: [
       {
         cwd,
-        skills: ['video-pipeline', 'remotion-best-practices', 'ffmpeg'].map((name) => ({
+        skills: [
+          'video-pipeline',
+          'remotion-best-practices',
+          'ffmpeg',
+          'directing-motion-art',
+          'motion-design-production',
+        ].map((name) => ({
           name: `videocut-production:${name}`,
           path: path.join(root, `.agents/skills/${name}/SKILL.md`),
           enabled: true,

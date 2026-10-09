@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "templateVersion": "1.3.1",
+  "templateVersion": "1.3.2",
   "motionGuide": "../动效组件与内容适配说明.md",
   "entry": "src/index.ts",
   "timelineModule": "src/timeline.ts",
@@ -24,7 +24,7 @@
   ],
   "rules": [
     "复制到任务 project/renderer 后使用已部署的 Remotion 依赖；不安装依赖。只允许执行 sentenceAudioValidator 指向的只读校验脚本。",
-    "复用小圆头像、观点卡、中央面板、章节导航、全片进度条和字幕等栏目骨架。正文根据本期内容设计，可以复用、组合或直接在任务副本编写图形与运动，不要求先填基础动效组件；本期扩展通过visualExtensions注册及校验。",
+    "制作前读取 motionGuide 中的“创作范围与保护边界”，按其要求保留栏目元素、更新本期内容并创作中央图解；本期扩展仍在任务副本注册和校验。",
     "timeline.ts 和 render/<runId>/timeline.json 是本期任务文件，必须由每条独立短句 TTS 的实际时长生成；默认每条建议不超过 28 字；可靠时间记录允许复用音频分页，拼接保持确认原文，不得按比例切字幕。",
     "chapters 定义导航和逻辑章节，不限定一章只用一张图。跨句延续的图形放章节visualBlocks，单镜专用图形可放scene.visualBlocks；后者替换该镜的章节图解。单镜与全片均传入完整timeline，不能重置连续图形和全片进度。",
     "Root 渲染入口自动执行 validateTimeline；超出推荐范围返回提示，非法时序必须修正，不得删除校验。使用实际配音时间驱动正文变化，候选导出后对照本期原稿检查关键状态、运动过程和文字布局；有问题先修本期工程并复查，再批量导出。技术通过不等于画面表达合格。",

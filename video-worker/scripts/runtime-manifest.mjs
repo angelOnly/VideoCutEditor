@@ -19,6 +19,8 @@ for (const directory of [
   'claude-code-video-toolkit/.agents/skills/video-pipeline',
   'claude-code-video-toolkit/.agents/skills/remotion-best-practices',
   'claude-code-video-toolkit/.agents/skills/ffmpeg',
+  'claude-code-video-toolkit/.agents/skills/directing-motion-art',
+  'claude-code-video-toolkit/.agents/skills/motion-design-production',
   'claude-code-video-toolkit/.codex-plugin',
 ])
   await collect(directory);

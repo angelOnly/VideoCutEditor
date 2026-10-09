@@ -42,12 +42,24 @@ export async function verifyProductionPlugin(config: Config) {
   return { name: release.name, version: release.version, sha256: release.sha256, root };
 }
 
-export async function productionSkill(rpc: Rpc, config: Config, cwd: string) {
+export async function productionSkill(
+  rpc: Rpc,
+  config: Config,
+  cwd: string,
+  stage: 'analysis' | 'render' = 'analysis',
+) {
   const release = await verifyProductionPlugin(config);
   const result = await rpc.request('skills/list', { cwds: [cwd], forceReload: true });
   const skills = result.data?.find((item: any) => item.cwd === cwd)?.skills ?? [];
   // 使用 Codex 实际发现的插件 Skill，不能把“可以读文件”当成“插件已经加载”。
-  const loaded = ['video-pipeline', 'remotion-best-practices', 'ffmpeg'].map((name) =>
+  const names = [
+    'video-pipeline',
+    'remotion-best-practices',
+    'ffmpeg',
+    'directing-motion-art',
+    'motion-design-production',
+  ];
+  const loaded = names.map((name) =>
     skills.find(
       (item: any) =>
         item.path === path.join(release.root, `.agents/skills/${name}/SKILL.md`) &&
@@ -56,7 +68,15 @@ export async function productionSkill(rpc: Rpc, config: Config, cwd: string) {
     ),
   );
   if (loaded.some((item) => !item))
-    throw new AppError('PRODUCTION_PLUGIN_NOT_LOADED', 'Codex 未完整加载指定制作插件的三个 Skill');
-  const skill = loaded[0];
-  return { release, input: { type: 'skill' as const, name: skill.name, path: skill.path } };
+    throw new AppError('PRODUCTION_PLUGIN_NOT_LOADED', 'Codex 未完整加载指定制作插件的五个 Skill');
+  // 同一个制作代理按阶段启用；Analysis 不注入正文创作指令。
+  const selected = stage === 'render' ? [loaded[0], loaded[3], loaded[4]] : [loaded[0]];
+  return {
+    release,
+    inputs: selected.map((skill) => ({
+      type: 'skill' as const,
+      name: skill.name,
+      path: skill.path,
+    })),
+  };
 }

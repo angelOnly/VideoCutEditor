@@ -5,7 +5,10 @@
 
 | 需求 | 共用入口 | Worker适配 |
 | --- | --- | --- |
-| 正文构图与连续讲解 | video-pipeline/references/motion-design.md；需要借鉴时再读motion-reference-cases.md | 根据本期内容创作，不以组件名称代替设计 |
+| 导演与完整观看过程 | directing-motion-art/SKILL.md | 读取本任务边界后设计具体演出，不从组件菜单出发 |
+| 造型、构图与连续运动 | motion-design-production/SKILL.md | 深化主体、关键状态与危险中途，实际预览后返修 |
+| 工程接入与口播时间 | video-pipeline/references/motion-design.md | 读取当前模板入口，基于真实配音换算坐标 |
+| 表现参考 | video-pipeline/references/motion-reference-cases.md | 按当前设计问题查看，不作为固定菜单 |
 | Remotion工程、时间与转场 | remotion-best-practices/SKILL.md，按需timing、sequencing、transitions、audio | 使用当前依赖，不启动Studio、不安装软件 |
 | 数据图与数值变化 | remotion-best-practices/rules/data-animation.md | 使用本期数据、实际音频窗口和当前依赖 |
 | 关系、结构与布局重排 | remotion-best-practices/rules/diagram-animation.md | 在任务工程实现，使用当前模板的接入方式；有visualExtensions时通过它接入 |

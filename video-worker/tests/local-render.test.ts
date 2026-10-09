@@ -35,7 +35,7 @@ rl.createInterface({input:process.stdin}).on('line',line=>{
  fs.appendFileSync(${JSON.stringify(log)},JSON.stringify(m)+'\\n');
  let result={};
  if(m.method==='account/read')result={account:{type:'chatgpt'}};
- if(m.method==='skills/list')result={data:[{cwd:m.params.cwds[0],skills:['video-pipeline','remotion-best-practices','ffmpeg'].map(name=>({name:'videocut-production:'+name,path:path.join(process.env.TOOLKIT_ROOT,'.agents/skills',name,'SKILL.md'),enabled:true,pluginId:'videocut-production@videocut-internal'})),errors:[]}]};
+ if(m.method==='skills/list')result={data:[{cwd:m.params.cwds[0],skills:['video-pipeline','remotion-best-practices','ffmpeg','directing-motion-art','motion-design-production'].map(name=>({name:'videocut-production:'+name,path:path.join(process.env.TOOLKIT_ROOT,'.agents/skills',name,'SKILL.md'),enabled:true,pluginId:'videocut-production@videocut-internal'})),errors:[]}]};
  if(m.method.startsWith('thread/')){root=m.params.cwd;result={thread:{id:'same-thread'},activePermissionProfile:{id:'videocut'}};if(m.params.dynamicTools)throw Error('不能注册制作工具');}
  if(m.method==='turn/start')result={turn:{id:'turn-'+(++turn)}};
  console.log(JSON.stringify({id:m.id,result}));
@@ -68,10 +68,28 @@ rl.createInterface({input:process.stdin}).on('line',line=>{
     ];
     const first = JSON.parse((await command(process.execPath, args, { timeout: 10000 })).trim());
     assert.equal(first.requestId, 'one');
-    await writeJson(entry, { ...task, requestId: 'two', resultFile: 'output/two/result.json' });
+    await writeJson(entry, {
+      ...task,
+      stage: 'render',
+      requestId: 'two',
+      resultFile: 'output/two/result.json',
+    });
     const second = JSON.parse((await command(process.execPath, args, { timeout: 10000 })).trim());
     assert.equal(second.requestId, 'two');
     const calls = (await readFile(log, 'utf8')).trim().split('\n').map(JSON.parse);
+    assert.deepEqual(
+      calls
+        .filter((c) => c.method === 'turn/start')
+        .map((c) => c.params.input.filter((i: any) => i.type === 'skill').map((i: any) => i.name)),
+      [
+        ['videocut-production:video-pipeline'],
+        [
+          'videocut-production:video-pipeline',
+          'videocut-production:directing-motion-art',
+          'videocut-production:motion-design-production',
+        ],
+      ],
+    );
     assert.equal(calls.filter((c) => c.method === 'thread/start').length, 1);
     assert.equal(calls.filter((c) => c.method === 'thread/resume').length, 1);
     assert.equal(

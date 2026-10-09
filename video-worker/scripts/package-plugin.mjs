@@ -9,7 +9,13 @@ export const toolkitSource = fileURLToPath(
 );
 export const packageEntries = [
   '.codex-plugin/plugin.json',
-  ...['video-pipeline', 'remotion-best-practices', 'ffmpeg'].map((s) => `.agents/skills/${s}`),
+  ...[
+    'video-pipeline',
+    'remotion-best-practices',
+    'ffmpeg',
+    'directing-motion-art',
+    'motion-design-production',
+  ].map((s) => `.agents/skills/${s}`),
   ...[
     'generate_dialogue_audio.py',
     'two_stage.py',

@@ -85,7 +85,7 @@ try {
   const configuration = threadConfig(config, { root, task } as any);
   if (v.modules) configuration.permissions.videocut.filesystem[await realpath(v.modules)] = 'read';
   await rpc.start(config, undefined, configuration);
-  const plugin = await productionSkill(rpc, config, root);
+  const plugin = await productionSkill(rpc, config, root, task.stage);
   const sessionFile = path.join(root, 'work/local-session.json');
   let previous: any;
   try {
@@ -111,7 +111,7 @@ try {
   await writeJson(sessionFile, { taskId: task.taskId, threadId });
   const turn = await rpc.request('turn/start', {
     threadId,
-    input: [{ type: 'text', text: prompt(task, root, config.pluginRoot) }, plugin.input],
+    input: [{ type: 'text', text: prompt(task, root, config.pluginRoot) }, ...plugin.inputs],
     outputSchema: finalReferenceSchema,
     ...(v.effort ? { effort: v.effort } : {}),
   });

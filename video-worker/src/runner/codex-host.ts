@@ -204,13 +204,13 @@ export class HostCodex {
   };
   async run(lease: Lease, w: Workspace, signal: AbortSignal) {
     signal.throwIfAborted();
-    const plugin = await productionSkill(this.rpc, this.config, w.root);
+    const plugin = await productionSkill(this.rpc, this.config, w.root, lease.run.stage);
     const rules = loadPipeline(w.task, productionRoot(this.config));
     const inputPrompt = prompt(w.task, w.root, productionRoot(this.config), rules);
-    await writeJson(
-      path.join(w.root, `output/${lease.run.id}/plugin-runtime.json`),
-      plugin.release,
-    );
+    await writeJson(path.join(w.root, `output/${lease.run.id}/plugin-runtime.json`), {
+      ...plugin.release,
+      skills: plugin.inputs,
+    });
     const args = {
       cwd: w.root,
       runtimeWorkspaceRoots: [w.root],
@@ -299,7 +299,7 @@ export class HostCodex {
       const start = await this.rpc.request('turn/start', {
         threadId,
         ...(this.config.codexReasoningEffort ? { effort: this.config.codexReasoningEffort } : {}),
-        input: [{ type: 'text', text: inputPrompt }, plugin.input],
+        input: [{ type: 'text', text: inputPrompt }, ...plugin.inputs],
         outputSchema,
       });
       if (state.turnId && state.turnId !== start.turn.id) throw new Error('Turn identity mismatch');
