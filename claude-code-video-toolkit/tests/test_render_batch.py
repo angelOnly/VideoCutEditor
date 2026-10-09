@@ -33,7 +33,23 @@ class BatchTests(Fixture):
         self.args = SimpleNamespace(request=render, batch='batch_1', project='project', entry='project/index.js',
              scenes='scenes.json', modules=str(modules), browser=str(browser), node=sys.executable, slots=2)
         frozen = freeze_batch(self.args); self.args.manifest = frozen['manifest']
+        self.preflight = self.args.request.parent/'preflight-review.json'
+        preview = self.job/'preview.mp4'; preview.write_bytes(b'test-preview')
+        write(self.preflight, {'productionSha256': frozen['productionSha256'], 'previews': [
+            {'path': 'preview.mp4', 'sha256': digest(preview), 'viewedFrames': [0],
+             'observed': '测试桩，不代表真实审片', 'limitations': '测试未播放', 'passed': True}]})
         self.dir = (self.job / self.args.manifest).parent
+
+    def test_preflight_missing_stale_or_changed(self):
+        original = read(self.preflight)
+        for update in ({'productionSha256': 'stale'}, {'previews': []}):
+            write(self.preflight, {**original, **update})
+            with self.assertRaisesRegex(StageError, '试作'): batch_module.validate_preflight(self.job, self.args.request, read(self.job/self.args.manifest))
+        write(self.preflight, original)
+        (self.job/'preview.mp4').write_bytes(b'changed')
+        with self.assertRaisesRegex(StageError, '试作视频已变化'): batch_module.validate_preflight(self.job, self.args.request, read(self.job/self.args.manifest))
+        self.preflight.unlink()
+        with self.assertRaisesRegex(StageError, '缺少代表段'): batch_module.validate_preflight(self.job, self.args.request, read(self.job/self.args.manifest))
 
     def build(self, argv, cwd, log, done, timeout):
         config = read(Path(done).parent/'config.json')

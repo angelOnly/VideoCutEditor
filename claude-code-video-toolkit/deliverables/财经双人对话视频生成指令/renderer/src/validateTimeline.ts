@@ -14,7 +14,7 @@ const short = (value: unknown, max: number, field: string, out: Recommendation[]
   recommend(out, Array.from(value).length <= max, field, `建议不超过 ${max} 字；检查换行、可读性和安全区`);
 };
 const listKinds = ['comparison', 'flow', 'layers', 'labels'];
-const kinds = ['metric', ...listKinds, 'quote', 'trend', 'line', 'gauge', 'ring'];
+const kinds = ['episode-unimplemented', 'metric', ...listKinds, 'quote', 'trend', 'line', 'gauge', 'ring'];
 const regions: Record<string, number[]> = {
   full: [0, 0, 1, 1], top: [0, 0, 1, .46], bottom: [0, .54, 1, 1], left: [0, 0, .48, 1], right: [.52, 0, 1, 1],
 };
@@ -30,6 +30,10 @@ export function validateBlocks(blocks: VisualBlock[], frames: number, warnings: 
     if (b.animationFrames !== undefined) check(integer(b.animationFrames), `${b.id} 动画参数无效`);
     recommend(warnings, b.endFrameExclusive - b.startFrame >= 14, b.id, '展示较短，检查动画完成度及阅读时间');
     if (extension) { extension.validate(b); continue; }
+    if (b.kind === 'episode-unimplemented') {
+      recommend(warnings, false, b.id, '本期正文尚未实现；此标记仅供开发预览，不可交付');
+      continue;
+    }
     const p = b.props;
     if (p.columns !== undefined) check(typeof p.columns === 'number' && integer(p.columns) && p.columns > 0, `${b.id} 列数须为正整数`);
     if (listKinds.includes(b.kind)) {

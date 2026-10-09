@@ -997,6 +997,7 @@
     "narrationCheck": {
       "type": "object",
       "properties": {
+        "designIds": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1, "uniqueItems": true},
         "utteranceIds": {
           "type": "array",
           "items": {
@@ -1050,6 +1051,7 @@
         }
       },
       "required": [
+        "designIds",
         "utteranceIds",
         "mode",
         "startFrame",

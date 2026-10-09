@@ -1,5 +1,5 @@
 import type {CSSProperties} from 'react';
-import {Easing, interpolate} from 'remotion';
+import {Easing, interpolate, getRemotionEnvironment} from 'remotion';
 import type {VisualBlock} from './types';
 import {visualExtensions} from './visualExtensions';
 import {motionFrames} from './motion';
@@ -92,12 +92,17 @@ const Block: React.FC<{block: VisualBlock; frame: number}> = ({block, frame}) =>
       </>}
       <div style={{fontSize: 22, marginTop: 12}}>{text(p.detail)}</div>
     </div>;
-  } else {
+  } else if (block.kind === 'episode-unimplemented') {
+    // Studio 可看见未实现提示；正式导出不能把占位画面交付。
+    if (getRemotionEnvironment().isRendering) throw new Error('TASK_LAYOUT_INVALID：本期正文尚未实现');
+    body = <div style={{color: '#ef5258', fontSize: 32}}>本期正文尚未实现：请先完成演出设计并注册组件</div>;
+  } else if (block.kind === 'quote') {
     body = <div style={{...box, width: '100%', borderLeft: '4px solid #ef5258'}}>
       <div style={{color: '#ef5258', fontSize: 20, marginBottom: 18}}>{text(p.label)}</div>
       <div style={{color: '#f5f9ff', fontSize: 38, lineHeight: 1.5, fontWeight: 800}}>{text(p.text)}</div>
     </div>;
   }
+  if (!body) throw new Error(`正文组件未实现：${block.kind}`);
   return <div data-block={block.id} style={{position: 'absolute', ...slots[block.slot ?? 'full'], display: 'flex',
     // 扩展自己控制运动，外层只定位，避免二次淡入和位移。
     alignItems: 'center', ...(Extension ? {} : {opacity: entry, transform: `translateY(${(1 - entry) * 20}px)`})}}>

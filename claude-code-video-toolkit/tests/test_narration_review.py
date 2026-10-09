@@ -18,13 +18,16 @@ class NarrationReviewTests(unittest.TestCase):
         self.request = {'outputSpec': {'fps': 30}}
         self.manifest = {'scenes': [{'id': 's1', 'frames': 100, 'text': '现状。变化。',
                                     'evidence': [{'frame': i} for i in range(100)]}]}
-        self.hold = {'utteranceIds': ['u1'], 'mode': 'hold', 'startFrame': 10, 'endFrameExclusive': 40,
+        self.hold = {'designIds': ['d1'], 'utteranceIds': ['u1'], 'mode': 'hold', 'startFrame': 10, 'endFrameExclusive': 40,
                      'expected': '保持现状供阅读', 'observed': '背景及对象保持可读',
                      'viewedFrames': [10, 39], 'passed': True}
-        self.change = {'utteranceIds': ['u2'], 'mode': 'change', 'startFrame': 39, 'endFrameExclusive': 80,
+        self.change = {'designIds': ['d2'], 'utteranceIds': ['u2'], 'mode': 'change', 'startFrame': 39, 'endFrameExclusive': 80,
                        'changeStartFrame': 40, 'changeEndFrameExclusive': 60,
                        'expected': '随转折改变主体', 'observed': '转折处开始变化并保留结果',
                        'viewedFrames': [39, 40, 49, 59, 60, 79], 'passed': True}
+        self.timeline['scenes'][0]['visualDesign'] = [
+            {'id': 'd1', 'utteranceIds': ['u1'], 'mode': 'hold', 'description': '保持现状', 'implementation': 'project/Scene.tsx'},
+            {'id': 'd2', 'utteranceIds': ['u2'], 'mode': 'change', 'description': '改变主体', 'implementation': 'project/Scene.tsx'}]
         self.review = {'scenes': [{'viewedFrames': list(range(100)), 'narrationChecks': [self.hold, self.change]}]}
 
     def validate(self):
@@ -32,13 +35,26 @@ class NarrationReviewTests(unittest.TestCase):
             schema(item, 'narrationCheck')
         validate_narration_review(self.timeline, self.request, self.manifest, self.review)
 
+    def test_design_cannot_be_silently_downgraded(self):
+        self.change['mode'] = 'hold'
+        self.change.pop('changeStartFrame'); self.change.pop('changeEndFrameExclusive')
+        with self.assertRaisesRegex(StageError, '意图不符'): self.validate()
+
+    def test_missing_design_and_orphan_review(self):
+        self.change['designIds'] = ['unknown']
+        with self.assertRaisesRegex(StageError, '设计引用'): self.validate()
+        del self.timeline['scenes'][0]['visualDesign']
+        with self.assertRaisesRegex(StageError, '设计执行索引'): self.validate()
+
     def test_hold_change_intro_and_outro(self):
         self.validate()  # 片头和片尾不强制伪造口播，也不要求全程运动。
 
     def test_grouped_hold_and_silent_scene(self):
+        self.timeline['scenes'][0]['visualDesign'] = [dict(self.timeline['scenes'][0]['visualDesign'][0], utteranceIds=['u1', 'u2'])]
         self.hold.update(utteranceIds=['u1', 'u2'], endFrameExclusive=80, viewedFrames=[10, 79])
         self.review['scenes'][0]['narrationChecks'] = [self.hold]
         self.validate()
+        self.timeline['scenes'][0]['visualDesign'] = []
         self.timeline['scenes'][0]['utterances'] = []
         self.manifest['scenes'][0]['text'] = ''
         self.review['scenes'][0]['narrationChecks'] = []

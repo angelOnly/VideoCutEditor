@@ -401,7 +401,8 @@ class MediaTests(Fixture):
             uid = scene['id'] + '_u1'
             timeline['scenes'].append({'id': scene['id'], 'startFrame': i * 10, 'endFrameExclusive': (i + 1) * 10,
                 'utterances': [{'id': uid, 'text': scene['text'], 'startFrame': 0, 'endFrameExclusive': 10}]})
-            viewed['narrationChecks'] = [{'utteranceIds': [uid], 'mode': 'hold', 'startFrame': 0,
+            timeline['scenes'][-1]['visualDesign'] = [{'id': 'd1', 'utteranceIds': [uid], 'mode': 'hold', 'description': '测试保持纯色', 'implementation': 'fixture'}]
+            viewed['narrationChecks'] = [{'designIds': ['d1'], 'utteranceIds': [uid], 'mode': 'hold', 'startFrame': 0,
                 'endFrameExclusive': 10, 'expected': '合成测试保持纯色背景', 'observed': '区间两端背景一致',
                 'viewedFrames': [0, 9], 'passed': True}]
         write(self.render.parent/'timeline.json', timeline)

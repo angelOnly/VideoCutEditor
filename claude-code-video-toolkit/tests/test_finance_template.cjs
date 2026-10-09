@@ -12,9 +12,13 @@ const req = createRequire(path.join(deps, '../package.json'));
 const ts = req('typescript');
 
 // 只给本测试加载模板 TS；正式入口仍由 Remotion 编译。
-require.extensions['.tsx'] = require.extensions['.ts'] = (module, file) => module._compile(ts.transpileModule(fs.readFileSync(file, 'utf8'), {
-  compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020},
+require.extensions['.tsx'] = require.extensions['.ts'] = (module, file) => {
+  module.paths.unshift(deps);
+  module._compile(ts.transpileModule(fs.readFileSync(file, 'utf8'), {
+  fileName: file,
+  compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020, jsx: ts.JsxEmit.ReactJSX},
 }).outputText, file);
+};
 const {validateTimeline, validateBlocks} = require(path.join(template, 'renderer/src/validateTimeline.ts'));
 const block = (kind, props, slot = 'full', startFrame = 0, endFrameExclusive = 360) => ({id: kind, kind, props, slot, startFrame, endFrameExclusive});
 const groups = [
@@ -91,6 +95,17 @@ multiScene.scenes.push({...closing,id:'closing-a',frames:45,contentFrames:45,utt
 const padded = structuredClone(timeline); padded.totalFrames += 2; padded.scenes[12].frames += 2; validateTimeline(padded);
 const noEnding = structuredClone(timeline); delete noEnding.ending; noEnding.scenes.pop(); noEnding.totalFrames = 2160; validateTimeline(noEnding);
 const example = JSON.parse(fs.readFileSync(path.join(template,'renderer/timeline.example.json'),'utf8')); validateTimeline(example);
+// 未实现正文只可在开发预览看到提示，不能静默变成引语卡并导出。
+const React = req('react');
+const {renderToStaticMarkup} = req('react-dom/server');
+const {VisualBlocks} = require(path.join(template, 'renderer/src/VisualBlocks.tsx'));
+const previewBody = () => renderToStaticMarkup(React.createElement(VisualBlocks, {
+  blocks: example.chapters[0].visualBlocks, frame: 0, title: '测试', label: '正文',
+}));
+assert.match(previewBody(), /本期正文尚未实现/);
+global.window = {process: {env: {NODE_ENV: 'test'}}};
+try { assert.throws(previewBody, /TASK_LAYOUT_INVALID/); }
+finally { delete global.window; }
 console.log('模板参数回归通过：10 类动效、正文保持、同镜/跨镜结束语、独立片尾、禁用路径与失败用例');
 
 async function main() {

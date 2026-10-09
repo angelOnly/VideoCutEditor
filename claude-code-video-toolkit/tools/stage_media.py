@@ -343,9 +343,34 @@ def validate_narration_review(timeline, request, manifest, review):
         normalize = lambda value: ''.join(value.split())
         check(normalize(''.join(u['text'] for u in utterances)) == normalize(actual['text']),
               f"{actual['id']} 审片时间轴未覆盖确认口播")
+        # 设计是独立的制作意图，审片不能自行把所有过程降级为保持。
+        designs = source.get('visualDesign')
+        check(isinstance(designs, list) and (designs or not utterances), '缺少 visualDesign 设计执行索引')
+        design_by_id = {}
+        for design in designs:
+            check(isinstance(design, dict), '设计项无效')
+            did = design.get('id')
+            check(isinstance(did, str) and did.strip() and did not in design_by_id, '设计 ID 为空或重复')
+            check(design.get('mode') in ('change', 'hold'), '设计 mode 无效')
+            check(all(isinstance(design.get(k), str) and design[k].strip()
+                      for k in ('description', 'implementation')), '设计缺少演出说明或实现位置')
+            ids = design.get('utteranceIds')
+            check(isinstance(ids, list) and ids and all(isinstance(u, str) and u in by_id for u in ids),
+                  '设计引用不存在的口播')
+            design_by_id[did] = design
+        check({u for d in designs for u in d['utteranceIds']} == set(by_id), '设计未覆盖全部讲解')
+        reviewed_designs = set()
         covered = set()
         evidence = {item['frame'] for item in actual['evidence']}
         for item in viewed['narrationChecks']:
+            design_ids = item.get('designIds')
+            check(isinstance(design_ids, list) and design_ids and
+                  all(isinstance(d, str) and d in design_by_id for d in design_ids), '审片缺少有效设计引用')
+            for did in design_ids:
+                design = design_by_id[did]
+                check(item['mode'] == design['mode'], '审片与设计的变化/保持意图不符')
+                check(set(design['utteranceIds']).issubset(item['utteranceIds']), '审片未覆盖所引用设计的口播')
+            reviewed_designs.update(design_ids)
             ids = item['utteranceIds']
             check(set(ids).issubset(by_id), '审片引用不存在的发言')
             start, stop = item['startFrame'], item['endFrameExclusive']
@@ -368,6 +393,7 @@ def validate_narration_review(timeline, request, manifest, review):
                                min(stop - 1, action_end)})
             check(needed.issubset(samples), '缺少讲解区间边界或动作前中后画面')
             covered.update(ids)
+        check(reviewed_designs == set(design_by_id), '存在未检查的设计过程')
         check(covered == set(by_id), f"{actual['id']} 存在未检查的口播；可合并同一语义并说明保持理由")
 
 

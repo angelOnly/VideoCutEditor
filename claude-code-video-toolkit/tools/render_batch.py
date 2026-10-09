@@ -79,7 +79,8 @@ def freeze_batch(args):
         path = Path(args.request).resolve().parent / 'batches' / args.batch / 'manifest.json'
         if path.exists(): require(read(path) == manifest, '已有批次不可覆盖，请使用新 batch ID', 'TIMELINE_STALE')
         else: write(path, manifest)
-        return {'manifest': str(path.relative_to(root)), 'version': manifest['version'], 'scenes': ids}
+        return {'manifest': str(path.relative_to(root)), 'version': manifest['version'], 'scenes': ids,
+                'productionSha256': json_digest({k: frozen[k] for k in ('projectFiles', 'props', 'timelineHash')})}
 
 
 def verify_manifest(root, request_path, request, manifest, modules, browser):
@@ -94,6 +95,29 @@ def verify_manifest(root, request_path, request, manifest, modules, browser):
     require(current == manifest['inputs'], '冻结输入已变化，必须建立新批次', 'TIMELINE_STALE')
 
 
+def validate_preflight(root, request_path, manifest):
+    """只验证实际试作文件及版本关联，不把这些字段当成审美通过证明。"""
+    def check(value, message):
+        require(value, message + '；请在当前任务内试作、观察后继续', 'VISUAL_REVIEW_REQUIRED')
+    path = Path(request_path).resolve().parent / 'preflight-review.json'
+    check(path.is_file(), '正式批次前缺少代表段试作记录')
+    record = read(path)
+    check(isinstance(record, dict), '试作记录无效')
+    # 只绑定制作输入，不绑定批次名称；重试同一版本可复用。
+    expected = {key: manifest['inputs'][key] for key in ('projectFiles', 'props', 'timelineHash')}
+    check(record.get('productionSha256') == json_digest(expected), '试作记录对应的工程、参数或时间轴已变化')
+    previews = record.get('previews')
+    check(isinstance(previews, list) and previews, '试作记录没有实际预览')
+    for preview in previews:
+        check(isinstance(preview, dict) and preview.get('passed') is True, '试作仍有未解决问题')
+        check(all(isinstance(preview.get(k), str) and preview[k].strip()
+                  for k in ('path', 'sha256', 'observed', 'limitations')), '试作缺少文件、观察或能力限制')
+        check(digest(local(root, preview['path'])) == preview['sha256'], '试作视频已变化')
+        frames = preview.get('viewedFrames')
+        check(isinstance(frames, list) and frames and all(type(f) is int and f >= 0 for f in frames),
+              '试作缺少实际查看帧')
+
+
 def render_batch(args):
     started = time.monotonic()
     with execution(args.request, 'render-batch') as context:
@@ -104,6 +128,7 @@ def render_batch(args):
         manifest = read(manifest_path)
         require(args.slots in (1, 2, 3, 4, 5), '只支持 1 至 5 个渲染槽')
         verify_manifest(root, args.request, request, manifest, args.modules, args.browser)
+        validate_preflight(root, args.request, manifest)
         require(os.environ.get('VIDEOCUT_RENDER_SANDBOX', 'seatbelt' if sys.platform == 'darwin' else 'bwrap') in ('seatbelt', 'bwrap', 'native'),
                 '批次必须使用只读输入沙箱', 'CAPABILITY_MISSING')
         stop = threading.Event()

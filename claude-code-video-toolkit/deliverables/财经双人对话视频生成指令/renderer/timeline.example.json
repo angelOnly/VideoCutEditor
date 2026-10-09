@@ -15,20 +15,11 @@
       "visualBlocks": [
         {
           "id": "viewpoints",
-          "kind": "comparison",
+          "kind": "episode-unimplemented",
           "startFrame": 0,
           "endFrameExclusive": 180,
           "slot": "full",
-          "props": {
-            "items": [
-              "第一方观点",
-              "第二方观点"
-            ],
-            "itemFrames": [
-              0,
-              90
-            ]
-          }
+          "props": {}
         }
       ]
     }

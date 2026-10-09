@@ -24,12 +24,13 @@ for i,s in enumerate(plan['scenes']):
 timeline={'fps':r['outputSpec']['fps'],'scenes':[]}
 for index,scene in enumerate(m['scenes']):
  timeline['scenes'].append({'id':scene['id'],'startFrame':index*10,'endFrameExclusive':(index+1)*10,
+  'visualDesign':[{'id':'d1','utteranceIds':[scene['id']+'_tts'],'mode':'hold','description':'合成色块保持','implementation':'project/fixture.ts'}],
   'utterances':[{'id':scene['id']+'_tts','text':scene['text'],'src':scene['audio']['path'],'startFrame':0,'endFrameExclusive':10}],
   'captions':[{'utteranceId':scene['id']+'_tts','text':scene['text'],'startFrame':0,'endFrameExclusive':10}]})
 write(root/'render'/r['runId']/'timeline.json',timeline)
 review['timelineSha256']=digest(root/'render'/r['runId']/'timeline.json')
 for scene in review['scenes']:
- scene['narrationChecks']=[{'utteranceIds':[scene['id']+'_tts'],'mode':'hold','startFrame':0,
+ scene['narrationChecks']=[{'designIds':['d1'],'utteranceIds':[scene['id']+'_tts'],'mode':'hold','startFrame':0,
   'endFrameExclusive':10,'expected':'合成色块保持','observed':'首尾颜色一致','viewedFrames':[0,9],'passed':True}]
 write(root/m['quality'],review);write(root/'output/manifest.json',m)
 (root/'project').mkdir(exist_ok=True)

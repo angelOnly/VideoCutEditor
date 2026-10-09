@@ -1,6 +1,6 @@
 import type {FinanceTimeline} from './types';
 
-// 仅演示串行片尾字段，音频和片尾必须在任务内替换、实测后才能渲染。
+// 接口骨架：本期正文必须由任务工程实现，不能替换示例文字后交付。
 export const timeline: FinanceTimeline = {
   "fps": 30,
   "width": 1920,
@@ -18,20 +18,11 @@ export const timeline: FinanceTimeline = {
       "visualBlocks": [
         {
           "id": "viewpoints",
-          "kind": "comparison",
+          "kind": "episode-unimplemented",
           "startFrame": 0,
           "endFrameExclusive": 180,
           "slot": "full",
-          "props": {
-            "items": [
-              "第一方观点",
-              "第二方观点"
-            ],
-            "itemFrames": [
-              0,
-              90
-            ]
-          }
+          "props": {}
         }
       ]
     }
