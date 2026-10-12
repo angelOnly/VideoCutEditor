@@ -104,7 +104,7 @@ POST /narrate/ai_video_director/getAiVideoEditingAnalysisData
 - `script`、`otherRequirements`、`otherMaterial` 为必填字段；图片和视频数组可以为空。
 - 每个素材的 `assetId` 必填且在同一请求内唯一。
 - 当前服务器的测试模板为 `finance_dialogue_v1`，其内容来自本机已打包的财经模板 ZIP。
-- 后续接入定制化模板服务后，`templateId` 改传定制化模板 ID；服务端还需配置 `CUSTOM_TEMPLATE_API_BASE_URL` 后才会下载对应 ZIP。部署时按实际配置核对；本地 ZIP 不代表远程模板接口已联调。
+- 定制化模板的 `templateId` 传平台模板 ID。Worker 以 `CUSTOM_TEMPLATE_API_BASE_URL` 为可信基址，直接下载 `/api/custom-templates/{id}/package`；不依赖详情接口，亦不使用详情响应中的 `package_local_path`。模板 ID `3` 已完成 ZIP 下载与解压校验。
 
 ## 4. 分析回调
 

@@ -1,0 +1,241 @@
+{
+  "说明": "覆盖资料包内除本清单自身之外的全部文件；SHA-256 按文件原始字节计算。",
+  "文件数": 47,
+  "文件": [
+    {
+      "路径": "00-阅读入口.md",
+      "字节数": 3647,
+      "SHA256": "6bfa46577130c33819d192a7503e802798846cf9702821cf5fda1605f222cce7"
+    },
+    {
+      "路径": "01-两阶段接口与接入说明.md",
+      "字节数": 17674,
+      "SHA256": "d98357bcb72a2c70a9286fd9a62df5e03893a15f71fbb86323acf1f524554780"
+    },
+    {
+      "路径": "02-从单阶段拆分的需求与输入.md",
+      "字节数": 12455,
+      "SHA256": "3c4c9d441e7aeb94f75ca98e435e2feabc7c46e0071abe1e1bc947166dff24ad"
+    },
+    {
+      "路径": "03-Worker与Codex职责边界.md",
+      "字节数": 7099,
+      "SHA256": "1a53fb445a7dea2a6b10d481b0c4df5d829098853639a21e36174c2ceb1194c4"
+    },
+    {
+      "路径": "04-解说视频模板保全说明.md",
+      "字节数": 7141,
+      "SHA256": "9516df8cd86ab5bf5c4d7c01c4b15801f33396cab5c678c18058603f4e56af3f"
+    },
+    {
+      "路径": "05-video-pipeline重整实施清单.md",
+      "字节数": 12059,
+      "SHA256": "66d17bbcadbaaca4cf1f5f8fa2418dc8d4ef96573fd6c85db7256253f5645d10"
+    },
+    {
+      "路径": "快照核验.json",
+      "字节数": 442,
+      "SHA256": "4c113f99524fabe91fed75b4d2baf8488862bb9a56d5e1dfd879b7451b262a6b"
+    },
+    {
+      "路径": "模板快照/原有财经双人对话视频生成指令.zip",
+      "字节数": 27360357,
+      "SHA256": "4d5cd78f7a4cbefdc9da819869658f3b5f1b0c6f046b645d78414023363bc073"
+    },
+    {
+      "路径": "模板快照/财经双人对话视频生成指令/assets/audio/bgm/immersed.mp3",
+      "字节数": 4802449,
+      "SHA256": "210861570a15597e551a3e064ba28b1b23172468179151f39e55adea4c15f703"
+    },
+    {
+      "路径": "模板快照/财经双人对话视频生成指令/assets/audio/sfx/bearish-drop-short.wav",
+      "字节数": 377382,
+      "SHA256": "0f2df1c4aefeb895c9440ccc002fcb92dfb3c37ef75fea63aa6a43cae04e281a"
+    },
+    {
+      "路径": "模板快照/财经双人对话视频生成指令/assets/audio/sfx/closing-resolve.wav",
+      "字节数": 748902,
+      "SHA256": "37bdce45e21532f7a091555615fed5339262fb0393b0343b28e0b689cdca3bfd"
+    },
+    {
+      "路径": "模板快照/财经双人对话视频生成指令/assets/audio/sfx/data-tick-crisp.wav",
+      "字节数": 119454,
+      "SHA256": "672f5d4f19694f16bde0ef1fc28f60459ddcbfc3b35e4bd5057f850e45f16870"
+    },
+    {
+      "路径": "模板快照/财经双人对话视频生成指令/assets/audio/sfx/data-tick-soft.wav",
+      "字节数": 72102,
+      "SHA256": "672122543d0e5ebce6ac8fff663e56462ad9b4c2359b3395380013310c38e4c6"
+    },
+    {
+      "路径": "模板快照/财经双人对话视频生成指令/assets/audio/sfx/headline-land.wav",
+      "字节数": 446502,
+      "SHA256": "9b83b911ab4d8fda0d9cd2ed4a11b4170db64d8364b773bcfd765a54fa0e02cd"
+    },
+    {
+      "路径": "模板快照/财经双人对话视频生成指令/assets/audio/sfx/number-counter-fast.wav",
+      "字节数": 218982,
+      "SHA256": "4cf828e4f01be62cdf4555bee2140d1fecd420db9f7eb7e766d55c989d7f18d4"
+    },
+    {
+      "路径": "模板快照/财经双人对话视频生成指令/assets/audio/sfx/risk-alert.wav",
+      "字节数": 446502,
+      "SHA256": "c6404a8206c5e122c73f21e3c4d34a0ad7a3e8031aa2c72f4240d402c0bd2976"
+    },
+    {
+      "路径": "模板快照/财经双人对话视频生成指令/assets/audio/sfx/section-tech-sweep.wav",
+      "字节数": 489702,
+      "SHA256": "ef4f614a85e7f9244624d1721cb3c31e8ea217e6747f9d88bea6b7f5a4cf59ce"
+    },
+    {
+      "路径": "模板快照/财经双人对话视频生成指令/assets/images/brand/logo-dark.png",
+      "字节数": 37444,
+      "SHA256": "9c5fd7c87a0a3d6cd8cedce101fa00b6c0a111f2fce12282dd29a8f49c1c6995"
+    },
+    {
+      "路径": "模板快照/财经双人对话视频生成指令/assets/images/guide/01_hook.png",
+      "字节数": 120713,
+      "SHA256": "27399ee44f5cb88ce90a58ddb6493f24d060dfd997ab29ec15e8a37927ab815c"
+    },
+    {
+      "路径": "模板快照/财经双人对话视频生成指令/assets/images/guide/02_intro.png",
+      "字节数": 446650,
+      "SHA256": "fe35b609b462e867e44d207c998b9b897291f6e81712f8485c935a7b5d564e4d"
+    },
+    {
+      "路径": "模板快照/财经双人对话视频生成指令/assets/images/guide/03_active-speaker.png",
+      "字节数": 177318,
+      "SHA256": "e8d2e75e041a257a4ae76d87d63131710ef021f8fe1118511c9c22954ff21bde"
+    },
+    {
+      "路径": "模板快照/财经双人对话视频生成指令/assets/images/guide/04_chapter-card.png",
+      "字节数": 99910,
+      "SHA256": "f5fcfec74352e19bc4a6e835ed508d2ab33d911212f3fe07655e82a25efcdadf"
+    },
+    {
+      "路径": "模板快照/财经双人对话视频生成指令/assets/images/guide/05_outro.png",
+      "字节数": 97790,
+      "SHA256": "4f6eb0e67c98c9bad8a8a7c1decaac30d31001f96e62b76662cc473ddbea6836"
+    },
+    {
+      "路径": "模板快照/财经双人对话视频生成指令/assets/images/hosts/female-host.png",
+      "字节数": 5683511,
+      "SHA256": "95f8ab5a789dab186215a23e389d9ce672871969fb546559d7f857eed202436d"
+    },
+    {
+      "路径": "模板快照/财经双人对话视频生成指令/assets/images/hosts/male-chief.png",
+      "字节数": 5112237,
+      "SHA256": "62695177437c46e9d63bf3c67c988a3e3f5e5fbfbea83b4d598cf63cae3e6e11"
+    },
+    {
+      "路径": "模板快照/财经双人对话视频生成指令/assets/video/intro/financial-intro-portrait-sfx-v1.mov",
+      "字节数": 1047462,
+      "SHA256": "9beb8b9a13c76c82fb078fc35c6cb2daea2ac557605542121be57912d5cebb99"
+    },
+    {
+      "路径": "模板快照/财经双人对话视频生成指令/assets/video/outro/financial-intro-logo-sfx-v3.mov",
+      "字节数": 594677,
+      "SHA256": "69b1b6c9e072e0bddafc85aba575a3526ba15a8de791f5037a375757b8a92e44"
+    },
+    {
+      "路径": "模板快照/财经双人对话视频生成指令/assets/video/reference/financial-report-dialogue-v3-final-cut-preview.mp4",
+      "字节数": 8985553,
+      "SHA256": "cc243cd7b4c8841101ac7e5ebc8b8c3cb1f51965cc516839f34dcdeb937455aa"
+    },
+    {
+      "路径": "模板快照/财经双人对话视频生成指令/renderer/package.json",
+      "字节数": 386,
+      "SHA256": "a75a369e9b4874f88ebdcdba87707d2982aed6867731597bdbfbb638333c6dc1"
+    },
+    {
+      "路径": "模板快照/财经双人对话视频生成指令/renderer/renderer-manifest.json",
+      "字节数": 1726,
+      "SHA256": "14eb9c27d6b273481f17222d06b86af5c8975f17d67e3e0e322553d8240684f5"
+    },
+    {
+      "路径": "模板快照/财经双人对话视频生成指令/renderer/scripts/verify-sentence-audio.mjs",
+      "字节数": 7839,
+      "SHA256": "f809c760ed2f002f2332009de54a94757a969bdf0b244c2e1fe849338fb0977a"
+    },
+    {
+      "路径": "模板快照/财经双人对话视频生成指令/renderer/src/ChapterNav.tsx",
+      "字节数": 1665,
+      "SHA256": "a7b5b16b7170ab80132aaeb936733a78c47bc831a07e43e79f28f85a448712c6"
+    },
+    {
+      "路径": "模板快照/财经双人对话视频生成指令/renderer/src/ChapterTransition.tsx",
+      "字节数": 1289,
+      "SHA256": "983eb683e9fc4c0ff501f691ff11d17b150f2333b67b7551e6918a4c456d86e6"
+    },
+    {
+      "路径": "模板快照/财经双人对话视频生成指令/renderer/src/FinancialDialogue.tsx",
+      "字节数": 4835,
+      "SHA256": "8942056f35d3acc178a68aae5572308eeda1626d6cf958a6886d32b8da19e011"
+    },
+    {
+      "路径": "模板快照/财经双人对话视频生成指令/renderer/src/FinancialIntros.tsx",
+      "字节数": 917,
+      "SHA256": "ff60a53a9652863f050e6ffa2e25b0a9a4a43f1bdf166c720fcb243d2004570d"
+    },
+    {
+      "路径": "模板快照/财经双人对话视频生成指令/renderer/src/Root.tsx",
+      "字节数": 996,
+      "SHA256": "76110391ed541cabdcea84e0ac861f00dbe81aedba98b46f08d646c12b878f2c"
+    },
+    {
+      "路径": "模板快照/财经双人对话视频生成指令/renderer/src/SpeakerStage.tsx",
+      "字节数": 3072,
+      "SHA256": "86b2679b86e2495111821514e603bcebcdd52aacbc1a07803637f67b0fbc081f"
+    },
+    {
+      "路径": "模板快照/财经双人对话视频生成指令/renderer/src/SubtitleLayer.tsx",
+      "字节数": 866,
+      "SHA256": "869ae559744102da23b741ff90db159e3469e57fbe99f290f39a863b266d332c"
+    },
+    {
+      "路径": "模板快照/财经双人对话视频生成指令/renderer/src/VisualBlocks.tsx",
+      "字节数": 7471,
+      "SHA256": "50bce55896fb90a25da5539833dd797a773926bc510038047ac512155fd12637"
+    },
+    {
+      "路径": "模板快照/财经双人对话视频生成指令/renderer/src/index.ts",
+      "字节数": 105,
+      "SHA256": "5462d3268136731ce43bfd7c5072ea1ba48b51fec94fa30076f5044f4b39e4a2"
+    },
+    {
+      "路径": "模板快照/财经双人对话视频生成指令/renderer/src/timeline.ts",
+      "字节数": 326,
+      "SHA256": "92668c7bef6034df751aef94739020910f5b9f90a0aa597491a53716e4fa715a"
+    },
+    {
+      "路径": "模板快照/财经双人对话视频生成指令/renderer/src/types.ts",
+      "字节数": 1712,
+      "SHA256": "39f4af93197a05c43f838acc0587dc16f77bc6f7224b68f0911c8c8b1b8152ac"
+    },
+    {
+      "路径": "模板快照/财经双人对话视频生成指令/renderer/src/validateTimeline.ts",
+      "字节数": 7810,
+      "SHA256": "52eab36937c681971b203272ed845df044f4220862be620523729a44c43626a5"
+    },
+    {
+      "路径": "模板快照/财经双人对话视频生成指令/renderer/timeline.example.json",
+      "字节数": 1808,
+      "SHA256": "440531c632e5ab94bdabaf61d55cfd1f7ac9f68b16d1ba1b680a35d341a18f50"
+    },
+    {
+      "路径": "模板快照/财经双人对话视频生成指令/renderer/tsconfig.json",
+      "字节数": 270,
+      "SHA256": "c6a6c9fc468ff7bc8298943b860b23d5763551f0838cf42368a93d806ab36c00"
+    },
+    {
+      "路径": "模板快照/财经双人对话视频生成指令/动效组件与内容适配说明.md",
+      "字节数": 8902,
+      "SHA256": "f8262263a5bcf7181aba99d3d4db94bb4e6d560aafc2b79ebfde3a35787fe696"
+    },
+    {
+      "路径": "模板快照/财经双人对话视频生成指令/财经双人对话视频生成指令.md",
+      "字节数": 14964,
+      "SHA256": "bb9a7ee4966dbd8a2c732fb06169e0bc3168759610291335e7c12889327999ea"
+    }
+  ]
+}

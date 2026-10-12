@@ -1,7 +1,7 @@
 # AI 视频剪辑接口文档
 
-> 根据用户提供的 5 张 YApi 截图整理，整理日期：2026-09-10。
-> 本文记录截图中的接口定义，不代表已联调或已上线。4 个接口在截图中均标记为「未完成」。
+> 根据用户提供的 YApi 截图和接口示例整理，AI 视频剪辑接口整理日期：2026-09-10，基础资源接口整理日期：2026-09-18。
+> 本文记录截图中的接口定义，不代表已联调或已上线。原有 4 个 AI 视频剪辑接口以及本次补充的基础资源接口在截图中均标记为「未完成」；定制化模板包下载端点已完成实测。
 > 媒体路径说明已按用户后续澄清补充：`url` 当前为本机文件路径，后续为共享盘路径。
 
 ## 1. 文档范围与通用约定
@@ -12,6 +12,12 @@
 | 2 | 获取ai剪辑视频分析数据回调 | POST | `/ai_video_director/getAiVideoEditingAnalysisDataCallback` | 截图 2；截图 3 为请求体展开补充 |
 | 3 | 获取ai剪辑视频数据 | POST | `/ai_video_director/getAiVideoEditingData` | 截图 4 |
 | 4 | 获取ai剪辑视频数据回调 | POST | `/ai_video_director/getAiVideoEditingDataCallback` | 截图 5 |
+| 5 | 获取数字人详情 | GET | `/api/digital-humans/{hid}` | 本次截图 1 |
+| 6 | 获取模板详情 | GET | `/api/templates/{tid}` | 本次截图 2 |
+| 7 | 获取素材详情 | GET | `/api/materials/{mid}` | 本次截图 4 |
+| 8 | 下载素材文件 | GET | `/api/materials/{mid}/file` | 本次截图 3 |
+| 9 | 获取定制化模板详情 | GET | `/api/custom-templates/{id}` | 仅供工作台展示；Worker 不依赖该接口下载 |
+| 10 | 下载定制化模板包 | GET | `/api/custom-templates/{id}/package` | 已用模板 ID `3` 实测 |
 
 文档平台项目 ID 为 `2482`。用户提供的[视频数据回调文档链接](http://api.ifengcloud.ifeng.com/project/2482/interface/api/49567)对应接口 4。
 
@@ -298,7 +304,440 @@
 }
 ```
 
-## 6. 对接前待确认项
+## 6. 基础资源查询接口
+
+本节记录数字人、模板和素材接口。与前文 AI 视频剪辑接口不同，这些接口均为 GET 请求；截图只展示了路径参数，没有展示请求体或统一请求头配置。定制化模板包下载端点的实际二进制响应已单独验证。
+
+### 6.1 通用约定
+
+- 路径中的 `{hid}`、`{tid}`、`{mid}` 为路径参数，实际请求时替换为具体数字 ID，不要保留大括号。
+- 数字人详情、模板详情和素材详情接口使用统一的 JSON 响应外层结构：`code`、`message`、`data`。
+- 示例中 `code = 0`、`message = "success"` 表示成功；其他错误码、错误信息格式和 HTTP 状态码未在截图中提供。
+- 本节中的 `created_at` 为带时区的 ISO 8601 时间字符串，示例时区为 `+08:00`。
+- 截图只提供成功返回示例，未说明鉴权方式、分页、缓存、限流、超时和失败重试规则。
+
+### 6.2 获取数字人详情
+
+#### 6.2.1 基本信息
+
+| 项目 | 内容 |
+| --- | --- |
+| 接口名称 | 获取数字人详情 |
+| 请求方式 | GET |
+| 接口路径 | `/api/digital-humans/{hid}` |
+| 状态 | 未完成 |
+| 创建人 | zhangjt |
+| 更新时间 | 2026-09-15 09:32:15 |
+| Mock 地址 | [YApi Mock](http://api.ifengcloud.ifeng.com/mock/2482/api/digital-humans/{hid}) |
+
+#### 6.2.2 路径参数
+
+| 参数名 | 类型 | 示例 | 必须 | 说明 |
+| --- | --- | --- | --- | --- |
+| `hid` | number | `1` | 是 | 本平台数字人 ID |
+
+示例请求：
+
+```http
+GET /api/digital-humans/1
+```
+
+#### 6.2.3 返回数据
+
+```jsonc
+{
+  "code": 0, // number；示例中 0 表示成功
+  "message": "success", // string；响应消息
+  "data": {
+    "id": 1, // number；数字人记录 ID
+    "group_id": 4, // number；所属分组 ID
+    "group_name": "凤凰科技", // string；所属分组名称
+    "owner_id": 16, // number；所属用户或所有者 ID
+    "account_id": 5, // number；关联账号 ID
+    "name": "小熙-常杀人", // string；数字人实例名称
+    "figure_id": "3840278", // string；数字人形象 ID
+    "figure_name": "小熙", // string；数字人形象名称
+    "figure_type": null, // string | null；数字人形象类型，示例为空
+    "gender": "FEMALE", // string；性别枚举，示例为女性
+    "voice_id": "LMV_10578", // string；关联音色 ID
+    "voice_name": "长沙妹子", // string；关联音色名称
+    "source": "public", // string；数字人来源，示例为公共资源
+    "thumbnail": "https://star-light-lite.cdn.bcebos.com/figure/video/fig-sbeqrgwzndcrs9i920260205_144805main.png", // string；缩略图地址
+    "status": "ready", // string；数字人状态，示例为已就绪
+    "params": {}, // object；扩展参数，示例为空对象
+    "note": null, // string | null；备注，示例为空
+    "created_at": "2026-09-10T17:30:58.228566+08:00" // string；创建时间
+  }
+}
+```
+
+#### 6.2.4 字段说明
+
+| 字段路径 | 类型 | 示例 | 说明 |
+| --- | --- | --- | --- |
+| `code` | number | `0` | 业务返回码；成功码为 `0` 仅依据示例记录 |
+| `message` | string | `success` | 业务返回消息 |
+| `data` | object | - | 数字人详情对象 |
+| `data.id` | number | `1` | 数字人记录 ID |
+| `data.group_id` | number | `4` | 分组 ID |
+| `data.group_name` | string | `凤凰科技` | 分组名称 |
+| `data.owner_id` | number | `16` | 所有者 ID |
+| `data.account_id` | number | `5` | 关联账号 ID |
+| `data.name` | string | `小熙-常杀人` | 数字人名称 |
+| `data.figure_id` | string | `3840278` | 形象 ID |
+| `data.figure_name` | string | `小熙` | 形象名称 |
+| `data.figure_type` | string \| null | `null` | 形象类型；示例为空 |
+| `data.gender` | string | `FEMALE` | 性别字段；可见示例值为 `FEMALE` |
+| `data.voice_id` | string | `LMV_10578` | 音色 ID |
+| `data.voice_name` | string | `长沙妹子` | 音色名称 |
+| `data.source` | string | `public` | 来源；示例值为公共资源 |
+| `data.thumbnail` | string | URL | 缩略图地址 |
+| `data.status` | string | `ready` | 数字人状态；示例值为已就绪 |
+| `data.params` | object | `{}` | 扩展参数；具体键值未提供 |
+| `data.note` | string \| null | `null` | 备注 |
+| `data.created_at` | string | ISO 8601 | 创建时间 |
+
+字段是否必填、`gender`、`source`、`status` 的完整枚举，以及 `params` 的扩展字段未在截图中说明。
+
+### 6.3 获取模板详情
+
+#### 6.3.1 基本信息
+
+| 项目 | 内容 |
+| --- | --- |
+| 接口名称 | 获取模板详情 |
+| 请求方式 | GET |
+| 接口路径 | `/api/templates/{tid}` |
+| 状态 | 未完成 |
+| 创建人 | zhangjt |
+| 更新时间 | 2026-09-15 09:38:08 |
+| Mock 地址 | [YApi Mock](http://api.ifengcloud.ifeng.com/mock/2482/api/templates/{tid}) |
+
+#### 6.3.2 路径参数
+
+| 参数名 | 类型 | 示例 | 必须 | 说明 |
+| --- | --- | --- | --- | --- |
+| `tid` | number | `5` | 是 | 模板 ID |
+
+示例请求：
+
+```http
+GET /api/templates/5
+```
+
+#### 6.3.3 返回数据
+
+```jsonc
+{
+  "code": 0, // number；示例中 0 表示成功
+  "message": "success", // string；响应消息
+  "data": {
+    "id": 5, // number；模板记录 ID
+    "group_id": 4, // number；所属分组 ID
+    "group_name": "凤凰科技", // string；所属分组名称
+    "owner_id": 16, // number；所属用户或所有者 ID
+    "type": "cover", // string；模板类型
+    "name": "ssssss", // string；模板名称
+    "description": "", // string；模板描述
+    "tags": [], // string[]；模板标签
+    "note": "", // string；备注
+    "data": {
+      "els": {
+        "bg": {
+          "x": 0, // number；元素横向位置
+          "y": 0, // number；元素纵向位置
+          "w": 100, // number；元素宽度
+          "h": 100, // number；元素高度
+          "op": 100, // number；元素透明度或不透明度配置
+          "z": 10 // number；元素层级
+        },
+        "logo": {
+          "x": 4,
+          "y": 3,
+          "w": 22,
+          "h": 7,
+          "op": 100,
+          "z": 2
+        },
+        "title": {
+          "x": 7,
+          "y": 21,
+          "w": 86,
+          "h": 14,
+          "op": 100,
+          "z": 3
+        },
+        "biz": {
+          "x": 68,
+          "y": 3,
+          "w": 28,
+          "h": 6,
+          "op": 90,
+          "z": 1
+        },
+        "sub": {
+          "x": 7,
+          "y": 76,
+          "w": 86,
+          "h": 9,
+          "op": 100,
+          "z": 4
+        }
+      },
+      "on": {
+        "bg": true, // boolean；是否启用背景元素
+        "logo": true, // boolean；是否启用 Logo 元素
+        "title": true, // boolean；是否启用标题元素
+        "biz": true, // boolean；是否启用业务信息元素
+        "sub": false // boolean；是否启用副标题元素
+      },
+      "mats": {
+        "bg": null, // object | null；背景素材绑定
+        "logo": null, // object | null；Logo 素材绑定
+        "title": null, // object | null；标题素材绑定
+        "biz": null, // object | null；业务信息素材绑定
+        "sub": null // object | null；副标题素材绑定
+      }
+    },
+    "created_at": "2026-09-11T12:22:41.660319+08:00", // string；创建时间
+    "updated_at": "2026-09-11T12:22:41.660319+08:00" // string；更新时间
+  }
+}
+```
+
+#### 6.3.4 字段说明
+
+| 字段路径 | 类型 | 示例 | 说明 |
+| --- | --- | --- | --- |
+| `data.id` | number | `5` | 模板记录 ID |
+| `data.group_id` | number | `4` | 分组 ID |
+| `data.group_name` | string | `凤凰科技` | 分组名称 |
+| `data.owner_id` | number | `16` | 所有者 ID |
+| `data.type` | string | `cover` | 模板类型 |
+| `data.name` | string | `ssssss` | 模板名称 |
+| `data.description` | string | 空字符串 | 模板描述 |
+| `data.tags` | string[] | `[]` | 模板标签列表 |
+| `data.note` | string | 空字符串 | 模板备注 |
+| `data.data.els` | object | - | 模板元素布局配置 |
+| `data.data.els.{element}.x/y` | number | - | 元素位置；坐标单位未提供 |
+| `data.data.els.{element}.w/h` | number | - | 元素宽高；单位未提供 |
+| `data.data.els.{element}.op` | number | - | 元素透明度相关配置；具体取值规则未提供 |
+| `data.data.els.{element}.z` | number | - | 元素层级，数值越大是否越靠前未明确 |
+| `data.data.on` | object | - | 各模板元素的启用状态 |
+| `data.data.on.{element}` | boolean | `true` | 对应元素是否启用 |
+| `data.data.mats` | object | - | 各模板元素的素材绑定信息 |
+| `data.data.mats.{element}` | object \| null | `null` | 对应元素的素材绑定；示例均为空 |
+| `data.created_at` | string | ISO 8601 | 创建时间 |
+| `data.updated_at` | string | ISO 8601 | 更新时间 |
+
+模板元素名 `bg`、`logo`、`title`、`biz`、`sub` 来自当前示例。截图未说明 `x/y/w/h` 的坐标系、`op` 的精确定义、`mats` 非空时的对象结构，以及模板类型和标签的完整枚举。
+
+### 6.4 获取定制化模板详情
+
+#### 6.4.1 基本信息
+
+| 项目 | 内容 |
+| --- | --- |
+| 接口名称 | 获取定制化模板详情 |
+| 请求方式 | GET |
+| 接口路径 | `/api/custom-templates/{id}` |
+| 状态 | 工作台展示接口；Worker 不作为下载前置依赖 |
+| 创建人 | zhangjt |
+| 更新时间 | 2026-09-18 18:08:26 |
+| Mock 地址 | [YApi Mock](http://api.ifengcloud.ifeng.com/mock/2482/api/custom-templates/{id}) |
+
+#### 6.4.2 路径参数
+
+| 参数名 | 类型 | 示例 | 必须 | 说明 |
+| --- | --- | --- | --- | --- |
+| `id` | number | `1` | 是 | 定制化模板 ID |
+
+示例请求：
+
+```http
+GET /api/custom-templates/1
+```
+
+#### 6.4.3 返回数据
+
+```jsonc
+{
+  "code": 0, // number；示例中 0 表示成功
+  "message": "success", // string；响应消息
+  "data": {
+    "id": 1, // number；定制化模板记录 ID
+    "group_id": 4, // number；所属分组 ID
+    "group_name": "凤凰科技", // string；所属分组名称
+    "owner_id": 1, // number；所有者 ID
+    "owner_name": "初始管理员", // string；所有者名称
+    "name": "鹤梳室", // string；定制化模板名称
+    "description": "11111111", // string；模板描述
+    "cover_name": "fig-sbeqrgwzndcrs9i920260205_144805main.png", // string；封面文件名
+    "package_name": "财经双人对话视频生成指令.zip", // string；模板压缩包文件名
+    "cover_url": "http://10.20.12.43:8000/api/custom-templates/1/cover", // string；封面访问地址
+    "package_url": "http://10.20.12.43:8000/api/custom-templates/1/package", // string；工作台展示的模板压缩包访问地址
+    "package_local_path": "/home/ops/vea/uploads/custom_templates/...zip", // string；平台服务器本地路径，Worker 不可使用
+    "created_at": "2026-09-18T17:44:41.051980+08:00", // string；创建时间
+    "updated_at": "2026-09-18T17:44:41.051980+08:00" // string；更新时间
+  }
+}
+```
+
+#### 6.4.4 字段说明
+
+| 字段路径 | 类型 | 示例 | 说明 |
+| --- | --- | --- | --- |
+| `code` | number | `0` | 业务返回码；成功码为 `0` 仅依据示例记录 |
+| `message` | string | `success` | 业务返回消息 |
+| `data` | object | - | 定制化模板详情对象 |
+| `data.id` | number | `1` | 定制化模板记录 ID |
+| `data.group_id` | number | `4` | 分组 ID |
+| `data.group_name` | string | `凤凰科技` | 分组名称 |
+| `data.owner_id` | number | `1` | 所有者 ID |
+| `data.owner_name` | string | `初始管理员` | 所有者名称 |
+| `data.name` | string | `鹤梳室` | 定制化模板名称 |
+| `data.description` | string | `11111111` | 模板描述 |
+| `data.cover_name` | string | 文件名 | 封面文件名 |
+| `data.package_name` | string | `财经双人对话视频生成指令.zip` | 模板压缩包文件名 |
+| `data.cover_url` | string | URL | 模板封面访问地址 |
+| `data.package_url` | string | URL | 模板压缩包访问地址 |
+| `data.package_local_path` | string | 平台绝对路径 | 平台服务器内部文件路径；不能传给或由 Worker 读取 |
+| `data.created_at` | string | ISO 8601 | 创建时间 |
+| `data.updated_at` | string | ISO 8601 | 更新时间 |
+
+补充说明：
+
+- `cover_url` 和 `package_url` 当前示例为内网 HTTP 地址。Worker 不依赖 `package_url`，而是使用下方固定的包下载接口。
+- `cover_name` 仅表示封面文件名；`cover_url` 为封面访问地址，两者不能混用。
+- `package_name` 表示定制化模板压缩包文件名；`package_local_path` 仅属于平台服务进程，不能暴露为跨主机文件路径。
+- `created_at` 与 `updated_at` 的示例时间相同，不代表接口始终保证二者相同。
+
+### 6.5 下载定制化模板包
+
+#### 6.5.1 基本信息
+
+| 项目 | 内容 |
+| --- | --- |
+| 请求方式 | GET |
+| 接口路径 | `/api/custom-templates/{id}/package` |
+| 返回 | `application/zip` 二进制流 |
+| 使用方 | Worker；工作台可提供同一下载链接 |
+
+Worker 以部署配置 `CUSTOM_TEMPLATE_API_BASE_URL` 为可信基址，直接拼接此路径下载，不先调用详情接口，也不接受详情响应中的 `package_url` 或 `package_local_path` 作为下载目标。
+
+已于 2026-09-24 使用工作台模板 ID `3` 验证：接口返回 `HTTP 200`、`Content-Type: application/zip`、`Content-Length: 27,363,827`，下载后的 ZIP 完整性校验通过。详情接口在未携带平台会话时返回 `401`，故不能成为 Worker 下载模板的前置条件。
+
+成功响应应包含 `Content-Disposition` 文件名。Worker 用该文件名辅助识别 ZIP 中的 Markdown 入口；即使未提供该响应头，ZIP 仍须满足唯一 Markdown 入口的既有校验。
+
+### 6.6 获取素材详情
+
+#### 6.6.1 基本信息
+
+| 项目 | 内容 |
+| --- | --- |
+| 接口名称 | 获取素材详情 |
+| 请求方式 | GET |
+| 接口路径 | `/api/materials/{mid}` |
+| 状态 | 未完成 |
+| 创建人 | zhangjt |
+| 更新时间 | 2026-09-15 09:35:22 |
+| Mock 地址 | [YApi Mock](http://api.ifengcloud.ifeng.com/mock/2482/api/materials/{mid}) |
+
+#### 6.6.2 路径参数
+
+| 参数名 | 类型 | 示例 | 必须 | 说明 |
+| --- | --- | --- | --- | --- |
+| `mid` | number | `42` | 是 | 素材 ID |
+
+示例请求：
+
+```http
+GET /api/materials/42
+```
+
+#### 6.6.3 返回数据
+
+```jsonc
+{
+  "code": 0, // number；示例中 0 表示成功
+  "message": "success", // string；响应消息
+  "data": {
+    "id": 42, // number；素材记录 ID
+    "group_id": 4, // number；所属分组 ID
+    "group_name": "凤凰科技", // string；所属分组名称
+    "owner_id": 16, // number；所属用户或所有者 ID
+    "category": "brand", // string；素材分类
+    "name": "s", // string；素材名称
+    "size": 212888, // number；素材大小，单位未在截图中说明
+    "mime_type": "image/png", // string；媒体类型
+    "tags": [], // string[]；素材标签
+    "meta": null, // object | null；扩展元数据，示例为空
+    "license": "pending", // string；授权状态
+    "created_at": "2026-09-11T12:23:26.342462+08:00", // string；创建时间
+    "file_url": "/api/materials/42/file" // string；素材文件接口相对路径
+  }
+}
+```
+
+#### 6.6.4 字段说明
+
+| 字段路径 | 类型 | 示例 | 说明 |
+| --- | --- | --- | --- |
+| `code` | number | `0` | 业务返回码；成功码为 `0` 仅依据示例记录 |
+| `message` | string | `success` | 业务返回消息 |
+| `data` | object | - | 素材详情对象 |
+| `data.id` | number | `42` | 素材记录 ID |
+| `data.group_id` | number | `4` | 分组 ID |
+| `data.group_name` | string | `凤凰科技` | 分组名称 |
+| `data.owner_id` | number | `16` | 所有者 ID |
+| `data.category` | string | `brand` | 素材分类 |
+| `data.name` | string | `s` | 素材名称 |
+| `data.size` | number | `212888` | 素材大小；单位未提供，通常需与接口方确认是否为字节 |
+| `data.mime_type` | string | `image/png` | MIME 类型 |
+| `data.tags` | string[] | `[]` | 素材标签列表 |
+| `data.meta` | object \| null | `null` | 素材扩展元数据；结构未提供 |
+| `data.license` | string | `pending` | 授权状态 |
+| `data.created_at` | string | ISO 8601 | 创建时间 |
+| `data.file_url` | string | `/api/materials/42/file` | 素材文件访问路径 |
+
+`file_url` 当前示例为相对 API 路径，不应按前文视频剪辑接口中的媒体文件系统路径处理。实际拼接 Base URL、鉴权方式和是否需要签名参数，需以服务端约定为准。
+
+### 6.7 下载素材文件
+
+#### 6.7.1 基本信息
+
+| 项目 | 内容 |
+| --- | --- |
+| 接口名称 | 下载素材文件 |
+| 请求方式 | GET |
+| 接口路径 | `/api/materials/{mid}/file` |
+| 状态 | 未完成 |
+| 创建人 | zhangjt |
+| 更新时间 | 2026-09-15 09:35:22 |
+| Mock 地址 | [YApi Mock](http://api.ifengcloud.ifeng.com/mock/2482/api/materials/{mid}/file) |
+
+#### 6.7.2 路径参数
+
+| 参数名 | 类型 | 示例 | 必须 | 说明 |
+| --- | --- | --- | --- | --- |
+| `mid` | number | `42` | 是 | 素材 ID |
+
+示例请求：
+
+```http
+GET /api/materials/42/file
+```
+
+#### 6.7.3 返回数据说明
+
+截图只展示了“返回数据”标题，没有展示响应体示例或响应头，因此当前仅记录接口用途和已知路径，不虚构具体返回结构：
+
+- 该接口与素材详情中的 `file_url` 对应，用于访问或下载指定素材文件。
+- 响应体可能是文件二进制流，也可能由网关返回重定向或 JSON 错误信息；截图未说明，待接口方确认。
+- `Content-Type`、`Content-Disposition`、缓存策略、断点续传、鉴权和文件不存在时的错误响应均未提供。
+- 是否支持图片、视频等不同 MIME 类型，及文件访问地址是否长期有效，也需要在联调前确认。
+
+## 7. 对接前待确认项
 
 以下是截图信息缺口，不是新增接口要求：
 

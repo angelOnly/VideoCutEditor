@@ -1,0 +1,77 @@
+{
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "totalFrames": 180,
+  "title": "字段示例：实际制作需替换音频及时间",
+  "chapters": [
+    {
+      "id": "chapter_01",
+      "label": "核心观点",
+      "title": "本期面板标题",
+      "summary": "章节摘要，不代替逐句字幕",
+      "from": 0,
+      "endFrameExclusive": 180,
+      "visualBlocks": [
+        {
+          "id": "viewpoints",
+          "kind": "comparison",
+          "startFrame": 0,
+          "endFrameExclusive": 180,
+          "slot": "full",
+          "props": {
+            "items": [
+              "第一方观点",
+              "第二方观点"
+            ],
+            "itemFrames": [
+              0,
+              90
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "scenes": [
+    {
+      "id": "scene_001",
+      "from": 0,
+      "frames": 180,
+      "speaker": "female-host",
+      "summary": "一句关键结论",
+      "utterances": [
+        {
+          "id": "scene_001_phrase_01",
+          "text": "第一段示例，",
+          "src": "audio/本期短句01.wav",
+          "startFrame": 0,
+          "endFrameExclusive": 90
+        },
+        {
+          "id": "scene_001_phrase_02",
+          "text": "第二段示例。",
+          "src": "audio/本期短句02.wav",
+          "startFrame": 90,
+          "endFrameExclusive": 180
+        }
+      ],
+      "captions": [
+        {
+          "utteranceId": "scene_001_phrase_01",
+          "text": "第一段示例，",
+          "startFrame": 0,
+          "endFrameExclusive": 90
+        },
+        {
+          "utteranceId": "scene_001_phrase_02",
+          "text": "第二段示例。",
+          "startFrame": 90,
+          "endFrameExclusive": 180
+        }
+      ],
+      "visualBlocks": [],
+      "sfx": []
+    }
+  ]
+}

@@ -136,7 +136,7 @@ Worker 继续管理接口、任务、队列、模板冻结、权限、状态、�
 
 asset 的现有形态为 `{ "assetId": "...", "url": "/绝对路径" }`。这里的 `url` 不是 HTTP URL：输入必须能映射到租户共享媒体目录，并经过目录白名单、实际路径及符号链接校验。Analysis 的图片、视频和 narration 之间 assetId 不得重复。
 
-本文不新增远程素材下载接口，不把模板 `package_url` 的下载能力错误套用到一般素材的 `url`。
+本文不新增远程素材下载接口；定制化模板仅通过固定的 `/api/custom-templates/{id}/package` 下载，不把该能力套用到一般素材的 `url`。
 
 ### 3.2 Render 提交：客户端申请制作，不是最终视频回调
 
@@ -381,12 +381,11 @@ Analysis 不产生必须遵循的视觉方案。Render 有权优化自己的内�
 配置了 `CUSTOM_TEMPLATE_API_BASE_URL` 时，当前实现：
 
 1. 要求 templateId 是正整数字符串。
-2. GET `/api/custom-templates/{id}`，超时 15 秒，不跟随重定向。
-3. 解析 `code/message/data`；要求 code=0，data.id 匹配，package_name/package_url 有效。
-4. 校验 package_url 为 HTTP(S)，origin 属于模板服务自身或 `CUSTOM_TEMPLATE_PACKAGE_ORIGINS`。
-5. 下载 ZIP，超时 30 秒；冻结并记录 archiveSha256。
+2. 以受保护的部署配置为基址，GET `/api/custom-templates/{id}/package`，超时 30 秒，不跟随重定向。
+3. 校验响应大小与 ZIP 结构；从 `Content-Disposition` 读取文件名，仅用于选择 ZIP 内 Markdown 入口。
+4. 冻结并记录 archiveSha256。详情接口及其 `package_url`、`package_local_path` 均不参与 Worker 下载链路。
 
-当前没有额外模板鉴权头，不能在文档里假设已接入某种 Token。
+该包下载端点已用模板 ID `3` 验证可用。详情接口当前可能返回 401，不能作为下载前置条件；`package_local_path` 是平台服务器内部路径，跨主机 Worker 不可读取。
 
 ZIP 限制保留：压缩包和单文件各不超过 64 MiB，解压总量 256 MiB，条目不超过 512；单根目录；拒绝路径穿越、特殊文件和符号链接；忽略 macOS 辅助文件。保留原相对目录，不能只复制 Markdown。
 

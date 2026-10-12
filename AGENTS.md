@@ -1,17 +1,22 @@
-# VideoCutEditor
+# AGENTS.md
 
-## Repository layout
+## 开发原则
 
-The Git root is VideoCutEditor. Preserve these sibling directories:
+不要过度设计。优先选择满足当前需求的最简单、可靠、可维护方案，只实现明确需要的功能，不为假设中的未来需求增加复杂度。
 
-- claude-code-video-toolkit/: video production tools, templates, components and Skills.
-- video-worker/: task API, PostgreSQL queue, Ubuntu Codex supervisor and callbacks.
-- huibo-saas/: existing digital-human HTTP adapter.
-- xiling-http/: existing local digital-human client scripts.
-- docs/: shared API and architecture documents.
+当“简单方案有明确代价、复杂方案更完善但明显更臃肿”时，先简要说明取舍，并在开发前询问我是否接受该代价，不要默认选择复杂方案。
 
-Do not flatten the toolkit into this root or move the sibling services under a services/ directory. Do not create nested Git repositories.
+## 文档与产品决策
 
-Read claude-code-video-toolkit/AGENTS.md before changing toolkit files. Run toolkit commands from its directory so its existing relative paths remain valid. Maintain Skill sources under claude-code-video-toolkit/.claude/skills and synchronize generated .agents copies only when needed.
+- 让我分析、解释、梳理时，只分析，不改文件；让我澄清、对齐或写入刚确认的结论时，只做解决当前问题的修改。
+- 分析和设计不以兼容现有实现为前提。旧方案不合理时，应参考业界成熟实践重新设计并删除旧逻辑，避免冗余；提案须说明旧方案、新方案及拟删除的功能或逻辑，确认后实施。
+- 仅当项目自身缺陷导致任务无法继续时，才停止任务。素材不合适、搜索无结果或思路有误，应调整策略继续处理，不得因此报障停工。
 
-Worker implementation and deployment instructions are in video-worker/README.md. Run its TypeScript tests and the relevant toolkit regression tests when changing the pipeline. The user explicitly requested one tracked root .env shared by Worker and toolkit; preserve that configuration and do not print its values. Local media, other credentials, generated tasks and outputs retain their ignore rules. Never copy the root .env into a task image.
+## 注意事项
+
+- 关键代码添加精炼易懂的中文注释
+- 所有的文档描述等都使用中文
+
+## 完成后
+
+简要说明实现内容、修改文件、主要调用链、失败处理和已知代价；
