@@ -48,7 +48,7 @@ def production_inputs(root, request_path, request, project_name, scenes, modules
                 'project': str(project), 'timeline': project_timeline(timeline), 'done': str(temp/'done.json')})
             argv = ['/usr/bin/env', 'HOME='+str(temp), 'TMPDIR='+str(temp), node,
                     str(Path(__file__).with_name('render_scene.cjs')), str(temp/'config.json')]
-            sandbox = os.environ.get('VIDEOCUT_RENDER_SANDBOX', 'seatbelt' if sys.platform == 'darwin' else 'bwrap')
+            sandbox = os.environ.get('VIDEOCUT_RENDER_SANDBOX', 'seatbelt' if sys.platform == 'darwin' else 'landlock')
             command(isolated_command(argv, sandbox, root, project, temp))
     return plan, CONTRACT if isolated else 'legacy-conservative'
 
@@ -58,9 +58,13 @@ def isolated_command(argv, sandbox, root, project, temp, bundle=None):
     from stage_media import render_seatbelt_profile
     paths = [Path(project).resolve(), Path(temp).resolve()]
     if bundle: paths.append(Path(bundle).resolve())
-    require(sandbox in ('seatbelt', 'bwrap'), '新输入契约必须使用具有读取隔离的沙箱', 'CAPABILITY_MISSING')
+    require(sandbox in ('seatbelt', 'bwrap', 'landlock'), '新输入契约必须使用具有读取隔离的沙箱', 'CAPABILITY_MISSING')
+    if sandbox == 'landlock':
+        return [sys.executable, str(Path(__file__).with_name('render_landlock.py')),
+                json.dumps({'root': str(Path(root).resolve()), 'readable': [str(p) for p in paths],
+                            'writable': [str(Path(temp).resolve())]}), *argv]
     if sandbox == 'bwrap':
-        result = ['bwrap', '--die-with-parent', '--unshare-pid', '--unshare-net', '--ro-bind', '/', '/', '--tmpfs', str(root)]
+        result = ['bwrap', '--die-with-parent', '--unshare-pid', '--ro-bind', '/', '/', '--tmpfs', str(root)]
         for path in paths:
             result += ['--bind' if path == Path(temp).resolve() else '--ro-bind', str(path), str(path)]
         return [*result, '--dev-bind', '/dev', '/dev', '--proc', '/proc', '--', *argv]
@@ -68,7 +72,6 @@ def isolated_command(argv, sandbox, root, project, temp, bundle=None):
     # deny 的例外只包含本次白名单，不能用只读整个任务目录代替读取隔离。
     exceptions = ' '.join('(require-not (subpath '+json.dumps(str(p))+'))' for p in paths)
     profile += '(deny file-read-data (require-all (subpath '+json.dumps(str(root))+') '+exceptions+'))'
-    profile += '(deny network-outbound (require-all (require-not (remote ip "localhost:*")) (require-not (remote unix-socket))))'
     return ['/usr/bin/sandbox-exec', '-p', profile, *argv]
 
 

@@ -1016,10 +1016,12 @@ def render_scene(request_path, scene_id, project_name, entry_name, composition, 
                 render_command = ['/usr/bin/env', 'TMPDIR='+str(scratch), 'HOME='+str(scratch), node,
                                   str(Path(__file__).with_name('render_scene.cjs')), str(temp/'config.json')]
                 sandbox = os.environ.get('VIDEOCUT_RENDER_SANDBOX')
-                if batch_context and not sandbox: sandbox = 'seatbelt' if sys.platform == 'darwin' else 'bwrap'
+                if batch_context and not sandbox: sandbox = 'seatbelt' if sys.platform == 'darwin' else 'landlock'
                 if mode == CONTRACT:
-                    render_command = isolated_command(render_command, sandbox or ('seatbelt' if sys.platform == 'darwin' else 'bwrap'),
+                    render_command = isolated_command(render_command, sandbox or ('seatbelt' if sys.platform == 'darwin' else 'landlock'),
                         root, project, temp, batch_context['bundle'] if batch_context else None)
+                elif sandbox == 'landlock':
+                    render_command = isolated_command(render_command, sandbox, root, root, temp)
                 elif sandbox == 'bwrap':
                     # 工程 JS 只可写本次渲染临时目录；不能继承可信工具的预算写权限。
                     render_command = ['bwrap', '--die-with-parent', '--unshare-pid', '--ro-bind', '/', '/',

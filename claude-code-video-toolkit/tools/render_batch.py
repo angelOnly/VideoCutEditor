@@ -64,7 +64,7 @@ def inputs(root, request_path, request, project, entry, scenes, modules, browser
                          for s in scenes if s.get('fixedMix')},
             'planHash': request['confirmation']['planSha256'], 'spec': request['outputSpec'],
             'packages': packages, 'browser': digest(Path(browser)),
-            'tools': {name: digest(Path(__file__).with_name(name)) for name in ('render_batch.py', 'stage_media.py', 'render_scene.cjs', 'two_stage.py', 'actual_timeline.py', 'finance_timeline.py', 'production_contract.py', 'render_inputs.py')},
+            'tools': {name: digest(Path(__file__).with_name(name)) for name in ('render_batch.py', 'stage_media.py', 'render_scene.cjs', 'two_stage.py', 'actual_timeline.py', 'finance_timeline.py', 'production_contract.py', 'render_inputs.py', 'render_landlock.py')},
             'frameConcurrency': frame_concurrency(),
             'designHash': digest(timeline.with_name('design.json')) if timeline.with_name('design.json').exists() else None}
 
@@ -120,7 +120,7 @@ def render_batch(args):
         review_plan, mode = production_inputs(root, args.request, request, manifest['project'], manifest['scenes'], args.modules, args.node)
         input_seconds = time.monotonic()-input_started
         write(Path(args.request).resolve().parent/'review-plan.json', review_plan)
-        require(os.environ.get('VIDEOCUT_RENDER_SANDBOX', 'seatbelt' if sys.platform == 'darwin' else 'bwrap') in ('seatbelt', 'bwrap', 'native'),
+        require(os.environ.get('VIDEOCUT_RENDER_SANDBOX', 'seatbelt' if sys.platform == 'darwin' else 'landlock') in ('seatbelt', 'bwrap', 'native'),
                 '批次必须使用只读输入沙箱', 'CAPABILITY_MISSING')
         usage = media.CgroupUsage()
         stop = threading.Event()
@@ -189,10 +189,12 @@ def render_batch(args):
                 scratch = build / 'runtime'; scratch.mkdir()
                 argv = ['/usr/bin/env', 'TMPDIR='+str(scratch), 'HOME='+str(scratch), args.node,
                         str(Path(__file__).with_name('render_scene.cjs')), str(build / 'config.json')]
-                sandbox = os.environ.get('VIDEOCUT_RENDER_SANDBOX') or ('seatbelt' if sys.platform == 'darwin' else 'bwrap')
-                require(sandbox in ('bwrap', 'seatbelt', 'native'), '批次必须使用只读输入沙箱', 'CAPABILITY_MISSING')
+                sandbox = os.environ.get('VIDEOCUT_RENDER_SANDBOX') or ('seatbelt' if sys.platform == 'darwin' else 'landlock')
+                require(sandbox in ('bwrap', 'seatbelt', 'landlock', 'native'), '批次必须使用只读输入沙箱', 'CAPABILITY_MISSING')
                 if mode == CONTRACT:
                     argv = isolated_command(argv, sandbox, root, local(root, manifest['project'], exists=False), build)
+                elif sandbox == 'landlock':
+                    argv = isolated_command(argv, sandbox, root, root, build)
                 elif sandbox == 'bwrap':
                     argv = ['bwrap', '--die-with-parent', '--unshare-pid', '--ro-bind', '/', '/',
                             '--bind', str(build), str(build), '--dev-bind', '/dev', '/dev', '--proc', '/proc', '--', *argv]

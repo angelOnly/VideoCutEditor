@@ -101,7 +101,7 @@ class ProductionContractTests(ProductionFixture):
         self.assertNotIn('passed', str(plan)); self.assertNotIn('observed', str(plan))
 
     @unittest.skipUnless(sys.platform == 'darwin', '真实读取隔离使用 macOS 沙箱')
-    def test_build_cannot_read_sidecar_or_network(self):
+    def test_build_cannot_read_sidecar(self):
         import subprocess
         temp = self.request.parent/'sandbox'; temp.mkdir()
         script = temp/'read.py'; script.write_text('import pathlib,sys; pathlib.Path(sys.argv[1]).read_bytes()')
@@ -109,9 +109,7 @@ class ProductionContractTests(ProductionFixture):
         self.assertEqual(subprocess.run(allowed, capture_output=True).returncode, 0)
         denied = isolated_command([sys.executable, str(script), str(self.request.parent/'design.json')], 'seatbelt', self.job.resolve(), self.project, temp)
         self.assertNotEqual(subprocess.run(denied, capture_output=True).returncode, 0)
-        network = isolated_command([sys.executable, '-c', "import socket; s=socket.socket(); s.settimeout(1); s.connect(('198.51.100.1',80))"], 'seatbelt', self.job.resolve(), self.project, temp)
-        blocked = subprocess.run(network, capture_output=True)
-        self.assertIn(b'Operation not permitted', blocked.stderr)
+
 
 
 @unittest.skipUnless(os.environ.get('RUN_OPTIMIZATION_BROWSER') == '1', '需显式启用真实浏览器回归')

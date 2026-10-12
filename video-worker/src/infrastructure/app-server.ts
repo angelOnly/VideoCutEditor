@@ -50,7 +50,7 @@ export function codexEnvironment(config: Config): NodeJS.ProcessEnv {
     REMOTION_BROWSER_EXECUTABLE: config.hostBrowser,
     PYTHONDONTWRITEBYTECODE: '1',
     // 外层任务权限允许读制作记录；媒体子进程还须隔离这些非执行数据。
-    VIDEOCUT_RENDER_SANDBOX: process.platform === 'darwin' ? 'seatbelt' : 'bwrap',
+    VIDEOCUT_RENDER_SANDBOX: process.platform === 'darwin' ? 'seatbelt' : 'landlock',
     VIDEOCUT_RENDER_SLOTS: String(config.renderSlots),
     VIDEOCUT_FRAME_CONCURRENCY: String(config.frameConcurrency ?? 1),
     DOUBAO_TTS_API_KEY: process.env.DOUBAO_TTS_API_KEY,

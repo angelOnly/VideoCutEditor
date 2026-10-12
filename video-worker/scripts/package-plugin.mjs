@@ -33,6 +33,7 @@ export const packageEntries = [
     'finance_timeline.py',
     'production_contract.py',
     'render_inputs.py',
+    'render_landlock.py',
     'validation_context.py',
     'stage_tts.py',
     'cached_tts.py',

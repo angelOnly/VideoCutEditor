@@ -40,6 +40,18 @@ import tempfile
 with tempfile.TemporaryDirectory() as temporary:
  assert pathlib.Path(temporary).is_relative_to(pathlib.Path.cwd()), '临时目录必须属于当前任务'
 socket.getaddrinfo('openspeech.bytedance.com', 443)
+# 在真实 Codex 外层权限内验证媒体读取隔离，避免宿主可用但嵌套失败。
+sys.path.insert(0, ${JSON.stringify(path.join(productionRoot(c), 'tools'))})
+from render_inputs import isolated_command
+import subprocess
+root = pathlib.Path.cwd()
+(root/'project/render-probe.txt').write_text('render-input')
+(root/'work/design.json').write_text('sidecar')
+probe = "import pathlib,sys; root=pathlib.Path(sys.argv[1]); assert (root/'project/render-probe.txt').read_text() == 'render-input'; (root/'cache/render-result').write_text('ok');\\ntry: (root/'work/design.json').read_text()\\nexcept PermissionError: pass\\nelse: raise RuntimeError('渲染可读取设计记录')"
+command = isolated_command([sys.executable, '-c', probe, str(root)],
+ os.environ['VIDEOCUT_RENDER_SANDBOX'], root, root/'project', root/'cache')
+result = subprocess.run(command, capture_output=True, text=True)
+assert result.returncode == 0, result.stderr
 print('native isolation passed')`;
     const commands = [
       [c.python, '-c', python, forbidden, path.join(c.codexHome, 'auth.json')],
