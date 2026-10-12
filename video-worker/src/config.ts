@@ -31,6 +31,7 @@ export interface Config {
   hostRenderCpus: number;
   hostRenderTasksMax: number;
   renderSlots: number;
+  frameConcurrency?: number;
   databaseUrl: string;
   port: number;
   mediaRoot: string;
@@ -178,6 +179,12 @@ export function loadConfig(envFile = path.resolve(serviceRoot, '../.env')): Conf
       .min(1)
       .max(5)
       .parse(process.env.RENDER_TASK_SLOTS ?? 5),
+    frameConcurrency: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(2)
+      .parse(process.env.RENDER_FRAME_CONCURRENCY ?? 1),
     databaseUrl,
     port: Number(process.env.PORT ?? 8080),
     mediaRoot,

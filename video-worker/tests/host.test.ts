@@ -81,7 +81,9 @@ test('原生命令和看图可用，文件限定任务和只读工具，环境�
   assert.equal(env.DATABASE_URL, undefined);
   assert.equal(env.POSTGRES_PASSWORD, undefined);
   assert.equal(env.IFENG_CALLBACK_SECRET, undefined);
-  assert.equal(env.VIDEOCUT_RENDER_SANDBOX, 'native');
+  assert.equal(env.VIDEOCUT_RENDER_SANDBOX, process.platform === 'darwin' ? 'seatbelt' : 'bwrap');
+  assert.equal(env.VIDEOCUT_FRAME_CONCURRENCY, '1');
+  assert.equal(codexEnvironment({...c, frameConcurrency: 2}).VIDEOCUT_FRAME_CONCURRENCY, '2');
   assert.equal(env.VIDEOCUT_RENDER_SLOTS, '5');
   assert.equal(env.VIDEOCUT_PYTHON, '/opt/venv/bin/python3');
 });

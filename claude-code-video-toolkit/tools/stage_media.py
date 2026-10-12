@@ -22,7 +22,10 @@ import time
 
 from two_stage import (StageError, digest, execution, identifier, json_digest, load_request,
                        local, read, require, schema, write, process_signature, failure)
-from finance_timeline import derive_timeline
+from validation_context import ValidationContext, technical_fact, delivery_scope
+from finance_timeline import derive_timeline, scene_props
+from production_contract import CONTRACT, review_frames, with_design, scene_blocks, action_windows
+from render_inputs import production_inputs, isolated_command, frame_concurrency
 from actual_timeline import sample_frames, extend_timeline, check_fixed_ending
 
 
@@ -44,6 +47,11 @@ def _cgroup_value(path):
         return int(value)
     except ValueError:
         return None
+
+
+def _cgroup_text(path):
+    try: return Path(path).read_text(encoding='utf-8').strip()
+    except OSError: return None
 
 
 def _cgroup_events(path):
@@ -82,6 +90,10 @@ def cgroup_metrics(cgroup_root=Path('/sys/fs/cgroup'), process_cgroup=Path('/pro
             'peak': _cgroup_value(directory / 'pids.peak'),
         },
         'pidsEvents': _cgroup_events(directory / 'pids.events'),
+        'cpu': _cgroup_events(directory / 'cpu.stat'),
+        'cpuLimit': _cgroup_text(directory/'cpu.max'),
+        'memoryEvents': _cgroup_events(directory / 'memory.events'),
+        'io': _cgroup_text(directory/'io.stat'),
         'memory': {
             'current': _cgroup_value(directory / 'memory.current'),
             'peak': _cgroup_value(directory / 'memory.peak'),
@@ -121,6 +133,9 @@ class CgroupUsage:
                 'eventsBefore': self.before['pidsEvents'] if self.before else {},
                 'eventsAfter': self.latest['pidsEvents'],
             },
+            'cpu': {'before': (self.before or {}).get('cpu', {}), 'after': self.latest.get('cpu', {}), 'limit': self.latest.get('cpuLimit')},
+            'memoryEvents': {'before': (self.before or {}).get('memoryEvents', {}), 'after': self.latest.get('memoryEvents', {})},
+            'io': self.latest.get('io'),
             'memory': {
                 **self.latest['memory'],
                 'currentPeakObserved': self.peaks['memoryCurrent'],
@@ -181,8 +196,8 @@ def command(argv, timeout=120):
 
 
 
-def probe(path):
-    return json.loads(command([os.environ.get('FFPROBE', 'ffprobe'), '-v', 'error', '-count_frames',
+def probe(path, *, count_frames=False):
+    return json.loads(command([os.environ.get('FFPROBE', 'ffprobe'), '-v', 'error', *(['-count_frames'] if count_frames else []),
                                '-show_streams', '-show_format', '-of', 'json', str(path)]))
 
 
@@ -215,6 +230,7 @@ def publish_file(source, destination):
         temporary.unlink(missing_ok=True)
 
 
+@technical_fact
 def audio_info(path):
     data = probe(path)
     audios = [s for s in data['streams'] if s['codec_type'] == 'audio']
@@ -230,6 +246,7 @@ def audio_info(path):
             'sampleRate': sample_rate, 'samples': samples}
 
 
+@technical_fact
 def pcm(path):
     raw = ffmpeg('-i', path, '-map', '0:a:0', '-ac', '1', '-ar', '8000', '-f', 's16le', '-')
     values = array('h'); values.frombytes(raw)
@@ -281,8 +298,9 @@ def audio_offset(a, b):
     return {'estimatedOffsetMs': shift / 8, 'diagnosticCorrelation': value}
 
 
+@technical_fact
 def validate_mp4(path, spec, frames):
-    data = probe(path)
+    data = probe(path, count_frames=True)
     videos = [s for s in data['streams'] if s['codec_type'] == 'video']
     audios = [s for s in data['streams'] if s['codec_type'] == 'audio']
     require('mp4' in data['format']['format_name'].split(','), '不是 MP4', 'MEDIA_INVALID')
@@ -306,9 +324,20 @@ def validate_mp4(path, spec, frames):
     return {'sha256': digest(path), 'frames': frames, 'durationSeconds': frames / spec['fps']}
 
 
+@technical_fact
+def frames_rgb(path, indices):
+    indices = sorted(set(indices))
+    if not indices: return {}
+    select = '+'.join(f'eq(n\\,{i})' for i in indices)
+    raw = ffmpeg('-i', path, '-vf', f'select={select},scale=320:180', '-vsync', '0',
+                 '-frames:v', len(indices), '-pix_fmt', 'rgb24', '-f', 'rawvideo', '-')
+    size = 320*180*3
+    require(len(raw) == len(indices)*size, '帧图无法完整解码', 'MEDIA_INVALID')
+    return {i: raw[n*size:(n+1)*size] for n, i in enumerate(indices)}
+
+
 def frame_rgb(path, index):
-    return ffmpeg('-i', path, '-vf', f'select=eq(n\\,{index}),scale=320:180',
-                  '-frames:v', '1', '-pix_fmt', 'rgb24', '-f', 'rawvideo', '-')
+    return frames_rgb(path, (index,))[index]
 
 
 def validate_narration_review(timeline, request, manifest, review):
@@ -366,10 +395,17 @@ def validate_narration_review(timeline, request, manifest, review):
             design_ids = item.get('designIds')
             check(isinstance(design_ids, list) and design_ids and
                   all(isinstance(d, str) and d in design_by_id for d in design_ids), '审片缺少有效设计引用')
+            actual_actions = []
             for did in design_ids:
                 design = design_by_id[did]
                 check(item['mode'] == design['mode'], '审片与设计的变化/保持意图不符')
                 check(set(design['utteranceIds']).issubset(item['utteranceIds']), '审片未覆盖所引用设计的口播')
+                if timeline.get('renderInputContract') == CONTRACT and design['mode'] == 'change':
+                    blocks = scene_blocks(timeline, source)
+                    for ref in design.get('eventRefs', []):
+                        check(ref in blocks, '审片动作引用已失效')
+                        actual_actions.extend((max(0, a), min(frames, b)) for a, b in action_windows(blocks[ref]) if a < frames and b > 0)
+                    check(actual_actions, '变化设计缺少实际动作依据')
             reviewed_designs.update(design_ids)
             ids = item['utteranceIds']
             check(set(ids).issubset(by_id), '审片引用不存在的发言')
@@ -384,19 +420,18 @@ def validate_narration_review(timeline, request, manifest, review):
             check(set(samples).issubset(evidence) and set(samples).issubset(viewed['viewedFrames']),
                   '缺少讲解检查对应的成片抽帧')
             # 保持画面也要检查区间两端，不能只用一张图证明整段效果。
-            needed = {start, stop - 1}
-            if item['mode'] == 'change':
-                action_start, action_end = item['changeStartFrame'], item['changeEndFrameExclusive']
-                check(start <= action_start < action_end <= stop, '动作区间不在讲解检查范围内')
-                needed.update({max(start, action_start - 1), action_start,
-                               (action_start + action_end - 1) // 2, action_end - 1,
-                               min(stop - 1, action_end)})
+            action = (item['changeStartFrame'], item['changeEndFrameExclusive']) if item['mode'] == 'change' else None
+            needed = review_frames(start, stop, action)
+            if actual_actions:
+                check(action == (min(a for a, _ in actual_actions), max(b for _, b in actual_actions)), '审片动作窗口不是实际执行动作')
+                for window in actual_actions: needed.update(review_frames(start, stop, window))
             check(needed.issubset(samples), '缺少讲解区间边界或动作前中后画面')
             covered.update(ids)
         check(reviewed_designs == set(design_by_id), '存在未检查的设计过程')
         check(covered == set(by_id), f"{actual['id']} 存在未检查的口播；可合并同一语义并说明保持理由")
 
 
+@delivery_scope
 def validate_delivery(root, request, manifest):
     schema(manifest, 'manifest')
     for key in ('taskId', 'runId', 'stage', 'contractVersion'):
@@ -406,6 +441,8 @@ def validate_delivery(root, request, manifest):
     plan = read(local(root, confirmation['planFile']))
     require([s['id'] for s in manifest['scenes']] == [s['id'] for s in plan['scenes']], '镜头缺失、重复或乱序')
     assets = {a['id']: a for a in read(local(root, request['input']['assetsManifest']))['assets']}
+    from validation_context import _current
+    _current.get().observe(local(root, manifest['quality']))
     review = read(local(root, manifest['quality']))
     try:
         schema(review, 'review')
@@ -416,7 +453,15 @@ def validate_delivery(root, request, manifest):
     require([s['id'] for s in review['scenes']] == [s['id'] for s in plan['scenes']], '视觉审查未覆盖全部镜头')
     timeline_path = local(root, f"render/{request['runId']}/timeline.json")
     require(digest(timeline_path) == review['timelineSha256'], '时间轴已变化，请重新检查讲解对应', 'VISUAL_REVIEW_REQUIRED')
-    validate_narration_review(read(timeline_path), request, manifest, review)
+    _current.get().observe(timeline_path)
+    timeline = read(timeline_path)
+    design_path = timeline_path.with_name('design.json')
+    if design_path.exists(): _current.get().observe(design_path)
+    design = read(design_path) if design_path.exists() else None
+    if timeline.get('renderInputContract') == CONTRACT:
+        require(design is not None and review.get('designSha256') == digest(design_path),
+                '设计预期已变化，请重新核对实际作品与设计', 'VISUAL_REVIEW_REQUIRED')
+    validate_narration_review(with_design(timeline, design), request, manifest, review)
     reports, paths, total = [], set(), 0
     for expected, actual, viewed in zip(plan['scenes'], manifest['scenes'], review['scenes']):
         require(expected['text'] == actual['text'] == actual['audio']['text'], '正文/音频文本与确认不一致')
@@ -453,11 +498,12 @@ def validate_delivery(root, request, manifest):
         needed = {0, actual['frames'] // 2, actual['frames'] - 1}
         evidence = {e['frame']: e for e in actual['evidence']}
         require(needed.issubset(evidence) and needed.issubset(viewed['viewedFrames']), '缺少成片首、中、尾画面审查')
+        decoded = frames_rgb(path, tuple(sorted(evidence)))
         for index, item in evidence.items():
             require(0 <= index < actual['frames'], '审查帧越界')
             image = local(root, item['path']); require(digest(image) == item['sha256'], '审查图片已改变')
             # 从实际交付 MP4 重解码比对，防止拿预览帧冒充成片帧。
-            a, b = frame_rgb(path, index), frame_rgb(image, 0)
+            a, b = decoded[index], frame_rgb(image, 0)
             require(len(a) == len(b) == 320 * 180 * 3, '帧图无法解码')
             require(sum(abs(x-y) for x, y in zip(a, b)) / len(a) < 4, '审查图与实际成片不符')
         total += actual['frames']; reports.append({'id': actual['id'], **report})
@@ -471,9 +517,14 @@ def validate_delivery(root, request, manifest):
         offset = 0
         whole_pcm = pcm(path)
         require(abs(len(whole_pcm) - round(total / request['outputSpec']['fps'] * 8000)) <= 400, '整片音频时长不符')
+        boundaries, position = [], 0
         for scene in manifest['scenes']:
+            boundaries.extend((position, position+scene['frames']-1)); position += scene['frames']
+        decoded_whole = frames_rgb(path, tuple(boundaries))
+        for scene in manifest['scenes']:
+            decoded_scene = frames_rgb(local(root, scene['path']), tuple(sorted({e['frame'] for e in scene['evidence']})))
             for index in (0, scene['frames'] - 1):
-                require(frame_rgb(path, offset+index) == frame_rgb(local(root, scene['path']), index), '整片拼接边界画面不符')
+                require(decoded_whole[offset+index] == decoded_scene[index], '整片拼接边界画面不符')
             start = round(offset / request['outputSpec']['fps'] * 8000)
             end = round((offset + scene['frames']) / request['outputSpec']['fps'] * 8000)
             compare_samples(pcm(local(root, scene['audio']['path'])), whole_pcm[start:end], allow_silence=not scene['text'].strip(),
@@ -610,7 +661,7 @@ def supervise(argv, cwd, log, done_file, timeout, close_timeout=10):
                     'log': str(log), 'exitCode': child.returncode,
                     'logTail': tail, 'resourceMetrics': usage.diagnostics()})
             return {'closeTimedOut': False, 'pid': child.pid, 'recommendations': read(done_file).get('recommendations', []),
-                    'resourceMetrics': usage.diagnostics()}
+                    'resourceMetrics': usage.diagnostics(), 'rendererTimings': read(done_file).get('timings', {})}
         finally:
             # 先让 Node 执行 browser.close；之后仅清理已核验自有后代。
             try:
@@ -747,7 +798,7 @@ def inspect_outro(project, ending, spec):
     require(isinstance(outro.get('src'), str) and type(outro.get('muted')) is bool,
             '片尾需明确本地路径和是否保留原声')
     path = local(project / 'public' / 'template-assets', outro['src'])
-    data = probe(path)
+    data = probe(path, count_frames=True)
     videos = [s for s in data['streams'] if s['codec_type'] == 'video']
     audios = [s for s in data['streams'] if s['codec_type'] == 'audio']
     require(len(videos) == 1, '片尾需要唯一视频轨；先整理本地素材', 'MEDIA_INVALID')
@@ -787,14 +838,8 @@ def fixed_ending_context(root, request, request_path, project, props):
     official = read(local(root, str((Path(request_path).resolve().parent / 'timeline.json').relative_to(root))))
     require(not any(s.get('outro') for s in official['scenes']), '新模板不能在正文scene.outro中播放片尾')
     # 派生只改变坐标别名和音频溯源字段；禁止用另一份props更换合成素材。
-    expected = json.loads(json.dumps(official))
-    for item in expected['scenes']:
-        item['from'] = item.pop('startFrame')
-        item['frames'] = item.pop('endFrameExclusive') - item['from']
-        for utterance in item['utterances']:
-            utterance.pop('audioPath', None)
-    require(timeline == expected and props.get('scene') in timeline['scenes'],
-            '渲染props不是当前正式时间轴派生结果', 'TIMELINE_STALE')
+    expected = scene_props(official, props['scene']['id'])
+    require(props == expected, '渲染props不是当前正式时间轴派生结果', 'TIMELINE_STALE')
     require(type(official.get('withBgm')) is bool and props.get('withBgm') is official['withBgm'],
             '渲染音乐选择与正式时间轴不一致', 'TIMELINE_STALE')
     bounds = check_fixed_ending(official)
@@ -880,6 +925,14 @@ def render_scene(request_path, scene_id, project_name, entry_name, composition, 
         require(project.is_dir() and project != root, '需要独立项目目录')
         entry = local(root, entry_name); require(entry.is_relative_to(project), '入口不在项目目录')
         props = read(local(root, props_name)) if props_name else {}
+        mode = batch_context.get('reuseMode', 'legacy-conservative') if batch_context else 'legacy-conservative'
+        indices = batch_context.get('reviewFrames') if batch_context else None
+        if not batch_context:
+            official_file = Path(request_path).resolve().parent/'timeline.json'
+            if official_file.exists() and read(official_file).get('renderInputContract') == CONTRACT:
+                review_plan, mode = production_inputs(root, request_path, request, project_name,
+                    [{'sceneId': scene_id, 'composition': composition, 'frames': frames, 'props': props_name}], modules, node)
+                indices = review_plan['scenes'][scene_id]['frames']
         ending_bounds, outro = fixed_ending_context(root, request, request_path, project, props)
         if ending_bounds:
             require(props['scene']['id'] == scene_id, 'props分镜与当前导出ID不符')
@@ -901,12 +954,28 @@ def render_scene(request_path, scene_id, project_name, entry_name, composition, 
         packages = {n: digest(modules / n / 'package.json') for n in ('remotion', '@remotion/renderer', '@remotion/bundler')}
         project_entries = project_fingerprint(project)
         receipt = {'project': str(project.relative_to(root)), 'projectHash': json_digest(project_entries), 'timelineHash': timeline_hash}
-        fingerprint = json_digest({'project': project_entries, 'entry': str(entry), 'composition': composition,
-                                   'props': props, 'spec': request['outputSpec'], 'frames': frames, 'packages': packages,
-                                   'confirmedPlanSha256': request['confirmation']['planSha256'],
-                                   'fixedMix': fixed, 'timelineHash': timeline_hash, 'mediaTool': digest(Path(__file__)),
-                                   'renderer': digest(Path(__file__).with_name('render_scene.cjs')),
-                                   'batchVersion': batch_context['version'] if batch_context else None})
+        if batch_context:
+            identity = batch_context['identity']
+        else:
+            from render_batch import package_fingerprint
+            toolkit = Path(__file__).resolve().parent.parent
+            identity = {'packages': package_fingerprint(modules), 'browser': digest(Path(browser)),
+                        'sharedFiles': {str(p.relative_to(toolkit)): digest(p) for p in (toolkit/'lib').rglob('*') if p.is_file()}}
+        runtime = {'node': command([node, '--version']).decode().strip(),
+                   'ffmpeg': command([os.environ.get('FFMPEG', 'ffmpeg'), '-version']).decode().splitlines()[0]}
+        fingerprint = json_digest({'cacheSchemaVersion': 2, 'project': project_entries,
+                                   'entry': str(entry.relative_to(project)), 'composition': composition,
+                                   'props': props, 'spec': request['outputSpec'], 'frames': frames,
+                                   'identity': identity, 'runtime': runtime, 'audioContract': audio_contract,
+                                   'fixedMix': fixed, 'timelineHash': timeline_hash if mode != CONTRACT else None,
+                                   'legacyRecords': {name: digest(official_path.with_name(name)) for name in ('design.json', 'review.json')
+                                                     if mode != CONTRACT and official_path.with_name(name).exists()},
+                                   'mediaTool': digest(Path(__file__)),
+                                   'adapter': digest(Path(__file__).with_name('finance_timeline.py')),
+                                   'renderer': digest(Path(__file__).with_name('render_scene.cjs'))})
+        receipt.update(renderInputKey=fingerprint, reuseMode=mode,
+                       currentBatchVersion=batch_context['version'] if batch_context else None)
+        miss_reason = 'no_cached_media'
         if marker.exists() and out.exists():
             old = read(marker)
             mix_valid = False
@@ -915,9 +984,12 @@ def render_scene(request_path, scene_id, project_name, entry_name, composition, 
                 mix_valid = digest(local(root, saved_mix['path'])) == saved_mix['sha256']
             except (OSError, ValueError, KeyError, TypeError):
                 pass
-            if mix_valid and old['fingerprint'] == fingerprint and old.get('timelineHash') == timeline_hash and old['sha256'] == digest(out):
+            if mix_valid and old.get('fingerprint') == fingerprint and old.get('sha256') == digest(out):
                 return {**receipt, **validate_mp4(out, request['outputSpec'], frames), 'path': str(out.relative_to(root)),
-                        'mix': old.get('mix'), 'evidence': extract_frames(root, request, scene_id, out, frames), 'reused': True}
+                        'mix': old.get('mix'), 'evidence': extract_frames(root, request, scene_id, out, frames, indices=indices),
+                        'reused': True, 'cacheHit': True, 'cacheMissReason': None, 'cachedFrom': old.get('currentBatchVersion'),
+                        'browserRenderCount': 0, 'newRenderedFrames': 0}
+            miss_reason = 'execution_inputs_changed' if old.get('fingerprint') != fingerprint else 'media_or_mix_changed'
         # 编码和封装分开缓存：只修封装时复用原画面及 PCM，不再次启动浏览器。
         raw_marker = work / (scene_id + '.raw.json')
         raw = read(raw_marker) if raw_marker.exists() else None
@@ -936,7 +1008,8 @@ def render_scene(request_path, scene_id, project_name, entry_name, composition, 
                 video, mix = temp / 'video.mp4', fixed_path if fixed else temp / 'mix.wav'
                 config = {'entry': str(entry), 'project': str(project), 'composition': composition, 'props': props, 'modules': str(modules),
                           'browser': browser, 'output': str(video), 'audio': str(mix), 'done': str(done), 'bundle': str(temp/'bundle'),
-                          'spec': request['outputSpec'], 'frames': frames, 'fixedAudio': bool(fixed)}
+                          'spec': request['outputSpec'], 'frames': frames, 'fixedAudio': bool(fixed),
+                          'concurrency': frame_concurrency()}
                 if batch_context: config['serveUrl'] = batch_context['bundle']
                 write(temp / 'config.json', config)
                 scratch = temp/'runtime'; scratch.mkdir(exist_ok=True)
@@ -944,7 +1017,10 @@ def render_scene(request_path, scene_id, project_name, entry_name, composition, 
                                   str(Path(__file__).with_name('render_scene.cjs')), str(temp/'config.json')]
                 sandbox = os.environ.get('VIDEOCUT_RENDER_SANDBOX')
                 if batch_context and not sandbox: sandbox = 'seatbelt' if sys.platform == 'darwin' else 'bwrap'
-                if sandbox == 'bwrap':
+                if mode == CONTRACT:
+                    render_command = isolated_command(render_command, sandbox or ('seatbelt' if sys.platform == 'darwin' else 'bwrap'),
+                        root, project, temp, batch_context['bundle'] if batch_context else None)
+                elif sandbox == 'bwrap':
                     # 工程 JS 只可写本次渲染临时目录；不能继承可信工具的预算写权限。
                     render_command = ['bwrap', '--die-with-parent', '--unshare-pid', '--ro-bind', '/', '/',
                                       '--bind', str(temp), str(temp),
@@ -997,31 +1073,53 @@ def render_scene(request_path, scene_id, project_name, entry_name, composition, 
             # 保留画面和混音用于封装修复，体积较大的临时网页可删除。
             if (temp / 'bundle').exists(): shutil.rmtree(temp / 'bundle')
         phase_started = time.monotonic()
-        evidence = extract_frames(root, request, scene_id, out, frames)
+        evidence = extract_frames(root, request, scene_id, out, frames, indices=indices)
         timings['evidenceSeconds'] = time.monotonic() - phase_started
         timings['wallSeconds'] = time.monotonic() - scene_started
         return {**receipt, **info, 'path': str(out.relative_to(root)), 'mix': mixed, 'evidence': evidence,
-                'reused': False, 'timings': timings, 'renderReused': raw_reused,
+                'reused': False, 'cacheHit': False, 'cacheMissReason': miss_reason,
+                'browserRenderCount': 0 if raw_reused else 1, 'newRenderedFrames': 0 if raw_reused else frames,
+                'timings': timings, 'renderReused': raw_reused,
                 'recommendations': recovery.get('recommendations', []),
-                'resourceMetrics': recovery.get('resourceMetrics')}
+                'resourceMetrics': recovery.get('resourceMetrics'), 'rendererTimings': recovery.get('rendererTimings')}
 
 
-def extract_frames(root, request, scene_id, path, frames):
-    result = []
-    folder = root / 'render' / request['runId'] / 'frames'; folder.mkdir(parents=True, exist_ok=True)
-    for index in sorted({0, frames//2, frames-1}):
-        target = folder / f'{scene_id}-{index}.png'
-        ffmpeg('-y', '-i', path, '-vf', f'select=eq(n\\,{index})', '-frames:v', '1', target)
-        result.append({'frame': index, 'path': str(target.relative_to(root)), 'sha256': digest(target)})
-    return result
+def extract_frames(root, request, scene_id, path, frames, indices=None):
+    """按当前视频摘要存图，一次精确解码只补缺项；不生成已查看结论。"""
+    indices = sorted(set(indices or ()) | {0, frames//2, frames-1})
+    require(all(type(i) is int and 0 <= i < frames for i in indices), '取证帧越界')
+    video_hash = digest(path)
+    folder = root/'render'/request['runId']/'frames'/scene_id/video_hash
+    folder.mkdir(parents=True, exist_ok=True)
+    marker = folder/'index.json'
+    saved = read(marker) if marker.exists() else {}
+    missing = [i for i in indices if not (folder/f'{i}.png').exists() or saved.get(str(i)) != digest(folder/f'{i}.png')]
+    if missing:
+        with tempfile.TemporaryDirectory(dir=folder, prefix='extract-') as temporary:
+            targets = Path(temporary)
+            select = '+'.join(f'eq(n\\,{i})' for i in missing)
+            ffmpeg('-y', '-i', path, '-vf', 'select='+select, '-vsync', '0', '-frames:v', len(missing), targets/'%06d.png')
+            for number, index in enumerate(missing, 1):
+                source = targets/f'{number:06d}.png'
+                require(source.is_file(), '实际视频未覆盖取证帧', 'MEDIA_INVALID')
+                publish_file(source, folder/f'{index}.png')
+                saved[str(index)] = digest(folder/f'{index}.png')
+        require(digest(path) == video_hash, '取证时视频发生变化', 'TIMELINE_STALE')
+        write(marker, saved)
+    return [{'frame': i, 'path': str((folder/f'{i}.png').relative_to(root)), 'sha256': digest(folder/f'{i}.png')}
+            for i in indices]
 
 
+@delivery_scope
 def assemble(request_path, manifest_path):
     """按确认镜头顺序合片；视频直拷，逐镜原混音 PCM 拼接后仅编码一次 AAC。"""
     with execution(request_path, 'assemble') as (root, request, budget):
         manifest_path = Path(manifest_path).resolve()
         require(manifest_path.is_relative_to(root), '清单必须属于本任务')
         manifest = read(manifest_path)
+        assembly_started = time.monotonic()
+        assembly_key = json_digest({'schemaVersion': 1, 'scenes': [(s['sha256'], s['audio']['sha256'], s['frames']) for s in manifest['scenes']],
+                                    'spec': request['outputSpec'], 'tool': digest(Path(__file__))})
         # 先独立验证所有分镜和审查记录，整片暂时缺省。
         validate_delivery(root, {**request, 'delivery': {**request['delivery'], 'includeWholeVideo': False}}, {**manifest, 'wholeVideo': None})
         folder = root / 'output' / request['runId']; folder.mkdir(parents=True, exist_ok=True)
@@ -1047,8 +1145,17 @@ def assemble(request_path, manifest_path):
             compare_audio(temp/'whole.mp4', temp/'mix.wav', allow_silence=all(not s['text'].strip() for s in manifest['scenes']))
             load_request(request_path, 'render')
             output = folder/'video.mp4'; publish_file(temp/'whole.mp4', output)
+            from validation_context import _current
+            if _current.get():
+                _current.get()._files.pop(str((temp/'whole.mp4').resolve()), None)
+                _current.get().observe(output)
             manifest['wholeVideo'] = {'path': str(output.relative_to(root)), **info}
             write(manifest_path, manifest)
+            if _current.get():
+                for name in list(_current.get()._files):
+                    if Path(name).is_relative_to(temp): _current.get()._files.pop(name)
+        write(folder/'assembly.json', {'assemblyKey': assembly_key, 'wholeVideo': manifest['wholeVideo'],
+                                      'wallSeconds': time.monotonic()-assembly_started})
         return manifest['wholeVideo']
 
 
@@ -1123,6 +1230,10 @@ def main():
         a.add_argument('--timeline', required=True)
         if name != 'derive-timeline': a.add_argument('--output', required=True)
         if name != 'extend-timeline': a.add_argument('--project', required=True)
+    evidence_parser = s.add_parser('evidence')
+    evidence_parser.add_argument('--request', type=Path, required=True)
+    evidence_parser.add_argument('--scene', required=True); evidence_parser.add_argument('--video', required=True)
+    evidence_parser.add_argument('--frames', type=int, required=True); evidence_parser.add_argument('--indices', type=int, nargs='*', default=[])
     assemble_parser = s.add_parser('assemble'); assemble_parser.add_argument('--request', type=Path, required=True); assemble_parser.add_argument('--manifest', type=Path, required=True)
     a = p.parse_args()
     try:
@@ -1131,6 +1242,14 @@ def main():
                 require(a.slots == configured_slots, '当前任务的渲染槽位由 Worker 固定', 'RENDER_SLOT_CONFIG_INVALID')
             from render_batch import freeze_batch, render_batch
             result = freeze_batch(a) if a.command == 'freeze-batch' else render_batch(a)
+        elif a.command == 'evidence':
+            with execution(a.request, 'evidence') as (root, request, budget):
+                identifier(a.scene)
+                path = local(root, a.video)
+                validate_mp4(path, request['outputSpec'], a.frames)
+                plan_file = a.request.resolve().parent/'review-plan.json'
+                indices = read(plan_file)['scenes'][a.scene]['frames'] if plan_file.exists() else []
+                result = {'evidence': extract_frames(root, request, a.scene, path, a.frames, indices=[*indices, *a.indices])}
         elif a.command == 'preflight': result = preflight(a.node, a.modules, a.browser)
         elif a.command == 'assemble': result = assemble(a.request, a.manifest)
         elif a.command == 'derive-timeline':

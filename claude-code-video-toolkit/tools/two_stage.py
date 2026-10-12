@@ -150,6 +150,8 @@ def failure(request_path, step, exc):
                'message': str(exc), 'retryable': getattr(exc, 'retryable', False)}}
     if getattr(exc, 'details', None):
         payload['diagnostics'] = exc.details
+        if exc.details.get('category') == 'production_input':
+            payload['error'].update(category=exc.details['category'], issues=exc.details['issues'])
     adjustment = getattr(exc, 'code', '') in ('TIMELINE_EXTEND_REQUIRED', 'CONTENT_TIMELINE_REQUIRED', 'MIX_REBUILD_REQUIRED')
     if adjustment:
         payload['status'] = 'adjustment_required'
@@ -389,7 +391,7 @@ def result_base(request):
     return {k: request[k] for k in ('contractVersion', 'taskId', 'runId', 'stage')}
 
 
-def validate(request_path, artifact_path):
+def validate(request_path, artifact_path, validation_context=None):
     root, request = load_request(request_path)
     with lock(root / '.operation.lock'):
         artifact = Path(artifact_path).resolve()
@@ -401,7 +403,7 @@ def validate(request_path, artifact_path):
             result = {**result_base(request), 'status': 'candidate', 'planFile': str(artifact.relative_to(root)), 'planSha256': digest(artifact), **details}
         else:
             from stage_media import validate_delivery
-            details = validate_delivery(root, request, value)
+            details = validate_delivery(root, request, value, validation_context=validation_context)
             result = {**result_base(request), 'status': 'candidate', 'manifestFile': str(artifact.relative_to(root)), 'manifestSha256': digest(artifact), **details}
         # 长时间媒体校验结束前再次校验版本和输入。
         load_request(request_path)

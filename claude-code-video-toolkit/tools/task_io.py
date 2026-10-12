@@ -179,12 +179,15 @@ def complete_render(entry_path, manifest_path):
     saved = read(binding(root, entry_path))
     request_path = local(root, saved['request'])
     manifest_file = local(root, manifest_path)
+    from validation_context import ValidationContext
+    validation_context = ValidationContext()
     # 交付入口兜底合片；已有整片只做终检，损坏时禁止静默替换或回调成功。
     if read(manifest_file).get('wholeVideo') is None:
         from stage_media import assemble
-        assemble(request_path, manifest_file)
+        assemble(request_path, manifest_file, validation_context=validation_context)
+    validation_context.observe(manifest_file)
     # 制作终检属于 toolkit，由 Codex 显式调用；Worker 不运行此函数。
-    validate(request_path, manifest_file)
+    validate(request_path, manifest_file, validation_context=validation_context)
     manifest = read(manifest_file)
     whole = manifest['wholeVideo']
     spec = read(request_path)['outputSpec']
@@ -200,6 +203,7 @@ def complete_render(entry_path, manifest_path):
         data.append({**deepcopy(item), 'dur': scene['durationSeconds'], 'durationSource': 'measured', 'artifactRef': ref})
         data[-1].pop('url', None)
         files.append({'id': ref, 'path': scene['path']})
+    validation_context.check_stable()
     return finish(entry_path, 'completed', {'dataList': data}, files)
 
 

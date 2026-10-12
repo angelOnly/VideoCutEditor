@@ -216,19 +216,20 @@ class AdjustmentBudgetTests(Fixture):
         self.assertNotIn('audioPath',props['scene']['utterances'][0])
         self.assertEqual(read(source)['scenes'][0]['utterances'][0]['audioPath'],'project/renderer/public/a.wav')
 
-    def test_managed_tools_only_record_events_and_do_not_double_charge(self):
+    def test_legacy_policy_cannot_disable_repair_budget(self):
         request=self.render_request()
         root=request.parents[2]
+        # 任务自行写的旧策略不能豁免现行预算与连续无进展保护。
         write(root/'.control/policy.json', {'budgetOwner':'worker'})
-        for _ in range(4):
+        for index in range(4):
             with self.assertRaises(StageError) as error:
                 with execution(request,'render:scene_1'):
                     raise StageError('RENDER_FAILED','当前工程语法错误')
-            self.assertEqual(error.exception.code,'RENDER_FAILED')
-        state=read(root/'.control/execution.json')
-        self.assertEqual(state['repairRounds'],0)
-        self.assertEqual(len(state['events']),4)
-        self.assertNotIn('stopReason',state)
+            self.assertEqual(error.exception.code,'RENDER_FAILED' if index < 2 else 'REPAIR_BUDGET_EXHAUSTED')
+        state=read(request.parent/'execution.json')
+        self.assertEqual(state['repairRounds'],3)
+        self.assertEqual(len(state['repairs']),3)
+        self.assertTrue(state['stopReason'])
 
     def test_adjustment_does_not_spend_repairs_and_repetition_stops(self):
         request=self.render_request()

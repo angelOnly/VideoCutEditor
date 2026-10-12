@@ -320,8 +320,10 @@ def run(config):
     if config.get('repetitions', 3) < 3:
         raise ValueError('每种条件至少三次')
     expected = {'old_serial': 1, 'new_1': 1, 'new_2': 2, 'new_3': 3}
-    if {v['name']: v['slots'] for v in config['variants']} != expected:
-        raise ValueError('variants 必须包含 old_serial/new_1/new_2/new_3 及正确槽数')
+    frame_matrix = {v['name']: (v['slots'], v.get('frameConcurrency', 1)) for v in config['variants']}
+    if {v['name']: v['slots'] for v in config['variants']} != expected and frame_matrix != {
+            'new_5x1': (5, 1), 'new_3x2': (3, 2), 'new_4x2': (4, 2), 'new_5x2': (5, 2)}:
+        raise ValueError('variants 必须使用完整的串并行对照或受控帧并发矩阵')
     if any(not v.get('stages') for v in config['variants']):
         raise ValueError('每组至少一个阶段命令')
     if not config.get('immutableInputs'):

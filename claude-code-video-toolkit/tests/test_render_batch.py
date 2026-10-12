@@ -32,24 +32,26 @@ class BatchTests(Fixture):
         write(self.job/'scenes.json', self.scenes)
         self.args = SimpleNamespace(request=render, batch='batch_1', project='project', entry='project/index.js',
              scenes='scenes.json', modules=str(modules), browser=str(browser), node=sys.executable, slots=2)
+        (project/'public').mkdir()
+        (project/'public/audio.wav').write_bytes(b'test-audio-source')
+        timeline = {'fps': 10, 'scenes': []}
+        offset = 0
+        for scene, confirmed in zip(self.scenes, self.plan['scenes']):
+            count = scene['frames']
+            timeline['scenes'].append({'id': scene['sceneId'], 'startFrame': offset, 'endFrameExclusive': offset+count,
+                'utterances': [{'id': 'u', 'text': confirmed['text'], 'startFrame': 0, 'endFrameExclusive': count,
+                    'audioPath': 'project/public/audio.wav', 'src': 'audio.wav'}],
+                'captions': [{'text': confirmed['text'], 'startFrame': 0, 'endFrameExclusive': count}],
+                'visualDesign': [{'id': 'd', 'utteranceIds': ['u'], 'mode': 'hold', 'description': '测试保持', 'implementation': 'project/index.js'}]})
+            offset += count
+        write(render.parent/'timeline.json', timeline)
         frozen = freeze_batch(self.args); self.args.manifest = frozen['manifest']
-        self.preflight = self.args.request.parent/'preflight-review.json'
-        preview = self.job/'preview.mp4'; preview.write_bytes(b'test-preview')
-        write(self.preflight, {'productionSha256': frozen['productionSha256'], 'previews': [
-            {'path': 'preview.mp4', 'sha256': digest(preview), 'viewedFrames': [0],
-             'observed': '测试桩，不代表真实审片', 'limitations': '测试未播放', 'passed': True}]})
         self.dir = (self.job / self.args.manifest).parent
 
-    def test_preflight_missing_stale_or_changed(self):
-        original = read(self.preflight)
-        for update in ({'productionSha256': 'stale'}, {'previews': []}):
-            write(self.preflight, {**original, **update})
-            with self.assertRaisesRegex(StageError, '试作'): batch_module.validate_preflight(self.job, self.args.request, read(self.job/self.args.manifest))
-        write(self.preflight, original)
-        (self.job/'preview.mp4').write_bytes(b'changed')
-        with self.assertRaisesRegex(StageError, '试作视频已变化'): batch_module.validate_preflight(self.job, self.args.request, read(self.job/self.args.manifest))
-        self.preflight.unlink()
-        with self.assertRaisesRegex(StageError, '缺少代表段'): batch_module.validate_preflight(self.job, self.args.request, read(self.job/self.args.manifest))
+    def test_no_preview_required(self):
+        self.assertFalse((self.args.request.parent/'preflight-review.json').exists())
+        with patch('stage_media.supervise', side_effect=self.build), patch('stage_media.render_scene', return_value={'reused': False}):
+            self.assertEqual(len(render_batch(self.args)['results']), 2)
 
     def build(self, argv, cwd, log, done, timeout):
         config = read(Path(done).parent/'config.json')
@@ -133,7 +135,7 @@ class BatchTests(Fixture):
 
     def test_timeline_adapters_are_part_of_frozen_tool_inputs(self):
         tools = self.base / 'toolkit/tools'; tools.mkdir(parents=True)
-        names = ('render_batch.py', 'stage_media.py', 'render_scene.cjs', 'two_stage.py', 'actual_timeline.py', 'finance_timeline.py')
+        names = ('render_batch.py', 'stage_media.py', 'render_scene.cjs', 'two_stage.py', 'actual_timeline.py', 'finance_timeline.py', 'production_contract.py', 'render_inputs.py')
         for name in names:
             (tools / name).write_text('固定版本')
         # 用隔离副本模拟工具发布，不改正在并行开发的实际共享文件。

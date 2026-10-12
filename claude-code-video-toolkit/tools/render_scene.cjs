@@ -53,7 +53,22 @@ const checkCancelled = () => { if (cancelled) throw new Error('TASK_CANCELLED');
 const {bundle} = require(path.join(c.modules, '@remotion/bundler'));
 const {selectComposition, renderMedia, openBrowser} = require(path.join(c.modules, '@remotion/renderer'));
 (async () => {
+  if (c.validateOnly) {
+    // 独立只读校验进程；完整时间轴不会暴露给随后执行的构建与渲染进程。
+    const ts = require(path.join(c.modules, 'typescript'));
+    require.extensions['.ts'] = require.extensions['.tsx'] = (module, file) => {
+      module._compile(ts.transpileModule(fs.readFileSync(file, 'utf8'), {
+        fileName: file, compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020, jsx: ts.JsxEmit.ReactJSX},
+      }).outputText, file);
+    };
+    const {validateTimeline} = require(path.join(c.project, 'src/validateTimeline.ts'));
+    const recommendations = validateTimeline(c.timeline);
+    fs.writeFileSync(c.done, JSON.stringify({recommendations}));
+    return;
+  }
   const started = Date.now();
+  const timings = {};
+  if (![1, 2].includes(c.concurrency ?? 1)) throw new Error('帧并发配置无效');
   const serveUrl = c.serveUrl || await bundle({entryPoint: c.entry, outDir: c.bundle, enableCaching: false,
     publicDir: path.join(c.project, 'public'), webpackOverride: config => ({...config, cache: false})});
   checkCancelled();
@@ -61,10 +76,14 @@ const {selectComposition, renderMedia, openBrowser} = require(path.join(c.module
     fs.writeFileSync(c.done, JSON.stringify({bundle: serveUrl, bundleSeconds: (Date.now() - started) / 1000}));
     return;
   }
+  timings.bundleSeconds = (Date.now() - started) / 1000;
+  const browserStarted = Date.now();
   browserPromise = openBrowser('chrome', {browserExecutable: c.browser, logLevel: 'error'});
   try {
     const browser = await browserPromise;
     checkCancelled();
+    timings.browserSeconds = (Date.now() - browserStarted) / 1000;
+    const selectionStarted = Date.now();
     const recommendations = new Map();
     const onBrowserLog = (entry) => {
       try {
@@ -78,26 +97,29 @@ const {selectComposition, renderMedia, openBrowser} = require(path.join(c.module
         composition.width !== c.spec.width || composition.height !== c.spec.height) {
       throw new Error('Composition 与确认的输出规格或实际时间轴不一致');
     }
+    timings.compositionSeconds = (Date.now() - selectionStarted) / 1000;
+    const renderStarted = Date.now();
     await renderMedia({composition, serveUrl, inputProps: c.props, onBrowserLog, outputLocation: c.output,
       puppeteerInstance: browser, browserExecutable: c.browser, codec: 'h264', pixelFormat: 'yuv420p', colorSpace: 'bt709',
       // 保留 Remotion 的完整混音，避免 ADTS 中间文件丢失 AAC 编码延迟信息。
       ...(c.fixedAudio ? {muted: true} : {audioCodec: 'pcm-16', separateAudioTo: c.audio}),
-      imageFormat: 'png', concurrency: 1,
+      imageFormat: 'png', concurrency: c.concurrency ?? 1,
       // PCM 会使 Remotion 默认选 MKV 中间容器（毫秒时间基），损失 30fps 的精确时间戳。
       // 预编码阶段只有 H.264 画面，明确使用 MP4；PCM 仍单独保存在 WAV。
       ffmpegOverride: ({type, args}) => type === 'pre-stitcher'
         ? [...args.slice(0, -1), '-f', 'mp4', args.at(-1)] : args,
       forSeamlessAacConcatenation: false, enforceAudioTrack: !c.fixedAudio, logLevel: 'error',
-      onProgress: p => writeProgress(p.progress)});
+      onStart: p => writeProgress({phase: 'start', concurrency: p.resolvedConcurrency}),
+      onProgress: p => writeProgress({progress: p.progress, renderedFrames: p.renderedFrames, encodedFrames: p.encodedFrames})});
     checkCancelled();
     // 完成标记在关闭浏览器之前写入；父进程仍须独立验证 MP4。
-    fs.writeFileSync(c.done + '.tmp', JSON.stringify({frames: c.frames, completedAt: Date.now(), recommendations: [...recommendations.values()]}));
+    fs.writeFileSync(c.done + '.tmp', JSON.stringify({timings: {...timings, renderAndEncodeSeconds: (Date.now() - renderStarted) / 1000}, frames: c.frames, completedAt: Date.now(), recommendations: [...recommendations.values()]}));
     fs.renameSync(c.done + '.tmp', c.done);
   } finally {
     await closeBrowser();
   }
 })().catch(error => {
   // stderr 也可能随宿主采集器关闭；编码失败仍依赖退出码和父级的 MP4 校验。
-  if (progressPipeOpen && !process.stderr.destroyed) process.stderr.write(String(error.stack || error) + '\n');
+  if (progressPipeOpen && !process.stderr.destroyed) process.stderr.write(String(error.stack || (typeof error === 'object' ? JSON.stringify(error) : error)) + '\n');
   process.exitCode = 1;
 });

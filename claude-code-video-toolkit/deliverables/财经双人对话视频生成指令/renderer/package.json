@@ -1,7 +1,7 @@
 {
   "name": "financial-dialogue-renderer-baseline",
   "private": true,
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "财经双人对话栏目可复用 Remotion 基线，不含任何历史节目内容",
   "dependencies": {
     "react": "^18.2.0",

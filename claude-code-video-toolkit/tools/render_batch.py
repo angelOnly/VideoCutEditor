@@ -11,6 +11,8 @@ import time
 import uuid
 
 import stage_media as media
+from render_inputs import production_inputs, isolated_command, frame_concurrency
+from production_contract import CONTRACT
 from two_stage import StageError, digest, execution, identifier, json_digest, load_request, local, read, require, write
 
 
@@ -62,7 +64,9 @@ def inputs(root, request_path, request, project, entry, scenes, modules, browser
                          for s in scenes if s.get('fixedMix')},
             'planHash': request['confirmation']['planSha256'], 'spec': request['outputSpec'],
             'packages': packages, 'browser': digest(Path(browser)),
-            'tools': {name: digest(Path(__file__).with_name(name)) for name in ('render_batch.py', 'stage_media.py', 'render_scene.cjs', 'two_stage.py', 'actual_timeline.py', 'finance_timeline.py')}}
+            'tools': {name: digest(Path(__file__).with_name(name)) for name in ('render_batch.py', 'stage_media.py', 'render_scene.cjs', 'two_stage.py', 'actual_timeline.py', 'finance_timeline.py', 'production_contract.py', 'render_inputs.py')},
+            'frameConcurrency': frame_concurrency(),
+            'designHash': digest(timeline.with_name('design.json')) if timeline.with_name('design.json').exists() else None}
 
 
 def freeze_batch(args):
@@ -72,6 +76,11 @@ def freeze_batch(args):
         confirmed = validate_scenes(root, request, scenes)
         ids = [s['sceneId'] for s in scenes]
         scenes.sort(key=lambda s: confirmed.index(s['sceneId']))
+        began = time.monotonic()
+        review_plan, mode = production_inputs(root, args.request, request, args.project, scenes, args.modules, args.node)
+        input_seconds = time.monotonic()-began
+        began = time.monotonic()
+        write(Path(args.request).resolve().parent/'review-plan.json', review_plan)
         frozen = inputs(root, args.request, request, args.project, args.entry, scenes, args.modules, args.browser)
         contract = {'schemaVersion': 1, 'runId': request['runId'], 'project': args.project,
                     'entry': args.entry, 'scenes': scenes, 'inputs': frozen}
@@ -80,7 +89,8 @@ def freeze_batch(args):
         if path.exists(): require(read(path) == manifest, '已有批次不可覆盖，请使用新 batch ID', 'TIMELINE_STALE')
         else: write(path, manifest)
         return {'manifest': str(path.relative_to(root)), 'version': manifest['version'], 'scenes': ids,
-                'productionSha256': json_digest({k: frozen[k] for k in ('projectFiles', 'props', 'timelineHash')})}
+                'reuseMode': mode, 'inputValidationSeconds': input_seconds,
+                'fingerprintSeconds': time.monotonic()-began}
 
 
 def verify_manifest(root, request_path, request, manifest, modules, browser):
@@ -95,29 +105,6 @@ def verify_manifest(root, request_path, request, manifest, modules, browser):
     require(current == manifest['inputs'], '冻结输入已变化，必须建立新批次', 'TIMELINE_STALE')
 
 
-def validate_preflight(root, request_path, manifest):
-    """只验证实际试作文件及版本关联，不把这些字段当成审美通过证明。"""
-    def check(value, message):
-        require(value, message + '；请在当前任务内试作、观察后继续', 'VISUAL_REVIEW_REQUIRED')
-    path = Path(request_path).resolve().parent / 'preflight-review.json'
-    check(path.is_file(), '正式批次前缺少代表段试作记录')
-    record = read(path)
-    check(isinstance(record, dict), '试作记录无效')
-    # 只绑定制作输入，不绑定批次名称；重试同一版本可复用。
-    expected = {key: manifest['inputs'][key] for key in ('projectFiles', 'props', 'timelineHash')}
-    check(record.get('productionSha256') == json_digest(expected), '试作记录对应的工程、参数或时间轴已变化')
-    previews = record.get('previews')
-    check(isinstance(previews, list) and previews, '试作记录没有实际预览')
-    for preview in previews:
-        check(isinstance(preview, dict) and preview.get('passed') is True, '试作仍有未解决问题')
-        check(all(isinstance(preview.get(k), str) and preview[k].strip()
-                  for k in ('path', 'sha256', 'observed', 'limitations')), '试作缺少文件、观察或能力限制')
-        check(digest(local(root, preview['path'])) == preview['sha256'], '试作视频已变化')
-        frames = preview.get('viewedFrames')
-        check(isinstance(frames, list) and frames and all(type(f) is int and f >= 0 for f in frames),
-              '试作缺少实际查看帧')
-
-
 def render_batch(args):
     started = time.monotonic()
     with execution(args.request, 'render-batch') as context:
@@ -128,9 +115,14 @@ def render_batch(args):
         manifest = read(manifest_path)
         require(args.slots in (1, 2, 3, 4, 5), '只支持 1 至 5 个渲染槽')
         verify_manifest(root, args.request, request, manifest, args.modules, args.browser)
-        validate_preflight(root, args.request, manifest)
+        fingerprint_seconds = time.monotonic()-started
+        input_started = time.monotonic()
+        review_plan, mode = production_inputs(root, args.request, request, manifest['project'], manifest['scenes'], args.modules, args.node)
+        input_seconds = time.monotonic()-input_started
+        write(Path(args.request).resolve().parent/'review-plan.json', review_plan)
         require(os.environ.get('VIDEOCUT_RENDER_SANDBOX', 'seatbelt' if sys.platform == 'darwin' else 'bwrap') in ('seatbelt', 'bwrap', 'native'),
                 '批次必须使用只读输入沙箱', 'CAPABILITY_MISSING')
+        usage = media.CgroupUsage()
         stop = threading.Event()
         deadline = started + budget
         cancel = os.environ.get('VIDEOCUT_BATCH_CANCEL_FILE')
@@ -147,6 +139,7 @@ def render_batch(args):
             if getattr(media._BATCH_CONTEXT, 'checking_parent', False): return
             with parent_check_lock:
                 if time.monotonic() - last_parent_check[0] >= 1:
+                    usage.observe()
                     media._BATCH_CONTEXT.checking_parent = True
                     try:
                         load_request(args.request, 'render')
@@ -159,12 +152,20 @@ def render_batch(args):
             verify_manifest(root, args.request, request, manifest, args.modules, args.browser)
         results, failures, scene_seconds, scene_resources = {}, [], {}, {}
         metrics = {'slots': args.slots, 'bundleSeconds': 0, 'bundleReused': False,
-                   'sceneSeconds': scene_seconds, 'sceneResourceMetrics': scene_resources}
-        bundle_dir = batch_dir / 'bundle'
-        bundle_marker = batch_dir / 'bundle.json'
+                   'sceneSeconds': scene_seconds, 'sceneResourceMetrics': scene_resources,
+                   'reuseMode': mode, 'frameConcurrency': frame_concurrency(),
+                   'inputValidationSeconds': input_seconds, 'fingerprintSeconds': fingerprint_seconds}
+        # bundle 仅由构建输入决定；换批次、补说明或只改 props 不需要重新打包。
+        bundle_key = json_digest({k: manifest['inputs'][k] for k in ('projectFiles', 'sharedFiles', 'packages', 'tools')})
+        bundle_root = Path(args.request).resolve().parent/'bundles'/bundle_key
+        bundle_root.mkdir(parents=True, exist_ok=True)
+        bundle_dir = bundle_root/'bundle'
+        bundle_marker = bundle_root/'bundle.json'
         attempt = uuid.uuid4().hex
         work_dir = Path(args.request).resolve().parent / 'work'; work_dir.mkdir(exist_ok=True)
         def snapshot():
+            usage.observe()
+            metrics['batchResources'] = usage.diagnostics()
             write(batch_dir / 'progress.json', {'version': manifest['version'], 'attemptId': attempt,
                   'results': [results[s['sceneId']] for s in manifest['scenes'] if s['sceneId'] in results],
                   'failures': failures, 'metrics': {**metrics, 'wallSeconds': time.monotonic() - started}})
@@ -174,7 +175,7 @@ def render_batch(args):
             reuse = bundle_marker.exists() and bundle_dir.exists()
             if reuse:
                 saved = read(bundle_marker)
-                reuse = saved.get('version') == manifest['version'] and saved.get('files') == media.project_fingerprint(bundle_dir)
+                reuse = saved.get('bundleKey') == bundle_key and saved.get('files') == media.project_fingerprint(bundle_dir)
             if not reuse:
                 if bundle_dir.exists():
                     import shutil
@@ -190,7 +191,9 @@ def render_batch(args):
                         str(Path(__file__).with_name('render_scene.cjs')), str(build / 'config.json')]
                 sandbox = os.environ.get('VIDEOCUT_RENDER_SANDBOX') or ('seatbelt' if sys.platform == 'darwin' else 'bwrap')
                 require(sandbox in ('bwrap', 'seatbelt', 'native'), '批次必须使用只读输入沙箱', 'CAPABILITY_MISSING')
-                if sandbox == 'bwrap':
+                if mode == CONTRACT:
+                    argv = isolated_command(argv, sandbox, root, local(root, manifest['project'], exists=False), build)
+                elif sandbox == 'bwrap':
                     argv = ['bwrap', '--die-with-parent', '--unshare-pid', '--ro-bind', '/', '/',
                             '--bind', str(build), str(build), '--dev-bind', '/dev', '/dev', '--proc', '/proc', '--', *argv]
                 elif sandbox == 'seatbelt':
@@ -198,7 +201,7 @@ def render_batch(args):
                 media.supervise(argv, local(root, manifest['project'], exists=False), work_dir / ('bundle-' + attempt + '.log'), build / 'done.json', max(.01, deadline-time.monotonic()))
                 (build / 'bundle').rename(bundle_dir)
                 validate()
-                write(bundle_marker, {'version': manifest['version'], 'files': media.project_fingerprint(bundle_dir)})
+                write(bundle_marker, {'bundleKey': bundle_key, 'files': media.project_fingerprint(bundle_dir)})
                 metrics['bundleSeconds'] = time.monotonic() - build_start
             metrics['bundleReused'] = reuse
             bundle_files = read(bundle_marker)['files']
@@ -213,7 +216,9 @@ def render_batch(args):
                     value = media.render_scene(args.request, scene['sceneId'], manifest['project'], manifest['entry'],
                         scene['composition'], scene.get('props'), scene['frames'], args.node, args.modules, args.browser,
                         scene.get('fixedMix', False), batch_context={'execution': (root, request, max(.01, deadline-time.monotonic())),
-                            'version': manifest['version'], 'bundle': str(bundle_dir), 'validate': validate_render})
+                            'version': manifest['version'], 'bundle': str(bundle_dir), 'validate': validate_render,
+                            'identity': {k: manifest['inputs'][k] for k in ('sharedFiles', 'packages', 'browser', 'tools')},
+                            'reuseMode': mode, 'reviewFrames': review_plan['scenes'][scene['sceneId']]['frames']})
                     return value, time.monotonic() - began
                 finally:
                     media._BATCH_CONTEXT.check = None
@@ -267,7 +272,9 @@ def render_batch(args):
             if fatal_error: raise fatal_error
             validate_render()
             metrics.update({'wallSeconds': time.monotonic()-started, 'reused': sum(bool(r.get('reused')) for r in results.values()),
-                            'failures': len(failures)})
+                            'failures': len(failures),
+                            'browserRenderCount': sum(r.get('browserRenderCount', 0) for r in results.values()),
+                            'newRenderedFrames': sum(r.get('newRenderedFrames', 0) for r in results.values())})
             snapshot()
             if failures:
                 raise StageError('RENDER_BATCH_FAILED', '部分分镜失败，成功分镜已保留；修复后恢复同一批次', True,

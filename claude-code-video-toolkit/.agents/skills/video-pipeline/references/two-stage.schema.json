@@ -975,6 +975,7 @@
           },
           "minItems": 1
         },
+        "designSha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
         "timelineSha256": {
           "type": "string",
           "pattern": "^[a-f0-9]{64}$"
