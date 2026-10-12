@@ -53,6 +53,13 @@ class BatchTests(Fixture):
         with patch('stage_media.supervise', side_effect=self.build), patch('stage_media.render_scene', return_value={'reused': False}):
             self.assertEqual(len(render_batch(self.args)['results']), 2)
 
+    def test_landlock_reaches_batch_build(self):
+        # 覆盖批次入口的模式检查，不能只验证冻结步骤或隔离辅助函数。
+        with patch.dict(os.environ, {'VIDEOCUT_RENDER_SANDBOX': 'landlock'}), patch('stage_media.supervise', side_effect=self.build) as build, patch('stage_media.render_scene', return_value={'reused': False}):
+            self.assertEqual(len(render_batch(self.args)['results']), 2)
+            self.assertTrue(build.called)
+            self.assertIn('render_landlock.py', build.call_args.args[0][1])
+
     def build(self, argv, cwd, log, done, timeout):
         config = read(Path(done).parent/'config.json')
         bundle = Path(config['bundle']); bundle.mkdir(); (bundle/'index.html').write_text('bundle')

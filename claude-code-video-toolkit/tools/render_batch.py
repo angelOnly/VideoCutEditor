@@ -120,7 +120,7 @@ def render_batch(args):
         review_plan, mode = production_inputs(root, args.request, request, manifest['project'], manifest['scenes'], args.modules, args.node)
         input_seconds = time.monotonic()-input_started
         write(Path(args.request).resolve().parent/'review-plan.json', review_plan)
-        require(os.environ.get('VIDEOCUT_RENDER_SANDBOX', 'seatbelt' if sys.platform == 'darwin' else 'landlock') in ('seatbelt', 'bwrap', 'native'),
+        require(os.environ.get('VIDEOCUT_RENDER_SANDBOX', 'seatbelt' if sys.platform == 'darwin' else 'landlock') in ('seatbelt', 'bwrap', 'landlock', 'native'),
                 '批次必须使用只读输入沙箱', 'CAPABILITY_MISSING')
         usage = media.CgroupUsage()
         stop = threading.Event()

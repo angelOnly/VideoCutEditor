@@ -26,7 +26,7 @@ class ProductionFixture(Fixture):
         _, self.req = load_request(self.request)
         self.project = self.job/'project/renderer'
         (self.project/'src').mkdir(parents=True); (self.project/'public').mkdir()
-        self.modules = Path(__file__).resolve().parents[1]/'examples/hello-world/node_modules'
+        self.modules = Path(os.environ.get('TEST_MODULES', str(Path(__file__).resolve().parents[1]/'examples/hello-world/node_modules'))).resolve()
         (self.project/'node_modules').symlink_to(self.modules, target_is_directory=True)
         write(self.project/'render-contract.json', {'contract': CONTRACT})
         (self.project/'src/validateTimeline.ts').write_text('export const validateTimeline = () => []; // 固定小工程的参数已由 Python 检查\n')
