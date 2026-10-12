@@ -105,7 +105,7 @@ class BatchTests(Fixture):
             return stage_media.command([sys.executable, '-c', 'import subprocess,sys,time; subprocess.Popen([sys.executable,"-c","import time; time.sleep(30)"]); time.sleep(30)'])
         began = time.monotonic()
         try:
-            with patch.dict(os.environ, {'VIDEOCUT_BATCH_CANCEL_FILE': str(cancel)}), patch('stage_media.supervise', side_effect=self.build), patch('stage_media.render_scene', side_effect=render):
+            with patch.dict(os.environ, {'VIDEOCUT_BATCH_CANCEL_FILE': str(cancel), 'VIDEOCUT_RENDER_SANDBOX': 'native'}), patch('stage_media.supervise', side_effect=self.build), patch('stage_media.render_scene', side_effect=render):
                 with self.assertRaises(StageError): render_batch(self.args)
         finally: timer.join()
         self.assertLess(time.monotonic()-began, 3)
@@ -142,7 +142,7 @@ class BatchTests(Fixture):
 
     def test_timeline_adapters_are_part_of_frozen_tool_inputs(self):
         tools = self.base / 'toolkit/tools'; tools.mkdir(parents=True)
-        names = ('render_batch.py', 'stage_media.py', 'render_scene.cjs', 'two_stage.py', 'actual_timeline.py', 'finance_timeline.py', 'production_contract.py', 'render_inputs.py')
+        names = ('render_batch.py', 'stage_media.py', 'render_scene.cjs', 'two_stage.py', 'actual_timeline.py', 'finance_timeline.py', 'production_contract.py', 'render_inputs.py', 'render_landlock.py')
         for name in names:
             (tools / name).write_text('固定版本')
         # 用隔离副本模拟工具发布，不改正在并行开发的实际共享文件。
